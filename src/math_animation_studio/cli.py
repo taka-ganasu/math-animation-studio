@@ -266,12 +266,18 @@ def plan(
             if voiceover:
                 script_writer = VoiceoverScriptWriter()
                 if artifacts.llm_used:
-                    script = LLMVoiceoverScriptWriter().write(
-                        storyboard=artifacts.storyboard,
-                        target_duration_seconds=duration,
-                        audience=audience,
-                        goal=goal,
-                    )
+                    try:
+                        script = LLMVoiceoverScriptWriter().write(
+                            storyboard=artifacts.storyboard,
+                            target_duration_seconds=duration,
+                            audience=audience,
+                            goal=goal,
+                        )
+                    except LLMUnavailableError:
+                        script = script_writer.write(
+                            artifacts.storyboard,
+                            target_duration_seconds=duration,
+                        )
                 else:
                     script = script_writer.write(
                         artifacts.storyboard,
@@ -310,6 +316,10 @@ def plan(
         )
 
         typer.echo(f"Generated planning artifacts in {output_dir}")
+        if rendered_video_path is not None:
+            typer.echo(f"Generated video: {rendered_video_path}")
+        if voiceover_video_path is not None:
+            typer.echo(f"Generated narrated video: {voiceover_video_path}")
     except (
         FormulaUnderstandingPlannerError,
         GeneratorError,

@@ -8,15 +8,10 @@ class VoiceoverScriptWriter:
         concept = storyboard.concept.strip().lower().replace("-", "_")
         if concept == "cross_entropy":
             if target_duration_seconds is not None and target_duration_seconds >= 25:
-                return (
-                    "これは、クロスエントロピー損失です。"
-                    "まず、正解は猫だとします。"
-                    "ワンホットラベルでは、猫だけが一になります。"
-                    "モデルが猫に低い確率しか出していないと、悪い予測です。"
-                    "このとき、損失は大きくなります。"
-                    "右の曲線は、マイナスログです。"
-                    "確率pが小さいほど、罰は急に大きくなります。"
-                    "逆に、正解に高い確率を出せていれば、損失は小さくなります。"
+                return _storyboard_driven_script(
+                    storyboard,
+                    intro="今回はクロスエントロピー損失を、画面の例に沿って見ます。",
+                    max_scene_count=6,
                 )
             return (
                 "クロスエントロピー損失は、正解クラスに低い確率を置いたときに、"
@@ -75,3 +70,18 @@ def _shorten(value: str, max_length: int) -> str:
     if len(text) <= max_length:
         return text
     return text[: max_length - 1].rstrip("、。") + "。"
+
+
+def _storyboard_driven_script(
+    storyboard: Storyboard,
+    *,
+    intro: str,
+    max_scene_count: int,
+) -> str:
+    sentences = [intro]
+    if storyboard.examples:
+        sentences.append(f"例は、{storyboard.examples[0].title}です。")
+    for scene in storyboard.scenes[:max_scene_count]:
+        sentences.append(_shorten(scene.narration, 72))
+    sentences.append(_shorten(storyboard.one_sentence_summary, 72))
+    return "".join(sentences)

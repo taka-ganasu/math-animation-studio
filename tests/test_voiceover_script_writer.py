@@ -20,8 +20,9 @@ def test_voiceover_script_writer_creates_cross_entropy_script() -> None:
     assert "クロスエントロピー損失" in script
     assert "マイナスログ" in script
     assert len(script) < 170
-    assert "まず、正解は猫" in slow_script
-    assert "右の曲線" in slow_script
+    assert "3クラス分類: 猫・犬・鳥" in slow_script
+    assert "まず正解が猫" in slow_script
+    assert "正解クラスの予測確率" in slow_script
     assert len(slow_script) > len(script)
     assert "Target duration: 30 seconds" in markdown
     assert "## Voiceover Script" in markdown

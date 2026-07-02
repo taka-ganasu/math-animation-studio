@@ -3,7 +3,7 @@ from __future__ import annotations
 from importlib.resources import files
 
 from math_animation_studio.generator import ManimGenerator
-from math_animation_studio.schema import Storyboard
+from math_animation_studio.schema import Example, SceneSpec, Storyboard, SymbolDefinition, VisualObject
 from math_animation_studio.understanding import FormulaUnderstandingPlanner
 from math_animation_studio.validation import validate_python_syntax
 
@@ -38,4 +38,59 @@ def test_generator_writes_compilable_cross_entropy_scene(tmp_path) -> None:
     assert output_path.exists()
     assert generator.scene_name_for(artifacts.storyboard) == "CrossEntropyPenaltyScene"
     assert "class CrossEntropyPenaltyScene" in output_path.read_text(encoding="utf-8")
+    validate_python_syntax(output_path)
+
+
+def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> None:
+    storyboard = Storyboard(
+        concept="cross_entropy",
+        formula=r"L = - \sum_i y_i \log(\hat{y}_i)",
+        one_sentence_summary="リンゴに高い確率を置けるほど、損失は小さくなります。",
+        audience="high_school_math",
+        symbol_ledger=[
+            SymbolDefinition(
+                symbol=r"\hat{y}_i",
+                meaning="モデルが各クラスへ置いた予測確率",
+                intuition="どちらだと思っているかの自信",
+            )
+        ],
+        examples=[
+            Example(
+                title="イチゴとリンゴの分類例",
+                description="リンゴが正解のときの二値分類例。",
+                values={
+                    "y": "[0, 1]",
+                    r"\hat{y}_good": "[0.1, 0.9]",
+                    r"\hat{y}_bad": "[0.8, 0.2]",
+                },
+            )
+        ],
+        scenes=[
+            SceneSpec(
+                id="step1",
+                title="身近な分類例",
+                learning_goal="クロスエントロピーを確率の罰として見る。",
+                narration="リンゴが正解なら、リンゴへの予測確率だけを取り出して罰に変えます。",
+                visual_objects=[
+                    VisualObject(
+                        type="formula",
+                        name="loss",
+                        description="クロスエントロピー",
+                        params={"latex": r"L = - \sum_i y_i \log(\hat{y}_i)"},
+                    )
+                ],
+                duration_seconds=10,
+            )
+        ],
+    )
+    output_path = tmp_path / "manim_scene.py"
+
+    ManimGenerator(target_duration_seconds=60).generate(storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert "イチゴ" in rendered
+    assert "リンゴ" in rendered
+    assert "リンゴへの予測確率だけ" in rendered
+    assert "GOOD_DISTRIBUTION = (0.1, 0.9)" in rendered
+    assert "BAD_DISTRIBUTION = (0.8, 0.2)" in rendered
     validate_python_syntax(output_path)
