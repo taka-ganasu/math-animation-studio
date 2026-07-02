@@ -1,0 +1,120 @@
+from __future__ import annotations
+
+from math_animation_studio.schema import (
+    Example,
+    ExplanationPlan,
+    FormulaAnalysis,
+    SceneSpec,
+    Storyboard,
+    SymbolDefinition,
+    VisualObject,
+)
+
+
+class StoryboardAdapter:
+    def convert(
+        self,
+        *,
+        formula_analysis: FormulaAnalysis,
+        explanation_plan: ExplanationPlan,
+    ) -> Storyboard:
+        scenes: list[SceneSpec] = []
+        for index, step in enumerate(explanation_plan.explanation_steps, start=1):
+            visual_objects = [
+                VisualObject(
+                    type="formula",
+                    name=f"{step.id}_formula",
+                    description=f"このステップで注目する式: {step.formula_focus or explanation_plan.formula}",
+                    params={"latex": step.formula_focus or explanation_plan.formula},
+                ),
+                VisualObject(
+                    type="text",
+                    name=f"{step.id}_visual_idea",
+                    description=step.visual_idea,
+                    params={"text": step.visual_idea},
+                ),
+            ]
+            if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 1:
+                visual_objects.insert(
+                    0,
+                    VisualObject(
+                        type="surface",
+                        name="loss_surface",
+                        description="損失関数を地形として表示する",
+                        params={
+                            "function_preset": "quadratic_ripple",
+                            "function": "0.35*x**2 + y**2 + 0.25*x*y + 0.8*sin(1.5*x)*cos(y)",
+                            "x_range": [-3, 3],
+                            "y_range": [-3, 3],
+                        },
+                    ),
+                )
+            if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 2:
+                visual_objects.insert(
+                    0,
+                    VisualObject(
+                        type="point",
+                        name="current_position",
+                        description="現在のパラメータ位置を点として示す",
+                        params={"x": 2.5, "y": 2.0},
+                    ),
+                )
+            if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 3:
+                visual_objects.insert(
+                    0,
+                    VisualObject(
+                        type="vector",
+                        name="negative_gradient",
+                        description="負の勾配方向を矢印として示す",
+                        params={"learning_rate": 0.15},
+                    ),
+                )
+            if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 5:
+                visual_objects.insert(
+                    0,
+                    VisualObject(
+                        type="curve",
+                        name="descent_path",
+                        description="更新で移動した点の軌跡を示す",
+                        params={"steps": 30},
+                    ),
+                )
+
+            scenes.append(
+                SceneSpec(
+                    id=step.id,
+                    title=step.title,
+                    learning_goal=step.learning_goal,
+                    narration=step.explanation,
+                    visual_objects=visual_objects,
+                    duration_seconds=10,
+                )
+            )
+
+        examples = [
+            Example(
+                title=example.title,
+                description=example.description,
+                values=example.concrete_values,
+            )
+            for example in explanation_plan.recommended_examples
+        ]
+
+        return Storyboard(
+            concept=explanation_plan.target_concept,
+            formula=explanation_plan.formula,
+            one_sentence_summary=explanation_plan.one_sentence_summary,
+            audience=explanation_plan.audience,
+            prerequisites=[],
+            symbol_ledger=[
+                SymbolDefinition(
+                    symbol=symbol.symbol,
+                    meaning=symbol.meaning,
+                    intuition=symbol.intuition,
+                )
+                for symbol in formula_analysis.symbols
+            ],
+            examples=examples,
+            scenes=scenes,
+            misconceptions=explanation_plan.misconceptions,
+        )

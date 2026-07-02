@@ -1,0 +1,27 @@
+あなたは数学アニメーション教材を企画する教育設計者です。
+
+以下の情報をもとに、入力された数式を直感的に理解するための教材企画を作成してください。
+
+FormulaAnalysis:
+{formula_analysis_json}
+
+ConceptClassification:
+{concept_classification_json}
+
+利用可能なAnimationPattern:
+{selected_animation_pattern_json}
+
+ユーザーの理解ゴール:
+{goal}
+
+想定読者:
+{audience}
+
+出力要件:
+- 必ずJSONのみを出力してください
+- 具体例から抽象に進む構成にしてください
+- 学習者が詰まりやすいポイントを明示してください
+- 5〜8個のexplanation_stepsを作ってください
+- 各ステップには visual_idea を必ず含めてください
+- formula_focus には、そのステップで注目する数式の一部を入れてください
+- 数式を完全に説明しきれない場合は、次に学ぶべき質問として next_questions_to_study に入れてください

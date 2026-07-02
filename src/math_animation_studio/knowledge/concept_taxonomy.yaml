@@ -1,0 +1,28 @@
+concepts:
+  gradient_descent:
+    domain: optimization
+    aliases:
+      - 勾配降下法
+      - steepest descent
+    likely_formulas:
+      - "\\theta_{t+1} = \\theta_t - \\eta \\nabla L(\\theta_t)"
+    recommended_animation_family: trajectory_on_surface
+
+  cross_entropy:
+    domain: machine_learning
+    aliases:
+      - cross entropy loss
+      - log loss
+      - negative log likelihood
+    likely_formulas:
+      - "L = - \\sum_i y_i \\log(\\hat{y}_i)"
+    recommended_animation_family: penalty_curve
+
+  scaled_dot_product_attention:
+    domain: deep_learning
+    aliases:
+      - attention
+      - transformer attention
+    likely_formulas:
+      - "softmax(QK^T / sqrt(d_k))V"
+    recommended_animation_family: matrix_similarity_heatmap

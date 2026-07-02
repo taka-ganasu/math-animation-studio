@@ -67,6 +67,30 @@ math-anim generate \
 
 成功すると `outputs/gradient_descent_demo/video.mp4` が作成されます。Manimが未インストールの場合やレンダリングに失敗した場合でも、`render.log` にログが保存されます。
 
+## 数式の教材企画を生成
+
+MVP2では `plan` コマンドで、数式を理解するための教材企画を生成できます。最初はLLMなしの固定サンプルで動作します。
+
+```bash
+math-anim plan \
+  --formula "L = - \\sum_i y_i \\log(\\hat{y}_i)" \
+  --goal "クロスエントロピー損失を直感的に理解したい" \
+  --output-dir outputs/cross_entropy_plan \
+  --no-llm
+```
+
+生成物:
+
+- `formula_analysis.json`
+- `concept_classification.json`
+- `prerequisite_map.json`
+- `explanation_plan.json`
+- `animation_brief.md`
+- `storyboard.json`
+- `metadata.json`
+
+`--no-llm` の固定サンプルは、Cross Entropy、Gradient Descent、Attentionに対応しています。`storyboard.json` は既存のStoryboard schemaでparseできる形式です。
+
 ## テスト
 
 ```bash
@@ -75,7 +99,8 @@ python -m pytest
 
 ## 現在の制約
 
-- `--no-llm` は `concept=gradient_descent` の固定サンプルのみ対応
-- Manimテンプレートは勾配降下法の3D曲面プリセットのみ対応
+- `generate --no-llm` は `concept=gradient_descent` の固定サンプルのみ対応
+- `plan --no-llm` は Cross Entropy、Gradient Descent、Attention の固定サンプルに対応
+- Manimテンプレートは勾配降下法の3D曲面プリセットのみ対応しており、MVP2のCross EntropyやAttentionは企画とStoryboard生成までを主対象にしています
 - Storyboard内の関数文字列はPythonコードとして評価しません
 - 自動音声合成は未実装で、ナレーション原稿をMarkdownとして出力します

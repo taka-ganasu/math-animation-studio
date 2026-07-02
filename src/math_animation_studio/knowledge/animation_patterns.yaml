@@ -1,0 +1,90 @@
+patterns:
+  - id: trajectory_on_surface
+    name: Trajectory on Surface
+    suitable_for:
+      - gradient_descent
+      - optimization
+      - loss_minimization
+    description: 2変数関数を3D曲面として描き、その上を点が移動する様子で最適化を表現する。
+    visual_metaphor: 損失関数を地形として見て、点が谷へ下っていく。
+    manim_template: gradient_descent_3d.py.j2
+    required_visual_objects:
+      - surface
+      - point
+      - trajectory
+      - gradient_vector
+      - formula
+
+  - id: penalty_curve
+    name: Penalty Curve
+    suitable_for:
+      - cross_entropy
+      - negative_log_likelihood
+      - log_loss
+    description: 正解確率pに対して-log(p)がどのように増減するかをグラフで見せる。
+    visual_metaphor: 正解に低い確率を置くほど罰が急激に大きくなる。
+    manim_template: penalty_curve.py.j2
+    required_visual_objects:
+      - graph
+      - probability_bar
+      - highlighted_class
+      - formula
+
+  - id: matrix_similarity_heatmap
+    name: Matrix Similarity Heatmap
+    suitable_for:
+      - attention
+      - scaled_dot_product_attention
+      - matrix_multiplication
+      - similarity
+    description: QueryとKeyの内積をヒートマップで表示し、softmax後の重みを使ってValueを混ぜる。
+    visual_metaphor: どの情報を見るべきかを類似度で決める。
+    manim_template: attention_heatmap.py.j2
+    required_visual_objects:
+      - matrix
+      - heatmap
+      - arrows
+      - weighted_sum
+      - formula
+
+  - id: row_column_matrix_product
+    name: Row Column Matrix Product
+    suitable_for:
+      - matrix_multiplication
+      - linear_transformation
+    description: 行列積の各要素が、左行列の行と右行列の列の内積でできることを見せる。
+    visual_metaphor: 行と列が出会って一つの値を作る。
+    manim_template: matrix_product.py.j2
+    required_visual_objects:
+      - matrix
+      - row_highlight
+      - column_highlight
+      - dot_product
+
+  - id: distribution_update
+    name: Distribution Update
+    suitable_for:
+      - bayes_rule
+      - posterior_update
+      - probability
+    description: 事前分布、尤度、事後分布の変化を重ねて見せる。
+    visual_metaphor: 新しい証拠によって信念の山が移動する。
+    manim_template: distribution_update.py.j2
+    required_visual_objects:
+      - distribution_curve
+      - likelihood_curve
+      - posterior_curve
+      - formula
+
+  - id: generic_symbol_decomposition
+    name: Generic Symbol Decomposition
+    suitable_for:
+      - unknown
+      - formula_understanding
+      - symbol_decomposition
+    description: 数式を記号と操作に分解し、各部分の意味を順番に対応づける。
+    visual_metaphor: 圧縮された式を、意味のある部品に分解して並べる。
+    manim_template: null
+    required_visual_objects:
+      - formula
+      - text

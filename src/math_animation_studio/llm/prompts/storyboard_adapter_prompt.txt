@@ -1,0 +1,16 @@
+あなたは教材企画をManim用Storyboardに変換するエージェントです。
+
+以下のExplanationPlanを、既存のStoryboard schemaに変換してください。
+
+ExplanationPlan:
+{explanation_plan_json}
+
+既存Storyboard schema:
+{storyboard_schema}
+
+制約:
+- 出力は必ずJSONのみ
+- 既存のStoryboard schemaに完全準拠してください
+- scenesはExplanationPlanのexplanation_stepsに対応させてください
+- visual_objectsにはManimで表現しやすい単位を入れてください
+- 不明な値は空にせず、合理的なデフォルトを入れてください

@@ -6,11 +6,15 @@ from typing import Optional
 import typer
 
 from math_animation_studio import __version__
-from math_animation_studio.artifacts import ArtifactManager
+from math_animation_studio.artifacts import ArtifactManager, PlanArtifactManager
 from math_animation_studio.generator import GeneratorError, ManimGenerator
 from math_animation_studio.llm import LLMUnavailableError
 from math_animation_studio.planner import ConceptPlanner, PlannerError
 from math_animation_studio.renderer import ManimRenderer, RenderError
+from math_animation_studio.understanding.formula_understanding_planner import (
+    FormulaUnderstandingPlanner,
+    FormulaUnderstandingPlannerError,
+)
 from math_animation_studio.validation import ValidationError, validate_python_syntax
 
 
@@ -130,5 +134,118 @@ def generate(
                 duration_seconds_target=duration,
                 error=str(exc),
             )
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+
+@app.command()
+def plan(
+    formula: str = typer.Option(..., "--formula", help="Formula to understand."),
+    goal: Optional[str] = typer.Option(None, "--goal", help="Learning goal."),
+    audience: str = typer.Option(
+        "engineer_beginner_math",
+        "--audience",
+        help="Target audience.",
+    ),
+    domain_hint: Optional[str] = typer.Option(
+        None,
+        "--domain-hint",
+        help="Optional domain hint such as machine_learning or statistics.",
+    ),
+    output_dir: Path = typer.Option(
+        ...,
+        "--output-dir",
+        file_okay=False,
+        dir_okay=True,
+        help="Directory for generated planning artifacts.",
+    ),
+    no_llm: bool = typer.Option(
+        False,
+        "--no-llm",
+        help="Use deterministic bundled samples instead of calling an LLM.",
+    ),
+    to_storyboard: bool = typer.Option(
+        True,
+        "--to-storyboard/--no-storyboard",
+        help="Generate storyboard.json compatible with the MVP1 schema.",
+    ),
+    render: bool = typer.Option(
+        False,
+        "--render",
+        help="If possible, generate and render a Manim video from the storyboard.",
+    ),
+    output_format: str = typer.Option(
+        "all",
+        "--format",
+        help="Output format: json, markdown, or all.",
+    ),
+) -> None:
+    if output_format not in {"json", "markdown", "all"}:
+        typer.echo("Error: --format must be one of json, markdown, all.", err=True)
+        raise typer.Exit(code=1)
+
+    manager = PlanArtifactManager(output_dir)
+    manager.prepare()
+
+    try:
+        planner = FormulaUnderstandingPlanner(no_llm=no_llm)
+        artifacts = planner.plan(
+            formula=formula,
+            goal=goal,
+            audience=audience,
+            domain_hint=domain_hint,
+            to_storyboard=to_storyboard,
+        )
+
+        if output_format in {"json", "all"}:
+            manager.write_formula_analysis(artifacts.formula_analysis)
+            manager.write_concept_classification(artifacts.concept_classification)
+            manager.write_prerequisite_map(artifacts.prerequisite_map)
+            manager.write_explanation_plan(artifacts.explanation_plan)
+            if artifacts.storyboard is not None:
+                manager.write_storyboard(artifacts.storyboard)
+
+        if output_format in {"markdown", "all"}:
+            manager.write_animation_brief(artifacts.animation_brief)
+
+        manager.write_metadata(
+            formula=formula,
+            goal=goal,
+            audience=audience,
+            status="success",
+            llm_used=artifacts.llm_used,
+        )
+
+        if render:
+            if artifacts.storyboard is None:
+                raise FormulaUnderstandingPlannerError(
+                    "--render requires storyboard generation. Remove --no-storyboard."
+                )
+            artifact_manager = ArtifactManager(output_dir)
+            generator = ManimGenerator()
+            generator.generate(artifacts.storyboard, artifact_manager.manim_scene_path)
+            validate_python_syntax(artifact_manager.manim_scene_path)
+            renderer = ManimRenderer()
+            renderer.render(
+                scene_path=artifact_manager.manim_scene_path,
+                output_dir=output_dir,
+                log_path=artifact_manager.render_log_path,
+            )
+
+        typer.echo(f"Generated planning artifacts in {output_dir}")
+    except (
+        FormulaUnderstandingPlannerError,
+        GeneratorError,
+        RenderError,
+        ValidationError,
+    ) as exc:
+        manager.write_metadata(
+            formula=formula,
+            goal=goal,
+            audience=audience,
+            status="failed",
+            llm_used=False,
+            error=str(exc),
+        )
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc

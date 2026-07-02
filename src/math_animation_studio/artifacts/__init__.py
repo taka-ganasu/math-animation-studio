@@ -1,3 +1,3 @@
-from .manager import ArtifactManager
+from .manager import ArtifactManager, PlanArtifactManager
 
-__all__ = ["ArtifactManager"]
+__all__ = ["ArtifactManager", "PlanArtifactManager"]

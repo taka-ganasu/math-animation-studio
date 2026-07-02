@@ -5,6 +5,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from math_animation_studio.schema import (
+    ConceptClassification,
+    ExplanationPlan,
+    FormulaAnalysis,
+    PrerequisiteMap,
+)
 from math_animation_studio.schema import Storyboard, save_storyboard
 
 
@@ -83,6 +89,98 @@ class ArtifactManager:
         if video_path is not None:
             payload["video_path"] = str(video_path)
         if error is not None:
+            payload["error"] = error
+        self.metadata_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+
+class PlanArtifactManager:
+    def __init__(self, output_dir: Path) -> None:
+        self.output_dir = output_dir
+
+    def prepare(self) -> None:
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def formula_analysis_path(self) -> Path:
+        return self.output_dir / "formula_analysis.json"
+
+    @property
+    def concept_classification_path(self) -> Path:
+        return self.output_dir / "concept_classification.json"
+
+    @property
+    def prerequisite_map_path(self) -> Path:
+        return self.output_dir / "prerequisite_map.json"
+
+    @property
+    def explanation_plan_path(self) -> Path:
+        return self.output_dir / "explanation_plan.json"
+
+    @property
+    def animation_brief_path(self) -> Path:
+        return self.output_dir / "animation_brief.md"
+
+    @property
+    def storyboard_path(self) -> Path:
+        return self.output_dir / "storyboard.json"
+
+    @property
+    def metadata_path(self) -> Path:
+        return self.output_dir / "metadata.json"
+
+    def write_formula_analysis(self, formula_analysis: FormulaAnalysis) -> None:
+        self.formula_analysis_path.write_text(
+            formula_analysis.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+
+    def write_concept_classification(self, classification: ConceptClassification) -> None:
+        self.concept_classification_path.write_text(
+            classification.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+
+    def write_prerequisite_map(self, prerequisite_map: PrerequisiteMap) -> None:
+        self.prerequisite_map_path.write_text(
+            prerequisite_map.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+
+    def write_explanation_plan(self, explanation_plan: ExplanationPlan) -> None:
+        self.explanation_plan_path.write_text(
+            explanation_plan.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+
+    def write_animation_brief(self, content: str) -> None:
+        self.animation_brief_path.write_text(content, encoding="utf-8")
+
+    def write_storyboard(self, storyboard: Storyboard) -> None:
+        save_storyboard(storyboard, self.storyboard_path)
+
+    def write_metadata(
+        self,
+        *,
+        formula: str,
+        goal: str | None,
+        audience: str,
+        status: str,
+        llm_used: bool,
+        error: str | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {
+            "command": "plan",
+            "formula": formula,
+            "goal": goal,
+            "audience": audience,
+            "created_at": datetime.now().astimezone().isoformat(),
+            "status": status,
+            "llm_used": llm_used,
+        }
+        if error:
             payload["error"] = error
         self.metadata_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
