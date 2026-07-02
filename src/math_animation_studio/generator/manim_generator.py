@@ -45,7 +45,7 @@ class GradientDescentParams(BaseModel):
 class PenaltyCurveParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    base_duration_seconds: float = 26.0
+    base_duration_seconds: float = 29.5
     target_duration_seconds: int = Field(default=30, ge=5, le=180)
     title: str = "Cross Entropy Loss"
     formula_latex: str = r"L = - \sum_i y_i \log(\hat{y}_i)"

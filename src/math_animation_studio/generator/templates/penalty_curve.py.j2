@@ -109,8 +109,8 @@ class CrossEntropyPenaltyScene(Scene):
                 FadeIn(card),
                 run_time=rt(0.55),
             )
-            self.wait(rt(0.3))
-            self.play(FadeOut(highlight), FadeOut(target_copy), FadeOut(card), run_time=rt(0.28))
+            self.wait(rt(1.05))
+            self.play(FadeOut(highlight), FadeOut(target_copy), FadeOut(card), run_time=rt(0.2))
         return parts
 
     def pipeline_node(self, title: str, body: Mobject | str, color: ManimColor) -> VGroup:
