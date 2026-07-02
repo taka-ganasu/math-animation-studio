@@ -76,3 +76,30 @@ def test_plan_no_llm_cross_entropy_outputs_artifacts(tmp_path) -> None:
     assert "$\\log(\\hat{y}_i)$" in brief
     assert "注目する式: $y_i$" in brief
     assert "\\[" not in brief
+
+
+def test_plan_no_llm_gradient_double_well_outputs_storyboard(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+            "--goal",
+            "2次元で谷が2箇所ある時に勾配降下法がどう判断するか知りたい",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
+    assert storyboard.concept == "gradient_descent"
+    assert storyboard.examples[0].values["function_preset"] == "double_well_2d"
+    assert "局所最小" in brief
+    assert "SGD" in brief

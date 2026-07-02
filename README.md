@@ -127,6 +127,25 @@ math-anim plan \
 
 `--duration` は対応済みテンプレートの目標動画尺です。Cross Entropyでは、25秒以上を指定するとナレーション台本も少し噛み砕いた版になります。
 
+### 勾配降下法: 2Dで谷が2つある例
+
+`--no-llm` でも、ゴール文に「2次元」「谷が2箇所」「局所最小」などを含めると、2D等高線で浅い局所最小と深い大域最小を比べる動画を生成できます。
+
+```bash
+math-anim plan \
+  --formula "\\theta_{t+1} = \\theta_t - \\eta \\nabla L(\\theta_t)" \
+  --goal "2次元で谷が2箇所ある時に勾配降下法がどう判断するか知りたい" \
+  --audience high_school_math \
+  --domain-hint optimization \
+  --duration 52 \
+  --output-dir outputs/gradient_descent_double_well \
+  --no-llm \
+  --render \
+  --voiceover
+```
+
+成功すると、`outputs/gradient_descent_double_well/video_with_voice.mp4` が作成されます。
+
 ## LLMで動的に教材企画を生成
 
 OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。

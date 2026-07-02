@@ -19,10 +19,21 @@ STEPS = {{ params.steps | py_repr }}
 X_RANGE = {{ params.x_range | py_repr }}
 Y_RANGE = {{ params.y_range | py_repr }}
 NARRATION_LINES = {{ params.narration_lines | py_repr }}
+VISUALIZATION_STYLE = {{ params.visualization_style | py_repr }}
+FUNCTION_PRESET = {{ params.function_preset | py_repr }}
+COMPARISON_INITIAL_X = {{ params.comparison_initial_x | py_repr }}
+COMPARISON_INITIAL_Y = {{ params.comparison_initial_y | py_repr }}
+SEGMENT_DURATIONS = {{ params.segment_durations | py_repr }}
+
+
+def segment_duration(segment_id: str, fallback_seconds: float) -> float:
+    return max(0.05, float(SEGMENT_DURATIONS.get(segment_id, fallback_seconds)))
 
 
 class GradientDescent3DScene(ThreeDScene):
     def loss(self, x: float, y: float) -> float:
+        if FUNCTION_PRESET == "double_well_2d":
+            return self.double_well_loss(x, y)
         return (
             0.35 * x**2
             + y**2
@@ -31,6 +42,8 @@ class GradientDescent3DScene(ThreeDScene):
         )
 
     def gradient(self, x: float, y: float) -> np.ndarray:
+        if FUNCTION_PRESET == "double_well_2d":
+            return self.double_well_gradient(x, y)
         return np.array(
             [
                 0.7 * x + 0.25 * y + 1.2 * np.cos(1.5 * x) * np.cos(y),
@@ -39,9 +52,29 @@ class GradientDescent3DScene(ThreeDScene):
             dtype=float,
         )
 
-    def descent_points(self) -> list[tuple[float, float, float]]:
-        x = float(INITIAL_X)
-        y = float(INITIAL_Y)
+    def double_well_loss(self, x: float, y: float) -> float:
+        left = np.exp(-(((x + 1.45) ** 2) / 0.85 + ((y - 0.75) ** 2) / 0.65))
+        right = np.exp(-(((x - 1.35) ** 2) / 0.75 + ((y + 0.65) ** 2) / 0.85))
+        return 2.45 - 1.35 * left - 1.85 * right + 0.045 * (x**2 + y**2)
+
+    def double_well_gradient(self, x: float, y: float) -> np.ndarray:
+        left = np.exp(-(((x + 1.45) ** 2) / 0.85 + ((y - 0.75) ** 2) / 0.65))
+        right = np.exp(-(((x - 1.35) ** 2) / 0.75 + ((y + 0.65) ** 2) / 0.85))
+        return np.array(
+            [
+                1.35 * left * 2.0 * (x + 1.45) / 0.85
+                + 1.85 * right * 2.0 * (x - 1.35) / 0.75
+                + 0.09 * x,
+                1.35 * left * 2.0 * (y - 0.75) / 0.65
+                + 1.85 * right * 2.0 * (y + 0.65) / 0.85
+                + 0.09 * y,
+            ],
+            dtype=float,
+        )
+
+    def descent_points_from(self, start_x: float, start_y: float) -> list[tuple[float, float, float]]:
+        x = float(start_x)
+        y = float(start_y)
         points: list[tuple[float, float, float]] = []
         for _ in range(STEPS + 1):
             points.append((x, y, self.loss(x, y)))
@@ -50,7 +83,286 @@ class GradientDescent3DScene(ThreeDScene):
             y = float(np.clip(y - LEARNING_RATE * grad[1], Y_RANGE[0], Y_RANGE[1]))
         return points
 
+    def descent_points(self) -> list[tuple[float, float, float]]:
+        return self.descent_points_from(float(INITIAL_X), float(INITIAL_Y))
+
+    def make_math(self, latex: str, fallback: str, font_size: int = 32) -> Mobject:
+        try:
+            return MathTex(latex, font_size=font_size)
+        except Exception:
+            return Text(fallback, font_size=font_size)
+
+    def make_caption(self, text: str) -> Text:
+        caption = Text(text, font_size=23)
+        if caption.width > 12.1:
+            caption.scale(12.1 / caption.width)
+        caption.to_edge(DOWN, buff=0.25)
+        return caption
+
+    def wait_remaining(self, segment_seconds: float, used_seconds: float) -> None:
+        remaining = max(0.0, segment_seconds - used_seconds)
+        if remaining > 0.01:
+            self.wait(remaining)
+
+    def double_well_axes(self) -> Axes:
+        axes = Axes(
+            x_range=[X_RANGE[0], X_RANGE[1], 1],
+            y_range=[Y_RANGE[0], Y_RANGE[1], 1],
+            x_length=8.4,
+            y_length=5.0,
+            tips=False,
+        )
+        axes.shift(DOWN * 0.1)
+        return axes
+
+    def contour_lines(self, axes: Axes) -> VGroup:
+        contours = VGroup()
+        levels = [0.85, 1.05, 1.25, 1.5, 1.85, 2.2, 2.55, 2.9]
+        colors = [GREEN_B, TEAL_B, BLUE_B, BLUE_D, GREY_B, GREY_C, GREY_D, GREY_E]
+        for index, level in enumerate(levels):
+            try:
+                curve = axes.plot_implicit_curve(
+                    lambda x, y, c=level: self.loss(x, y) - c,
+                    min_depth=5,
+                    max_quads=900,
+                    color=colors[min(index, len(colors) - 1)],
+                    stroke_width=2,
+                )
+                curve.set_opacity(0.85 if index < 5 else 0.55)
+                contours.add(curve)
+            except Exception:
+                pass
+        return contours
+
+    def point2d(self, axes: Axes, point: tuple[float, float, float]) -> np.ndarray:
+        return axes.c2p(point[0], point[1])
+
+    def gradient_arrow_2d(self, axes: Axes, x: float, y: float, color: ManimColor) -> Arrow:
+        direction = -self.gradient(x, y)
+        norm = float(np.linalg.norm(direction))
+        if norm <= 1.0e-8:
+            direction = np.array([1.0, 0.0])
+            norm = 1.0
+        end_xy = np.array([x, y]) + 0.7 * direction / norm
+        return Arrow(
+            axes.c2p(x, y),
+            axes.c2p(float(end_xy[0]), float(end_xy[1])),
+            buff=0.05,
+            color=color,
+            stroke_width=5,
+        )
+
+    def final_loss_badge(
+        self,
+        label: str,
+        point: tuple[float, float, float],
+        color: ManimColor,
+    ) -> VGroup:
+        box = RoundedRectangle(
+            corner_radius=0.12,
+            width=3.25,
+            height=0.95,
+            stroke_color=color,
+            stroke_width=2,
+            fill_color=BLACK,
+            fill_opacity=0.72,
+        )
+        title = Text(label, font_size=19, color=color)
+        value = self.make_math(rf"L={point[2]:.2f}", f"L={point[2]:.2f}", font_size=24)
+        lines = VGroup(title, value).arrange(DOWN, buff=0.05)
+        lines.move_to(box.get_center())
+        return VGroup(box, lines)
+
+    def play_descent_path_2d(
+        self,
+        axes: Axes,
+        points: list[tuple[float, float, float]],
+        *,
+        color: ManimColor,
+        duration: float,
+        label: str,
+    ) -> tuple[Dot, VGroup]:
+        dot = Dot(self.point2d(axes, points[0]), color=color, radius=0.08)
+        label_mobject = Text(label, font_size=19, color=color)
+        label_mobject.next_to(dot, UP, buff=0.12)
+        entry_time = min(0.55, duration * 0.12)
+        self.play(FadeIn(dot), FadeIn(label_mobject), run_time=entry_time)
+        path_segments = VGroup()
+        step_time = max(0.03, (duration - entry_time - 0.25) / max(1, len(points) - 1))
+        for index, start in enumerate(points[:-1]):
+            end = points[index + 1]
+            start_point = self.point2d(axes, start)
+            end_point = self.point2d(axes, end)
+            segment = Line(start_point, end_point, color=color)
+            segment.set_stroke(width=4)
+            path_segments.add(segment)
+            self.play(
+                dot.animate.move_to(end_point),
+                label_mobject.animate.next_to(dot, UP, buff=0.12),
+                Create(segment),
+                run_time=step_time,
+            )
+        self.play(FadeOut(label_mobject), run_time=0.2)
+        return dot, path_segments
+
+    def sgd_jitter_path(self, axes: Axes, points: list[tuple[float, float, float]]) -> VGroup:
+        dashed = VGroup()
+        sampled = points[::3]
+        jittered: list[np.ndarray] = []
+        for index, point in enumerate(sampled):
+            offset = np.array([0.09 * np.sin(index * 1.7), 0.07 * np.cos(index * 1.3)])
+            jittered.append(axes.c2p(point[0] + offset[0], point[1] + offset[1]))
+        for start, end in zip(jittered[:-1], jittered[1:]):
+            dashed.add(DashedLine(start, end, dash_length=0.08, color=ORANGE, stroke_width=4))
+        return dashed
+
+    def construct_double_well_2d(self) -> None:
+        left_points = self.descent_points_from(float(INITIAL_X), float(INITIAL_Y))
+        right_points = self.descent_points_from(float(COMPARISON_INITIAL_X), float(COMPARISON_INITIAL_Y))
+
+        title = Text("Gradient Descent: Two Valleys", font_size=32)
+        title.to_edge(UP, buff=0.25)
+        formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=31)
+        formula.next_to(title, DOWN, buff=0.14)
+        axes = self.double_well_axes()
+        x_label = self.make_math(r"\theta_1", "theta_1", font_size=22)
+        y_label = self.make_math(r"\theta_2", "theta_2", font_size=22)
+        axis_labels = axes.get_axis_labels(x_label, y_label)
+        contours = self.contour_lines(axes)
+
+        caption = self.make_caption("2次元の等高線で、損失の低い場所を谷として見ます。")
+        duration = segment_duration("intro_landscape", 5.0)
+        self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=min(1.5, duration * 0.35))
+        self.play(Create(axes), FadeIn(axis_labels), FadeIn(contours), run_time=min(1.8, duration * 0.36))
+        self.wait_remaining(duration, min(1.5, duration * 0.35) + min(1.8, duration * 0.36))
+
+        shallow_point = (-1.41, 0.73, self.loss(-1.41, 0.73))
+        deep_point = (1.33, -0.64, self.loss(1.33, -0.64))
+        shallow_dot = Dot(axes.c2p(shallow_point[0], shallow_point[1]), color=YELLOW, radius=0.09)
+        deep_dot = Dot(axes.c2p(deep_point[0], deep_point[1]), color=GREEN, radius=0.09)
+        shallow_label = Text("浅い局所最小", font_size=22, color=YELLOW)
+        shallow_label.next_to(shallow_dot, LEFT, buff=0.15)
+        deep_label = Text("深い大域最小", font_size=22, color=GREEN)
+        deep_label.next_to(deep_dot, RIGHT, buff=0.15)
+        next_caption = self.make_caption("左の谷は局所最小、右の谷はより低い大域最小です。")
+        duration = segment_duration("two_valleys", 6.0)
+        self.play(
+            FadeIn(shallow_dot),
+            FadeIn(deep_dot),
+            FadeIn(shallow_label),
+            FadeIn(deep_label),
+            ReplacementTransform(caption, next_caption),
+            run_time=min(1.1, duration * 0.28),
+        )
+        caption = next_caption
+        self.wait_remaining(duration, min(1.1, duration * 0.28))
+
+        start = left_points[0]
+        start_dot = Dot(self.point2d(axes, start), color=RED, radius=0.08)
+        start_label = Text("現在地", font_size=20, color=RED)
+        start_label.next_to(start_dot, UP, buff=0.12)
+        arrow = self.gradient_arrow_2d(axes, start[0], start[1], RED)
+        arrow_label = Text("負の勾配方向", font_size=20, color=RED)
+        arrow_label.next_to(arrow, UP, buff=0.08)
+        next_caption = self.make_caption("勾配は今いる場所の上り方向です。下るには逆向きへ進みます。")
+        duration = segment_duration("local_slope", 6.0)
+        self.play(
+            FadeIn(start_dot),
+            FadeIn(start_label),
+            GrowArrow(arrow),
+            FadeIn(arrow_label),
+            ReplacementTransform(caption, next_caption),
+            run_time=min(1.25, duration * 0.3),
+        )
+        caption = next_caption
+        self.wait_remaining(duration, min(1.25, duration * 0.3))
+        self.play(FadeOut(start_dot), FadeOut(start_label), FadeOut(arrow), FadeOut(arrow_label), run_time=0.25)
+
+        next_caption = self.make_caption("左側から始めると、近くの浅い谷へ吸い込まれます。")
+        duration = segment_duration("left_descent", 8.0)
+        self.play(ReplacementTransform(caption, next_caption), run_time=0.35)
+        caption = next_caption
+        left_dot, left_path = self.play_descent_path_2d(
+            axes,
+            left_points,
+            color=YELLOW,
+            duration=max(0.5, duration - 0.35),
+            label="start A",
+        )
+
+        next_caption = self.make_caption("右側から始めると、より深い谷へ向かいます。")
+        duration = segment_duration("right_descent", 8.0)
+        self.play(ReplacementTransform(caption, next_caption), run_time=0.35)
+        caption = next_caption
+        right_dot, right_path = self.play_descent_path_2d(
+            axes,
+            right_points,
+            color=GREEN,
+            duration=max(0.5, duration - 0.35),
+            label="start B",
+        )
+
+        boundary = DashedLine(
+            axes.c2p(-0.08, Y_RANGE[0] + 0.1),
+            axes.c2p(-0.08, Y_RANGE[1] - 0.1),
+            dash_length=0.12,
+            color=GREY_B,
+            stroke_width=3,
+        )
+        boundary_label = Text("初期位置で分かれる境界のイメージ", font_size=19, color=GREY_B)
+        boundary_label.next_to(boundary, UP, buff=0.12)
+        left_badge = self.final_loss_badge("A: 局所最小", left_points[-1], YELLOW)
+        right_badge = self.final_loss_badge("B: 大域最小", right_points[-1], GREEN)
+        badges = VGroup(left_badge, right_badge).arrange(DOWN, buff=0.18)
+        badges.to_corner(UR, buff=0.55)
+        next_caption = self.make_caption("勾配降下法は谷を見比べません。初期位置と局所的な傾きで行き先が決まります。")
+        duration = segment_duration("compare_minima", 7.0)
+        self.play(
+            FadeIn(boundary),
+            FadeIn(boundary_label),
+            FadeIn(badges),
+            ReplacementTransform(caption, next_caption),
+            run_time=min(1.2, duration * 0.3),
+        )
+        caption = next_caption
+        self.wait_remaining(duration, min(1.2, duration * 0.3))
+
+        jitter = self.sgd_jitter_path(axes, left_points)
+        sgd_note = Text("SGD: 勾配にミニバッチ由来の揺れが入る", font_size=22, color=ORANGE)
+        sgd_note.to_corner(UL, buff=0.55)
+        next_caption = self.make_caption("SGDでは軌跡が少し揺れます。ただし、常に深い谷を選べるわけではありません。")
+        duration = segment_duration("sgd_bridge", 7.0)
+        self.play(
+            FadeIn(jitter),
+            FadeIn(sgd_note),
+            ReplacementTransform(caption, next_caption),
+            run_time=min(1.25, duration * 0.32),
+        )
+        caption = next_caption
+        self.wait_remaining(duration, min(1.25, duration * 0.32))
+
+        summary_formula = self.make_math(
+            r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)",
+            "theta_next = theta - eta grad L",
+            font_size=34,
+        )
+        summary_formula.move_to(ORIGIN + DOWN * 2.55)
+        summary_box = SurroundingRectangle(summary_formula, color=YELLOW, buff=0.12)
+        next_caption = self.make_caption("まとめると、勾配降下法は現在地の斜面だけを見て一歩ずつ下ります。")
+        duration = segment_duration("summary", 5.0)
+        self.play(
+            FadeIn(summary_formula),
+            Create(summary_box),
+            ReplacementTransform(caption, next_caption),
+            run_time=min(1.0, duration * 0.32),
+        )
+        self.wait_remaining(duration, min(1.0, duration * 0.32))
+
     def construct(self) -> None:
+        if VISUALIZATION_STYLE == "double_well_2d":
+            self.construct_double_well_2d()
+            return
+
         points = self.descent_points()
         max_z = max([point[2] for point in points] + [6.0])
 

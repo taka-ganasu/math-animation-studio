@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from math_animation_studio.schema import Storyboard
-from math_animation_studio.timing import cross_entropy_timeline_segments
+from math_animation_studio.timing import (
+    cross_entropy_timeline_segments,
+    gradient_double_well_timeline_segments,
+)
 
 
 @dataclass(frozen=True)
@@ -34,6 +37,18 @@ class VoiceoverScriptWriter:
                 "つまり、正解に高い確率を置くほど、損失は小さくなります。"
             )
         if concept == "gradient_descent":
+            if (
+                target_duration_seconds is not None
+                and target_duration_seconds >= 25
+                and _is_gradient_double_well_storyboard(storyboard)
+            ):
+                return "".join(
+                    segment.text
+                    for segment in self.write_segments(
+                        storyboard,
+                        target_duration_seconds=target_duration_seconds,
+                    )
+                )
             return (
                 "勾配降下法は、損失が増える方向の逆向きに少しずつ進む方法です。"
                 "曲面の高さを損失と見ると、点は谷へ向かって移動します。"
@@ -53,6 +68,19 @@ class VoiceoverScriptWriter:
         target_duration_seconds: int | None = None,
     ) -> list[VoiceoverSegment]:
         concept = storyboard.concept.strip().lower().replace("-", "_")
+        if concept == "gradient_descent" and _is_gradient_double_well_storyboard(storyboard):
+            timeline = gradient_double_well_timeline_segments(target_duration_seconds)
+            text_by_id = _gradient_double_well_segment_text()
+            return [
+                VoiceoverSegment(
+                    id=segment.id,
+                    text=text_by_id.get(segment.id, ""),
+                    duration_seconds=segment.duration_seconds,
+                )
+                for segment in timeline
+                if text_by_id.get(segment.id, "").strip()
+            ]
+
         if concept != "cross_entropy":
             return []
 
@@ -188,6 +216,31 @@ def _cross_entropy_segment_text(storyboard: Storyboard) -> dict[str, str]:
             "最後にpをマイナスlogへ通します。pが小さいほど、大きな罰になります。"
         ),
         "summary": "まとめると、正解に高い確率を置けるほど、損失は小さくなります。",
+    }
+
+
+def _is_gradient_double_well_storyboard(storyboard: Storyboard) -> bool:
+    for example in storyboard.examples:
+        if str(example.values.get("function_preset", "")).lower() == "double_well_2d":
+            return True
+    text = " ".join(
+        [storyboard.one_sentence_summary]
+        + [example.title + " " + example.description for example in storyboard.examples]
+        + [scene.title + " " + scene.narration for scene in storyboard.scenes]
+    )
+    return any(keyword in text for keyword in ("2つの谷", "二つの谷", "谷が複数", "局所最小"))
+
+
+def _gradient_double_well_segment_text() -> dict[str, str]:
+    return {
+        "intro_landscape": "今回は、2つの谷がある損失地形で勾配降下法を見ます。",
+        "two_valleys": "左は浅い局所最小、右はより低い大域最小です。",
+        "local_slope": "勾配は今いる場所の上り方向です。下るには、その逆へ進みます。",
+        "left_descent": "左側から始めると、近くの浅い谷へ吸い込まれます。",
+        "right_descent": "右側から始めると、より深い谷へ向かいます。",
+        "compare_minima": "勾配降下法は谷を見比べません。初期位置と局所的な傾きで行き先が決まります。",
+        "sgd_bridge": "SGDでは勾配に揺れが入ります。ただし、常に深い谷を選べるわけではありません。",
+        "summary": "まとめると、現在地の斜面だけを見て、一歩ずつ下る方法です。",
     }
 
 

@@ -156,3 +156,24 @@ def test_cross_entropy_dice_example_uses_six_class_pipeline(tmp_path) -> None:
     assert "softmax" in rendered
     assert "GOOD_LOGITS" in rendered
     validate_python_syntax(output_path)
+
+
+def test_gradient_descent_double_well_uses_2d_landscape_template(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        goal="2次元で谷が2箇所ある時に勾配降下法がどう判断するか知りたい",
+        audience="high_school_math",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    ManimGenerator(target_duration_seconds=52).generate(artifacts.storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert "VISUALIZATION_STYLE = 'double_well_2d'" in rendered
+    assert "FUNCTION_PRESET = 'double_well_2d'" in rendered
+    assert "construct_double_well_2d" in rendered
+    assert "double_well_loss" in rendered
+    assert "SEGMENT_DURATIONS" in rendered
+    assert "intro_landscape" in rendered
+    validate_python_syntax(output_path)

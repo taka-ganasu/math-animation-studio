@@ -15,9 +15,26 @@ from math_animation_studio.schema import (
 
 def detect_sample_key(formula: str) -> str:
     normalized = formula.lower().replace(" ", "")
+    wants_double_well = any(
+        keyword in normalized
+        for keyword in (
+            "2次元",
+            "二次元",
+            "2d",
+            "谷2",
+            "谷が2",
+            "谷が二",
+            "局所",
+            "localminimum",
+            "localminima",
+            "doublewell",
+        )
+    )
     if ("log" in normalized and "sum" in normalized) or "cross" in normalized:
         return "cross_entropy"
     if "nabla" in normalized or "grad" in normalized or "∇" in normalized:
+        if wants_double_well:
+            return "gradient_descent_double_well"
         return "gradient_descent"
     if "attention" in normalized or ("q" in normalized and "k" in normalized and "v" in normalized):
         return "scaled_dot_product_attention"
@@ -46,7 +63,7 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["ラベルがone-hotか確率分布かは文脈に依存する。"],
             confidence=0.9,
         )
-    if key == "gradient_descent":
+    if key in {"gradient_descent", "gradient_descent_double_well"}:
         return FormulaAnalysis(
             raw_formula=formula,
             normalized_formula_latex=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
@@ -102,7 +119,7 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
 def sample_classification(key: str) -> ConceptClassification:
     if key == "cross_entropy":
         return ConceptClassification(primary_domain="machine_learning", primary_concept="cross_entropy", related_concepts=["log_loss", "negative_log_likelihood", "softmax"], difficulty_level="undergraduate_intro", recommended_animation_family="penalty_curve", confidence=0.9)
-    if key == "gradient_descent":
+    if key in {"gradient_descent", "gradient_descent_double_well"}:
         return ConceptClassification(primary_domain="optimization", primary_concept="gradient_descent", related_concepts=["gradient", "learning_rate", "loss_minimization"], difficulty_level="undergraduate_intro", recommended_animation_family="trajectory_on_surface", confidence=0.95)
     if key == "scaled_dot_product_attention":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="scaled_dot_product_attention", related_concepts=["matrix_multiplication", "softmax", "weighted_sum"], difficulty_level="undergraduate_advanced", recommended_animation_family="matrix_similarity_heatmap", confidence=0.85)
@@ -120,7 +137,7 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
             ],
             likely_blockers=["logがなぜ出るのか", "sumの全項が効くと誤解すること"],
         )
-    if key == "gradient_descent":
+    if key in {"gradient_descent", "gradient_descent_double_well"}:
         return PrerequisiteMap(
             target_concept="gradient_descent",
             prerequisites=[
@@ -184,6 +201,43 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             ],
             misconceptions=["勾配は下る方向ではなく上る方向を示す", "学習率が大きいほど常に早く収束するわけではない"],
             next_questions_to_study=["凸最適化", "Momentum", "Adam"],
+        )
+    if key == "gradient_descent_double_well":
+        return ExplanationPlan(
+            formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+            target_concept="gradient_descent",
+            one_sentence_summary="谷が複数ある損失では、勾配降下法は現在地の斜面に従うため、初期位置によって到達する谷が変わる。",
+            audience=audience,
+            teaching_strategy="geometric_intuition",
+            recommended_examples=[
+                TeachingExample(
+                    title="2つの谷がある損失地形",
+                    description="2次元の等高線上で、浅い谷と深い谷へ向かう2本の軌跡を比べる。",
+                    why_it_works="勾配降下法が全体を見比べず、現在地周辺の傾きだけで進むことを直感化できる。",
+                    concrete_values={
+                        "function_preset": "double_well_2d",
+                        "learning_rate": 0.18,
+                        "steps": 36,
+                        "initial_x": -2.7,
+                        "initial_y": 1.9,
+                        "comparison_initial_x": 2.7,
+                        "comparison_initial_y": 1.8,
+                    },
+                )
+            ],
+            selected_animation_pattern_id="trajectory_on_surface",
+            explanation_steps=[
+                ExplanationStep(id="step_01", title="2次元の損失地形を見る", learning_goal="等高線を損失の高さとして読む", explanation="2次元の地図で、線が囲む低い場所を谷として見ます。", visual_idea="等高線と2つの谷を表示する。", formula_focus="L(\\theta)"),
+                ExplanationStep(id="step_02", title="谷は2つある", learning_goal="局所最小と大域最小の違いを知る", explanation="左の谷は浅い局所最小、右の谷はより低い大域最小です。", visual_idea="浅い谷と深い谷を別色でラベル付けする。"),
+                ExplanationStep(id="step_03", title="現在地の斜面だけを見る", learning_goal="勾配が局所情報であることを理解する", explanation="勾配は今いる場所の一番急な上り方向です。下るにはその逆へ進みます。", visual_idea="現在地に負の勾配矢印を出す。", formula_focus=r"-\nabla L(\theta_t)"),
+                ExplanationStep(id="step_04", title="左側から始める", learning_goal="初期位置で到達先が変わることを見る", explanation="左側から始めると、近くの浅い谷へ吸い込まれます。", visual_idea="左の初期点から局所最小へ進む軌跡を描く。"),
+                ExplanationStep(id="step_05", title="右側から始める", learning_goal="別の初期位置では深い谷へ向かうことを見る", explanation="右側から始めると、より深い谷へ進みます。", visual_idea="右の初期点から大域最小へ進む軌跡を描く。"),
+                ExplanationStep(id="step_06", title="どう判断しているか", learning_goal="勾配降下法単体の限界を理解する", explanation="勾配降下法は2つの谷を比較して選ぶわけではありません。初期位置と局所的な傾きで進む谷が決まります。", visual_idea="2本の軌跡と最終損失を比較する。"),
+                ExplanationStep(id="step_07", title="SGDへのつながり", learning_goal="確率的勾配降下法との関係を知る", explanation="確率的勾配降下法では、ミニバッチの揺れで軌跡が少しノイズを持ちます。ただし、それだけで常に深い谷を選べるわけではありません。", visual_idea="点線の揺れた軌跡を補足として表示する。"),
+                ExplanationStep(id="step_08", title="式へ戻る", learning_goal="更新式と直感を結びつける", explanation="式は、今いる場所から負の勾配方向へ、学習率の分だけ進むことを表します。", visual_idea="更新式の各部分に意味ラベルを付ける。", formula_focus=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)"),
+            ],
+            misconceptions=["勾配降下法が常に一番深い谷を見つけるわけではない", "勾配は全体地図ではなく現在地の局所情報である", "SGDのノイズは助けになることもあるが万能ではない"],
+            next_questions_to_study=["局所最小", "大域最小", "ランダム初期化", "確率的勾配降下法", "Momentum"],
         )
     if key == "scaled_dot_product_attention":
         return ExplanationPlan(

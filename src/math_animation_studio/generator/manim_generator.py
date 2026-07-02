@@ -11,7 +11,11 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import BaseModel, ConfigDict, Field
 
 from math_animation_studio.schema import Storyboard, VisualObject
-from math_animation_studio.timing import cross_entropy_timeline_segments, segment_duration_map
+from math_animation_studio.timing import (
+    cross_entropy_timeline_segments,
+    gradient_double_well_timeline_segments,
+    segment_duration_map,
+)
 
 
 DEFAULT_FUNCTION_EXPR = (
@@ -29,17 +33,21 @@ class GradientDescentParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = "Gradient Descent"
-    function_preset: Literal["quadratic_ripple"] = "quadratic_ripple"
+    visualization_style: Literal["surface_3d", "double_well_2d"] = "surface_3d"
+    function_preset: Literal["quadratic_ripple", "double_well_2d"] = "quadratic_ripple"
     function_expr: str = DEFAULT_FUNCTION_EXPR
     gradient_expr_x: str = DEFAULT_GRADIENT_X
     gradient_expr_y: str = DEFAULT_GRADIENT_Y
     initial_x: float = 2.5
     initial_y: float = 2.0
+    comparison_initial_x: float = 2.7
+    comparison_initial_y: float = 1.8
     learning_rate: float = Field(default=0.15, gt=0, le=1)
     steps: int = Field(default=30, ge=1, le=80)
     x_range: tuple[float, float] = (-3.0, 3.0)
     y_range: tuple[float, float] = (-3.0, 3.0)
     formula_latex: str = r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)"
+    segment_durations: dict[str, float] = Field(default_factory=dict)
     narration_lines: list[str] = Field(default_factory=list)
 
 
@@ -211,9 +219,13 @@ class ManimGenerator:
 
         function_preset = surface.params.get("function_preset", "quadratic_ripple")
         function_expr = surface.params.get("function", DEFAULT_FUNCTION_EXPR)
-        if function_preset != "quadratic_ripple" or function_expr != DEFAULT_FUNCTION_EXPR:
+        if function_preset == "double_well_2d":
+            visualization_style: Literal["surface_3d", "double_well_2d"] = "double_well_2d"
+        elif function_preset == "quadratic_ripple" and function_expr == DEFAULT_FUNCTION_EXPR:
+            visualization_style = "surface_3d"
+        else:
             raise GeneratorError(
-                "MVP uses the built-in quadratic_ripple loss surface only. "
+                "MVP uses built-in loss surface presets only. "
                 "Storyboard function strings are not executed as Python code."
             )
 
@@ -223,12 +235,27 @@ class ManimGenerator:
 
         return GradientDescentParams(
             title=_title_from_storyboard(storyboard),
-            function_preset="quadratic_ripple",
-            function_expr=DEFAULT_FUNCTION_EXPR,
+            visualization_style=visualization_style,
+            function_preset=function_preset,
+            function_expr=DEFAULT_FUNCTION_EXPR
+            if function_preset == "quadratic_ripple"
+            else "builtin_double_well_2d",
             gradient_expr_x=DEFAULT_GRADIENT_X,
             gradient_expr_y=DEFAULT_GRADIENT_Y,
             initial_x=float(point.params.get("x", values.get("initial_x", 2.5))),
             initial_y=float(point.params.get("y", values.get("initial_y", 2.0))),
+            comparison_initial_x=float(
+                point.params.get(
+                    "comparison_x",
+                    values.get("comparison_initial_x", 2.7),
+                )
+            ),
+            comparison_initial_y=float(
+                point.params.get(
+                    "comparison_y",
+                    values.get("comparison_initial_y", 1.8),
+                )
+            ),
             learning_rate=float(
                 vector.params.get("learning_rate", values.get("learning_rate", 0.15))
             ),
@@ -237,6 +264,11 @@ class ManimGenerator:
             y_range=y_range,
             formula_latex=storyboard.formula
             or r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+            segment_durations=segment_duration_map(
+                gradient_double_well_timeline_segments(self.target_duration_seconds or 52)
+            )
+            if visualization_style == "double_well_2d"
+            else {},
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 

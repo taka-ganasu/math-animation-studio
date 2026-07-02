@@ -19,6 +19,11 @@ class StoryboardAdapter:
         explanation_plan: ExplanationPlan,
     ) -> Storyboard:
         scenes: list[SceneSpec] = []
+        example_values = (
+            explanation_plan.recommended_examples[0].concrete_values
+            if explanation_plan.recommended_examples
+            else {}
+        )
         for index, step in enumerate(explanation_plan.explanation_steps, start=1):
             visual_objects = [
                 VisualObject(
@@ -35,28 +40,46 @@ class StoryboardAdapter:
                 ),
             ]
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 1:
+                function_preset = str(example_values.get("function_preset", "quadratic_ripple"))
+                surface_params = {
+                    "function_preset": function_preset,
+                    "function": "0.35*x**2 + y**2 + 0.25*x*y + 0.8*sin(1.5*x)*cos(y)",
+                    "x_range": [-3, 3],
+                    "y_range": [-3, 3],
+                }
+                if function_preset == "double_well_2d":
+                    surface_params.update(
+                        {
+                            "function": "builtin_double_well_2d",
+                            "x_range": [-3, 3],
+                            "y_range": [-2.4, 2.4],
+                        }
+                    )
                 visual_objects.insert(
                     0,
                     VisualObject(
                         type="surface",
                         name="loss_surface",
                         description="損失関数を地形として表示する",
-                        params={
-                            "function_preset": "quadratic_ripple",
-                            "function": "0.35*x**2 + y**2 + 0.25*x*y + 0.8*sin(1.5*x)*cos(y)",
-                            "x_range": [-3, 3],
-                            "y_range": [-3, 3],
-                        },
+                        params=surface_params,
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 2:
+                point_params = {
+                    "x": float(example_values.get("initial_x", 2.5)),
+                    "y": float(example_values.get("initial_y", 2.0)),
+                }
+                if "comparison_initial_x" in example_values:
+                    point_params["comparison_x"] = float(example_values["comparison_initial_x"])
+                if "comparison_initial_y" in example_values:
+                    point_params["comparison_y"] = float(example_values["comparison_initial_y"])
                 visual_objects.insert(
                     0,
                     VisualObject(
                         type="point",
                         name="current_position",
                         description="現在のパラメータ位置を点として示す",
-                        params={"x": 2.5, "y": 2.0},
+                        params=point_params,
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 3:
@@ -66,7 +89,7 @@ class StoryboardAdapter:
                         type="vector",
                         name="negative_gradient",
                         description="負の勾配方向を矢印として示す",
-                        params={"learning_rate": 0.15},
+                        params={"learning_rate": float(example_values.get("learning_rate", 0.15))},
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 5:
@@ -76,7 +99,7 @@ class StoryboardAdapter:
                         type="curve",
                         name="descent_path",
                         description="更新で移動した点の軌跡を示す",
-                        params={"steps": 30},
+                        params={"steps": int(example_values.get("steps", 30))},
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "penalty_curve" and index == 2:

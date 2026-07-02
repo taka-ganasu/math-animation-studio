@@ -50,3 +50,30 @@ def test_voiceover_script_writer_creates_cross_entropy_script() -> None:
     assert "### focus_log" in markdown
     assert "## Voiceover Script" in markdown
     assert "## Source Scenes" in markdown
+
+
+def test_voiceover_script_writer_segments_gradient_double_well() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        goal="2次元で谷が2箇所ある時に勾配降下法がどう判断するか知りたい",
+        audience="high_school_math",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=52)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=52)
+
+    assert [segment.id for segment in segments] == [
+        "intro_landscape",
+        "two_valleys",
+        "local_slope",
+        "left_descent",
+        "right_descent",
+        "compare_minima",
+        "sgd_bridge",
+        "summary",
+    ]
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(52.0)
+    assert "局所最小" in script
+    assert "SGD" in script

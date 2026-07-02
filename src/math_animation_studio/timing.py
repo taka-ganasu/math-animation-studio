@@ -35,6 +35,18 @@ CROSS_ENTROPY_BASE_TIMELINE = (
 )
 
 
+GRADIENT_DOUBLE_WELL_BASE_TIMELINE = (
+    TimelineSegment("intro_landscape", 5.0),
+    TimelineSegment("two_valleys", 6.0),
+    TimelineSegment("local_slope", 6.0),
+    TimelineSegment("left_descent", 8.0),
+    TimelineSegment("right_descent", 8.0),
+    TimelineSegment("compare_minima", 7.0),
+    TimelineSegment("sgd_bridge", 7.0),
+    TimelineSegment("summary", 5.0),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -48,6 +60,14 @@ def cross_entropy_timeline_segments(
 
 def segment_duration_map(segments: Iterable[TimelineSegment]) -> dict[str, float]:
     return {segment.id: segment.duration_seconds for segment in segments}
+
+
+def gradient_double_well_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return GRADIENT_DOUBLE_WELL_BASE_TIMELINE
+    return scale_timeline(GRADIENT_DOUBLE_WELL_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(
