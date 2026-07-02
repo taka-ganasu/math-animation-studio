@@ -85,10 +85,18 @@ class FormulaUnderstandingPlanner:
             explanation_plan = llm_plan.explanation_plan
             llm_used = True
 
+        requested_animation_family = _coerce_animation_family(
+            requested=classification.recommended_animation_family,
+            formula=formula,
+            formula_analysis=formula_analysis,
+            classification=classification,
+            explanation_plan=explanation_plan,
+        )
         selected_pattern = self.pattern_selector.select(
-            classification.recommended_animation_family,
+            requested_animation_family,
             keywords=[classification.primary_concept, classification.primary_domain],
         )
+        classification.recommended_animation_family = selected_pattern.id
         explanation_plan.selected_animation_pattern_id = selected_pattern.id
         animation_brief = self.brief_writer.write(
             formula_analysis=formula_analysis,
@@ -115,3 +123,38 @@ class FormulaUnderstandingPlanner:
             storyboard=storyboard,
             llm_used=llm_used,
         )
+
+
+def _coerce_animation_family(
+    *,
+    requested: str,
+    formula: str,
+    formula_analysis: FormulaAnalysis,
+    classification: ConceptClassification,
+    explanation_plan: ExplanationPlan,
+) -> str:
+    text = " ".join(
+        [
+            requested,
+            formula,
+            formula_analysis.detected_name or "",
+            formula_analysis.normalized_formula_latex,
+            classification.primary_concept,
+            classification.primary_domain,
+            explanation_plan.target_concept,
+        ]
+    ).lower()
+
+    if (
+        "cross_entropy" in text
+        or "cross entropy" in text
+        or "クロスエントロピー" in text
+        or ("\\log" in text and "\\sum" in text)
+        or ("log" in text and "sum" in text)
+    ):
+        return "penalty_curve"
+    if "gradient_descent" in text or "勾配降下" in text or "\\nabla" in text or "∇" in text:
+        return "trajectory_on_surface"
+    if "attention" in text or ("q" in formula.lower() and "k" in formula.lower() and "v" in formula.lower()):
+        return "matrix_similarity_heatmap"
+    return requested
