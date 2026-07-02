@@ -17,8 +17,11 @@ GOOD_PROBABILITY = {{ params.good_probability | py_repr }}
 BAD_PROBABILITY = {{ params.bad_probability | py_repr }}
 GOOD_DISTRIBUTION = {{ params.good_distribution | py_repr }}
 BAD_DISTRIBUTION = {{ params.bad_distribution | py_repr }}
+GOOD_LOGITS = {{ params.good_logits | py_repr }}
+BAD_LOGITS = {{ params.bad_logits | py_repr }}
 GOOD_CHART_TITLE = {{ params.good_chart_title | py_repr }}
 BAD_CHART_TITLE = {{ params.bad_chart_title | py_repr }}
+SCENE_COMPONENTS = {{ params.scene_components | py_repr }}
 CAPTION_LINES = {{ params.caption_lines | py_repr }}
 NARRATION_LINES = {{ params.narration_lines | py_repr }}
 TIMING_SCALE = {{ params.timing_scale | py_repr }}
@@ -29,6 +32,9 @@ def rt(seconds: float) -> float:
 
 
 class CrossEntropyPenaltyScene(Scene):
+    def has_component(self, component_id: str) -> bool:
+        return component_id in SCENE_COMPONENTS
+
     def make_math(self, latex: str, fallback: str, font_size: int = 34) -> Mobject:
         try:
             return MathTex(latex, font_size=font_size)
@@ -51,6 +57,86 @@ class CrossEntropyPenaltyScene(Scene):
         values = ["1" if index == CORRECT_INDEX else "0" for index in range(len(CLASS_LABELS))]
         return "y = [" + ", ".join(values) + "]"
 
+    def pipeline_node(self, title: str, body: Mobject | str, color: ManimColor) -> VGroup:
+        box = RoundedRectangle(
+            corner_radius=0.12,
+            width=2.05,
+            height=1.05,
+            stroke_color=color,
+            stroke_width=2,
+            fill_color=BLACK,
+            fill_opacity=0.7,
+        )
+        title_text = Text(title, font_size=18, color=color)
+        if isinstance(body, str):
+            body_mobject = Text(body, font_size=20)
+        else:
+            body_mobject = body
+        lines = VGroup(title_text, body_mobject).arrange(DOWN, buff=0.08)
+        lines.move_to(box.get_center())
+        return VGroup(box, lines)
+
+    def model_pipeline(self) -> VGroup:
+        nodes = VGroup(
+            self.pipeline_node("入力", "x", BLUE_B),
+            self.pipeline_node("モデル", self.make_math(r"f_\theta(x)", "f_theta(x)", font_size=24), GREEN_B),
+            self.pipeline_node("logits", self.make_math("z", "z", font_size=26), ORANGE),
+            self.pipeline_node("softmax", self.make_math(r"\mathrm{softmax}(z)", "softmax(z)", font_size=20), PURPLE_B),
+            self.pipeline_node("予測確率", self.make_math(r"\hat{y}", "y_hat", font_size=26), YELLOW),
+        )
+        nodes.arrange(RIGHT, buff=0.32)
+        arrows = VGroup()
+        for left, right in zip(nodes[:-1], nodes[1:]):
+            arrows.add(Arrow(left.get_right(), right.get_left(), buff=0.08, stroke_width=3))
+        group = VGroup(nodes, arrows)
+        if group.width > 12.0:
+            group.scale(12.0 / group.width)
+        return group
+
+    def logits_panel(self, logits: list[float] | tuple[float, ...], title: str) -> VGroup:
+        title_text = Text(title, font_size=20)
+        values = ", ".join(f"{value:.2f}" for value in logits)
+        logits_text = self.make_math(
+            "z=[" + values + "]",
+            "z=[" + values + "]",
+            font_size=24,
+        )
+        if logits_text.width > 4.9:
+            logits_text.scale(4.9 / logits_text.width)
+        return VGroup(title_text, logits_text).arrange(DOWN, buff=0.08)
+
+    def one_hot_group(self) -> VGroup:
+        one_hot = self.make_math(
+            self.one_hot_latex(),
+            self.one_hot_latex(),
+            font_size=32,
+        )
+        if one_hot.width > 7.8:
+            one_hot.scale(7.8 / one_hot.width)
+        one_hot_label = Text(f"正解: {CLASS_LABELS[CORRECT_INDEX]}", font_size=22)
+        one_hot_label.next_to(one_hot, RIGHT, buff=0.38)
+        group = VGroup(one_hot, one_hot_label)
+        if group.width > 10.8:
+            group.scale(10.8 / group.width)
+        return group
+
+    def correct_selector(self) -> VGroup:
+        selected_label = CLASS_LABELS[CORRECT_INDEX]
+        math = self.make_math(
+            r"p = \hat{y}_{" + str(CORRECT_INDEX + 1) + "}",
+            f"p = y_hat_{CORRECT_INDEX + 1}",
+            font_size=32,
+        )
+        text = Text(f"one-hotが選ぶ確率: {selected_label} の p", font_size=22, color=YELLOW)
+        values = Text(
+            f"悪い予測 p={BAD_PROBABILITY:.2f} / 良い予測 p={GOOD_PROBABILITY:.2f}",
+            font_size=20,
+        )
+        group = VGroup(text, math, values).arrange(DOWN, buff=0.12)
+        if group.width > 10.8:
+            group.scale(10.8 / group.width)
+        return group
+
     def distribution(self, correct_probability: float) -> list[float]:
         other_probability = (1.0 - correct_probability) / (len(CLASS_LABELS) - 1)
         values = [other_probability for _ in CLASS_LABELS]
@@ -59,8 +145,8 @@ class CrossEntropyPenaltyScene(Scene):
 
     def probability_bars(self, probabilities: list[float], title: str) -> VGroup:
         max_height = 2.15
-        bar_width = 0.52
-        gap = 0.42
+        bar_width = min(0.52, 2.45 / len(CLASS_LABELS))
+        gap = min(0.42, 0.92 / len(CLASS_LABELS))
         bars = VGroup()
         labels = VGroup()
         values = VGroup()
@@ -72,13 +158,13 @@ class CrossEntropyPenaltyScene(Scene):
             color = YELLOW if index == CORRECT_INDEX else BLUE_D
             bar = Rectangle(
                 width=bar_width,
-                height=max_height * probability,
+                height=max(0.03, max_height * probability),
                 stroke_color=WHITE,
                 stroke_width=1,
             )
             bar.set_fill(color, opacity=0.86)
-            bar.move_to(np.array([x, max_height * probability / 2, 0]))
-            label = Text(str(CLASS_LABELS[index]), font_size=20)
+            bar.move_to(np.array([x, max(0.03, max_height * probability) / 2, 0]))
+            label = Text(str(CLASS_LABELS[index]), font_size=18)
             label.move_to(np.array([x, -0.32, 0]))
             value = Text(f"{probability:.2f}", font_size=18)
             value.next_to(bar, UP, buff=0.08)
@@ -91,6 +177,19 @@ class CrossEntropyPenaltyScene(Scene):
         highlight = SurroundingRectangle(bars[CORRECT_INDEX], color=YELLOW, buff=0.08)
         group.add(highlight)
         return group
+
+    def prediction_stack(
+        self,
+        logits: list[float] | tuple[float, ...],
+        probabilities: list[float],
+        title: str,
+    ) -> VGroup:
+        logits_panel = self.logits_panel(logits, f"{title}: logits")
+        chart = self.probability_bars(probabilities, f"{title}: softmax後")
+        stack = VGroup(logits_panel, chart).arrange(DOWN, buff=0.24)
+        if stack.width > 5.5:
+            stack.scale(5.5 / stack.width)
+        return stack
 
     def loss_badge(self, title: str, probability: float, color: ManimColor) -> VGroup:
         loss_value = -np.log(probability)
@@ -134,31 +233,53 @@ class CrossEntropyPenaltyScene(Scene):
         self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=rt(1.5))
         self.play(FadeIn(scenario), run_time=rt(0.5))
 
-        one_hot = self.make_math(
-            self.one_hot_latex(),
-            self.one_hot_latex(),
-            font_size=34,
-        )
-        one_hot.next_to(scenario, DOWN, buff=0.25)
-        one_hot_label = Text(f"正解: {CLASS_LABELS[CORRECT_INDEX]}", font_size=22)
-        one_hot_label.next_to(one_hot, RIGHT, buff=0.38)
-        self.play(Write(one_hot), FadeIn(one_hot_label), run_time=rt(1.0))
-        next_caption = self.caption_at(1)
-        self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
-        caption = next_caption
+        pipeline = VGroup()
+        if self.has_component("model_pipeline"):
+            pipeline = self.model_pipeline()
+            pipeline.next_to(scenario, DOWN, buff=0.42)
+            self.play(FadeIn(pipeline), run_time=rt(1.2))
+            next_caption = self.caption_at(1)
+            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption = next_caption
+
+        one_hot = VGroup()
+        if self.has_component("one_hot_vector"):
+            one_hot = self.one_hot_group()
+            one_hot.next_to(scenario, DOWN, buff=0.38)
+            if pipeline:
+                self.play(FadeOut(pipeline), run_time=rt(0.45))
+            self.play(Write(one_hot), run_time=rt(1.0))
+            next_caption = self.caption_at(2)
+            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption = next_caption
 
         bad_distribution = list(BAD_DISTRIBUTION) if BAD_DISTRIBUTION else self.distribution(BAD_PROBABILITY)
         good_distribution = list(GOOD_DISTRIBUTION) if GOOD_DISTRIBUTION else self.distribution(GOOD_PROBABILITY)
-        bad_chart = self.probability_bars(bad_distribution, BAD_CHART_TITLE)
-        good_chart = self.probability_bars(good_distribution, GOOD_CHART_TITLE)
-        charts = VGroup(bad_chart, good_chart).arrange(RIGHT, buff=1.0)
-        charts.scale(0.92)
-        charts.next_to(one_hot, DOWN, buff=0.48)
-        self.play(FadeIn(bad_chart), run_time=rt(1.0))
-        next_caption = self.caption_at(2)
-        self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
-        caption = next_caption
-        self.play(FadeIn(good_chart), run_time=rt(1.0))
+        charts = VGroup()
+        if self.has_component("softmax_distribution"):
+            bad_stack = self.prediction_stack(BAD_LOGITS, bad_distribution, BAD_CHART_TITLE)
+            good_stack = self.prediction_stack(GOOD_LOGITS, good_distribution, GOOD_CHART_TITLE)
+            charts = VGroup(bad_stack, good_stack).arrange(RIGHT, buff=0.62)
+            if charts.width > 11.6:
+                charts.scale(11.6 / charts.width)
+            charts.next_to(one_hot if one_hot else scenario, DOWN, buff=0.42)
+            self.play(FadeIn(bad_stack), run_time=rt(1.0))
+            next_caption = self.caption_at(3)
+            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption = next_caption
+            self.play(FadeIn(good_stack), run_time=rt(1.0))
+
+        selector = VGroup()
+        if self.has_component("correct_selector"):
+            selector = self.correct_selector()
+            selector.next_to(scenario, DOWN, buff=0.62)
+            self.play(FadeOut(charts), FadeOut(one_hot), run_time=rt(0.5))
+            charts = VGroup()
+            one_hot = VGroup()
+            self.play(FadeIn(selector), run_time=rt(0.8))
+            next_caption = self.caption_at(4)
+            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption = next_caption
 
         axes = Axes(
             x_range=[0.05, 1.0, 0.2],
@@ -184,18 +305,26 @@ class CrossEntropyPenaltyScene(Scene):
         graph_layout.scale(0.92)
         graph_layout.next_to(formula, DOWN, buff=0.62)
 
-        self.play(FadeOut(charts), FadeOut(one_hot), FadeOut(one_hot_label), FadeOut(scenario), run_time=rt(0.7))
-        self.play(Create(axes), FadeIn(axes_labels), Create(curve), FadeIn(curve_label), run_time=rt(1.5))
-        next_caption = self.caption_at(3)
-        self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
-        caption = next_caption
-        self.play(FadeIn(bad_dot), FadeIn(bad_badge), run_time=rt(0.9))
-        self.play(FadeIn(good_dot), FadeIn(good_badge), run_time=rt(0.9))
+        if self.has_component("negative_log_penalty"):
+            self.play(
+                FadeOut(charts),
+                FadeOut(one_hot),
+                FadeOut(selector),
+                FadeOut(scenario),
+                run_time=rt(0.7),
+            )
+            self.play(Create(axes), FadeIn(axes_labels), Create(curve), FadeIn(curve_label), run_time=rt(1.5))
+            next_caption = self.caption_at(4)
+            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption = next_caption
+            self.play(FadeIn(bad_dot), FadeIn(bad_badge), run_time=rt(0.9))
+            self.play(FadeIn(good_dot), FadeIn(good_badge), run_time=rt(0.9))
 
-        summary = Text(SUMMARY_TEXT, font_size=26)
-        summary.next_to(graph_layout, DOWN, buff=0.28)
-        if summary.width > 10.8:
-            summary.scale(10.8 / summary.width)
-        next_caption = self.caption_at(4)
-        self.play(ReplacementTransform(caption, next_caption), FadeIn(summary), run_time=rt(0.9))
+        if self.has_component("summary"):
+            summary = Text(SUMMARY_TEXT, font_size=26)
+            summary.next_to(graph_layout, DOWN, buff=0.28)
+            if summary.width > 10.8:
+                summary.scale(10.8 / summary.width)
+            next_caption = self.caption_at(5)
+            self.play(ReplacementTransform(caption, next_caption), FadeIn(summary), run_time=rt(0.9))
         self.wait(rt(2.0))

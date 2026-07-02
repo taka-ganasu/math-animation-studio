@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from importlib.resources import files
 from pathlib import Path
@@ -44,7 +45,7 @@ class GradientDescentParams(BaseModel):
 class PenaltyCurveParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    base_duration_seconds: float = 13.4
+    base_duration_seconds: float = 18.0
     target_duration_seconds: int = Field(default=30, ge=5, le=180)
     title: str = "Cross Entropy Loss"
     formula_latex: str = r"L = - \sum_i y_i \log(\hat{y}_i)"
@@ -56,10 +57,22 @@ class PenaltyCurveParams(BaseModel):
     bad_probability: float = Field(default=0.1, gt=0.0, lt=1.0)
     good_distribution: tuple[float, ...] = (0.9, 0.05, 0.05)
     bad_distribution: tuple[float, ...] = (0.1, 0.45, 0.45)
+    good_logits: tuple[float, ...] = (2.2, -0.7, -0.7)
+    bad_logits: tuple[float, ...] = (-1.4, 0.4, 0.4)
     good_chart_title: str = "良い予測"
     bad_chart_title: str = "悪い予測"
+    scene_components: tuple[str, ...] = (
+        "intro_formula",
+        "model_pipeline",
+        "one_hot_vector",
+        "softmax_distribution",
+        "correct_selector",
+        "negative_log_penalty",
+        "summary",
+    )
     caption_lines: tuple[str, ...] = (
         "クロスエントロピーは、正解クラスの予測確率を罰に変えます。",
+        "モデルは入力からlogitsを出し、softmaxで確率分布に変換します。",
         "one-hotラベルでは、正解クラスだけが損失に効きます。",
         "正解クラスの確率が低い予測は、大きく罰されます。",
         "pが0に近いほど、-log(p)は急激に大きくなります。",
@@ -215,6 +228,8 @@ class ManimGenerator:
             bad_probability=bad_distribution[correct_index],
             good_distribution=tuple(good_distribution),
             bad_distribution=tuple(bad_distribution),
+            good_logits=tuple(_logits_from_distribution(good_distribution)),
+            bad_logits=tuple(_logits_from_distribution(bad_distribution)),
             caption_lines=_caption_lines_from_storyboard(storyboard, scenario_title),
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
@@ -303,6 +318,9 @@ def _penalty_curve_example_data(storyboard: Storyboard) -> dict[str, Any]:
         for vector in (good_distribution, bad_distribution, prediction):
             if vector:
                 class_count = max(class_count, len(vector))
+
+    if _storyboard_mentions_dice(storyboard):
+        class_count = max(class_count, 6)
 
     if good_distribution:
         correct_index = min(correct_index, len(good_distribution) - 1)
@@ -398,7 +416,7 @@ def _parse_json_number_list(value: object) -> list[float] | None:
         number = _as_float(item)
         if number is None:
             return None
-        numbers.append(_clamp_probability(number))
+        numbers.append(_distribution_probability(number))
     return numbers
 
 
@@ -434,9 +452,12 @@ def _fit_distribution(
     fallback_correct_probability: float,
 ) -> list[float]:
     if vector:
-        fitted = [_clamp_probability(value) for value in vector[:label_count]]
-        while len(fitted) < label_count:
-            fitted.append(0.01)
+        fitted = [_distribution_probability(value) for value in vector[:label_count]]
+        missing_count = label_count - len(fitted)
+        if missing_count > 0:
+            remaining = max(0.0, 1.0 - sum(fitted))
+            fill_value = remaining / missing_count if remaining > 0 else 0.0
+            fitted.extend(fill_value for _ in range(missing_count))
         return fitted
 
     correct_probability = _clamp_probability(fallback_correct_probability)
@@ -452,8 +473,23 @@ def _clamp_probability(value: float) -> float:
     return min(0.99, max(0.01, float(value)))
 
 
+def _distribution_probability(value: float) -> float:
+    return min(0.99, max(0.0, float(value)))
+
+
 def _max_index(values: list[float]) -> int:
     return max(range(len(values)), key=lambda index: values[index])
+
+
+def _logits_from_distribution(distribution: list[float]) -> list[float]:
+    return [round(math.log(max(probability, 0.01)), 2) for probability in distribution]
+
+
+def _storyboard_mentions_dice(storyboard: Storyboard) -> bool:
+    texts = [storyboard.one_sentence_summary]
+    texts.extend(example.title + " " + example.description for example in storyboard.examples)
+    texts.extend(scene.title + " " + scene.narration for scene in storyboard.scenes)
+    return any("サイコロ" in text or "dice" in text.lower() for text in texts)
 
 
 def _class_labels_from_storyboard(storyboard: Storyboard, expected_count: int) -> list[str]:
@@ -509,6 +545,7 @@ def _caption_lines_from_storyboard(
 ) -> tuple[str, ...]:
     lines = [
         f"{scenario_title}で、予測確率が損失へ変わる流れを見ます。",
+        "入力xをモデルf_θに通し、logits zをsoftmaxで確率ŷに変えます。",
     ]
     for scene in storyboard.scenes:
         text = scene.narration.strip() or scene.title.strip()
@@ -519,6 +556,7 @@ def _caption_lines_from_storyboard(
 
     fallback = [
         "one-hotラベルでは、正解クラスだけが損失に効きます。",
+        "ŷのうち、正解クラスの確率だけを取り出してpと見ます。",
         "正解クラスの確率が低い予測は、大きく罰されます。",
         "pが0に近いほど、-log(p)は急激に大きくなります。",
         "式の中身は、正解確率を取り出して罰へ変換する操作です。",
