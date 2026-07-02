@@ -14,6 +14,25 @@ def test_plan_help() -> None:
 
     assert result.exit_code == 0
     assert "--formula" in result.output
+    assert "--voiceover" in result.output
+
+
+def test_plan_voiceover_requires_render(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"L = - \sum_i y_i \log(\hat{y}_i)",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+            "--voiceover",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "--voiceover requires --render" in result.output
 
 
 def test_plan_no_llm_cross_entropy_outputs_artifacts(tmp_path) -> None:

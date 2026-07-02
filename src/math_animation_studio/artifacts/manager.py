@@ -131,6 +131,22 @@ class PlanArtifactManager:
     def metadata_path(self) -> Path:
         return self.output_dir / "metadata.json"
 
+    @property
+    def narration_path(self) -> Path:
+        return self.output_dir / "narration.md"
+
+    @property
+    def narration_audio_path(self) -> Path:
+        return self.output_dir / "narration.aiff"
+
+    @property
+    def voiceover_log_path(self) -> Path:
+        return self.output_dir / "voiceover.log"
+
+    @property
+    def video_with_voice_path(self) -> Path:
+        return self.output_dir / "video_with_voice.mp4"
+
     def write_formula_analysis(self, formula_analysis: FormulaAnalysis) -> None:
         self.formula_analysis_path.write_text(
             formula_analysis.model_dump_json(indent=2),
@@ -158,6 +174,9 @@ class PlanArtifactManager:
     def write_animation_brief(self, content: str) -> None:
         self.animation_brief_path.write_text(content, encoding="utf-8")
 
+    def write_narration(self, content: str) -> None:
+        self.narration_path.write_text(content, encoding="utf-8")
+
     def write_storyboard(self, storyboard: Storyboard) -> None:
         save_storyboard(storyboard, self.storyboard_path)
 
@@ -169,6 +188,9 @@ class PlanArtifactManager:
         audience: str,
         status: str,
         llm_used: bool,
+        video_path: Path | None = None,
+        video_with_voice_path: Path | None = None,
+        voiceover_audio_path: Path | None = None,
         error: str | None = None,
     ) -> None:
         payload: dict[str, Any] = {
@@ -180,6 +202,12 @@ class PlanArtifactManager:
             "status": status,
             "llm_used": llm_used,
         }
+        if video_path is not None:
+            payload["video_path"] = str(video_path)
+        if video_with_voice_path is not None:
+            payload["video_with_voice_path"] = str(video_with_voice_path)
+        if voiceover_audio_path is not None:
+            payload["voiceover_audio_path"] = str(voiceover_audio_path)
         if error:
             payload["error"] = error
         self.metadata_path.write_text(

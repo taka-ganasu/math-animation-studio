@@ -16,6 +16,11 @@ from math_animation_studio.understanding.formula_understanding_planner import (
     FormulaUnderstandingPlannerError,
 )
 from math_animation_studio.validation import ValidationError, validate_python_syntax
+from math_animation_studio.voiceover import (
+    MacOSSayVoiceover,
+    VoiceoverError,
+    VoiceoverScriptWriter,
+)
 
 
 app = typer.Typer(
@@ -174,6 +179,23 @@ def plan(
         "--render",
         help="If possible, generate and render a Manim video from the storyboard.",
     ),
+    voiceover: bool = typer.Option(
+        False,
+        "--voiceover",
+        help="Generate macOS say narration and mux it into the rendered video.",
+    ),
+    voice: Optional[str] = typer.Option(
+        None,
+        "--voice",
+        help="Optional macOS say voice name. Auto-detects a Japanese voice when omitted.",
+    ),
+    voice_rate: int = typer.Option(
+        220,
+        "--voice-rate",
+        min=80,
+        max=360,
+        help="macOS say speaking rate.",
+    ),
     output_format: str = typer.Option(
         "all",
         "--format",
@@ -182,6 +204,9 @@ def plan(
 ) -> None:
     if output_format not in {"json", "markdown", "all"}:
         typer.echo("Error: --format must be one of json, markdown, all.", err=True)
+        raise typer.Exit(code=1)
+    if voiceover and not render:
+        typer.echo("Error: --voiceover requires --render.", err=True)
         raise typer.Exit(code=1)
 
     manager = PlanArtifactManager(output_dir)
@@ -208,13 +233,9 @@ def plan(
         if output_format in {"markdown", "all"}:
             manager.write_animation_brief(artifacts.animation_brief)
 
-        manager.write_metadata(
-            formula=formula,
-            goal=goal,
-            audience=audience,
-            status="success",
-            llm_used=artifacts.llm_used,
-        )
+        rendered_video_path: Path | None = None
+        voiceover_video_path: Path | None = None
+        voiceover_audio_path: Path | None = None
 
         if render:
             if artifacts.storyboard is None:
@@ -226,11 +247,40 @@ def plan(
             generator.generate(artifacts.storyboard, artifact_manager.manim_scene_path)
             validate_python_syntax(artifact_manager.manim_scene_path)
             renderer = ManimRenderer(scene_name=generator.scene_name_for(artifacts.storyboard))
-            renderer.render(
+            render_result = renderer.render(
                 scene_path=artifact_manager.manim_scene_path,
                 output_dir=output_dir,
                 log_path=artifact_manager.render_log_path,
             )
+            rendered_video_path = render_result.video_path
+
+            if voiceover:
+                script_writer = VoiceoverScriptWriter()
+                script = script_writer.write(artifacts.storyboard)
+                voiceover_result = MacOSSayVoiceover().create(
+                    video_path=render_result.video_path,
+                    script=script,
+                    script_path=manager.narration_path,
+                    audio_path=manager.narration_audio_path,
+                    output_video_path=manager.video_with_voice_path,
+                    log_path=manager.voiceover_log_path,
+                    voice=voice,
+                    rate=voice_rate,
+                )
+                manager.write_narration(script_writer.write_markdown(artifacts.storyboard))
+                voiceover_video_path = voiceover_result.video_path
+                voiceover_audio_path = voiceover_result.audio_path
+
+        manager.write_metadata(
+            formula=formula,
+            goal=goal,
+            audience=audience,
+            status="success",
+            llm_used=artifacts.llm_used,
+            video_path=rendered_video_path,
+            video_with_voice_path=voiceover_video_path,
+            voiceover_audio_path=voiceover_audio_path,
+        )
 
         typer.echo(f"Generated planning artifacts in {output_dir}")
     except (
@@ -238,6 +288,7 @@ def plan(
         GeneratorError,
         RenderError,
         ValidationError,
+        VoiceoverError,
     ) as exc:
         manager.write_metadata(
             formula=formula,

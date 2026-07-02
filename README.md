@@ -104,6 +104,25 @@ math-anim plan \
 
 成功すると `outputs/cross_entropy_plan/video.mp4` が作成されます。
 
+macOSでは、`--voiceover` を付けると `say` コマンドで日本語ナレーションを生成し、`ffmpeg` で動画に合成します。
+
+```bash
+math-anim plan \
+  --formula "L = - \\sum_i y_i \\log(\\hat{y}_i)" \
+  --goal "クロスエントロピー損失を直感的に理解したい" \
+  --output-dir outputs/cross_entropy_plan \
+  --no-llm \
+  --render \
+  --voiceover
+```
+
+生成物:
+
+- `narration.md`
+- `narration.aiff`
+- `voiceover.log`
+- `video_with_voice.mp4`
+
 ## テスト
 
 ```bash
@@ -116,5 +135,5 @@ python -m pytest
 - `plan --no-llm` は Cross Entropy、Gradient Descent、Attention の固定サンプルに対応
 - Manimテンプレートは Gradient Descent の3D曲面と Cross Entropy のPenalty Curve に対応
 - Attentionは企画とStoryboard生成まで対応しており、動画テンプレートは未実装
+- 音声合成はmacOSの `say` コマンドを使う簡易版で、シーン単位の厳密な同期は未実装
 - Storyboard内の関数文字列はPythonコードとして評価しません
-- 自動音声合成は未実装で、ナレーション原稿をMarkdownとして出力します
