@@ -5,6 +5,9 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
+
+from math_animation_studio.voiceover.script_writer import VoiceoverSegment
 
 
 class VoiceoverError(RuntimeError):
@@ -181,6 +184,238 @@ class MacOSSayVoiceover:
             voice=selected_voice,
         )
 
+    def create_segmented(
+        self,
+        *,
+        video_path: Path,
+        segments: Sequence[VoiceoverSegment],
+        script_path: Path,
+        audio_path: Path,
+        output_video_path: Path,
+        log_path: Path,
+        voice: str | None = None,
+        rate: int = 180,
+    ) -> VoiceoverResult:
+        if not segments:
+            raise VoiceoverError("Segmented voiceover requires at least one segment.")
+
+        say_bin = shutil.which("say")
+        ffmpeg_bin = shutil.which("ffmpeg")
+        ffprobe_bin = shutil.which("ffprobe")
+        if say_bin is None:
+            raise VoiceoverError("macOS say command was not found.")
+        if ffmpeg_bin is None:
+            raise VoiceoverError("ffmpeg command was not found.")
+        if ffprobe_bin is None:
+            raise VoiceoverError("ffprobe command was not found.")
+
+        video_path = video_path.resolve()
+        script_path = script_path.resolve()
+        audio_path = audio_path.resolve()
+        output_video_path = output_video_path.resolve()
+        log_path = log_path.resolve()
+
+        script_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        output_video_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        script_path.write_text(self._segmented_script_markdown(segments), encoding="utf-8")
+
+        segment_dir = audio_path.parent / ".voiceover_segments"
+        segment_dir.mkdir(parents=True, exist_ok=True)
+        selected_voice = voice or self._detect_japanese_voice(say_bin)
+        log_sections = ["# Segmented voiceover synthesis"]
+        padded_paths: list[Path] = []
+
+        for index, segment in enumerate(segments):
+            stem = f"{index:02d}_{self._safe_file_stem(segment.id)}"
+            raw_path = segment_dir / f"{stem}.aiff"
+            padded_path = segment_dir / f"{stem}.wav"
+            command = self._say_command(
+                say_bin=say_bin,
+                rate=rate,
+                audio_path=raw_path,
+                script=segment.text,
+                voice=selected_voice,
+            )
+            process = subprocess.run(
+                command,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            log_sections.append(
+                self._segment_log_header(index, segment)
+                + "$ "
+                + " ".join(command)
+                + "\n"
+                + (process.stdout or "")
+            )
+            if process.returncode != 0 and selected_voice:
+                fallback_command = self._say_command(
+                    say_bin=say_bin,
+                    rate=rate,
+                    audio_path=raw_path,
+                    script=segment.text,
+                    voice=None,
+                )
+                fallback_process = subprocess.run(
+                    fallback_command,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    check=False,
+                )
+                log_sections.append(
+                    "# Fallback without selected voice.\n$ "
+                    + " ".join(fallback_command)
+                    + "\n"
+                    + (fallback_process.stdout or "")
+                )
+                process = fallback_process
+                selected_voice = None
+            if process.returncode != 0:
+                log_path.write_text("\n\n".join(log_sections), encoding="utf-8")
+                raise VoiceoverError(f"Voice synthesis failed. See {log_path}.")
+
+            audio_duration = self._probe_duration(ffprobe_bin, raw_path)
+            if audio_duration > segment.duration_seconds * 0.96:
+                adjusted_rate = min(
+                    360,
+                    max(rate + 1, int(rate * audio_duration / (segment.duration_seconds * 0.92))),
+                )
+                adjusted_command = self._say_command(
+                    say_bin=say_bin,
+                    rate=adjusted_rate,
+                    audio_path=raw_path,
+                    script=segment.text,
+                    voice=selected_voice,
+                )
+                adjusted_process = subprocess.run(
+                    adjusted_command,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    check=False,
+                )
+                log_sections.append(
+                    f"# Adjusted segment rate to {adjusted_rate} for {segment.id}.\n$ "
+                    + " ".join(adjusted_command)
+                    + "\n"
+                    + (adjusted_process.stdout or "")
+                )
+                if adjusted_process.returncode != 0:
+                    log_path.write_text("\n\n".join(log_sections), encoding="utf-8")
+                    raise VoiceoverError(f"Voice synthesis failed. See {log_path}.")
+
+            pad_command = [
+                ffmpeg_bin,
+                "-y",
+                "-i",
+                str(raw_path),
+                "-filter:a",
+                (
+                    f"apad=pad_dur={segment.duration_seconds:.3f},"
+                    f"atrim=0:{segment.duration_seconds:.3f},"
+                    "asetpts=N/SR/TB"
+                ),
+                "-ar",
+                "44100",
+                "-ac",
+                "2",
+                "-c:a",
+                "pcm_s16le",
+                str(padded_path),
+            ]
+            pad_process = subprocess.run(
+                pad_command,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            log_sections.append("$ " + " ".join(pad_command) + "\n" + (pad_process.stdout or ""))
+            if pad_process.returncode != 0:
+                log_path.write_text("\n\n".join(log_sections), encoding="utf-8")
+                raise VoiceoverError(f"Segment audio padding failed. See {log_path}.")
+            padded_paths.append(padded_path)
+
+        concat_list_path = segment_dir / "concat.txt"
+        concat_list_path.write_text(
+            "\n".join(f"file '{path.name}'" for path in padded_paths) + "\n",
+            encoding="utf-8",
+        )
+        concat_command = [
+            ffmpeg_bin,
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            concat_list_path.name,
+            "-c:a",
+            "pcm_s16be",
+            str(audio_path),
+        ]
+        concat_process = subprocess.run(
+            concat_command,
+            cwd=segment_dir,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        log_sections.append("$ " + " ".join(concat_command) + "\n" + (concat_process.stdout or ""))
+        if concat_process.returncode != 0:
+            log_path.write_text("\n\n".join(log_sections), encoding="utf-8")
+            raise VoiceoverError(f"Segment audio concat failed. See {log_path}.")
+
+        video_duration = self._probe_duration(ffprobe_bin, video_path)
+        ffmpeg_command = [
+            ffmpeg_bin,
+            "-y",
+            "-i",
+            str(video_path),
+            "-i",
+            str(audio_path),
+            "-filter_complex",
+            f"[1:a]volume=1.0,apad=pad_dur={video_duration:.3f}[a]",
+            "-map",
+            "0:v:0",
+            "-map",
+            "[a]",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "160k",
+            "-t",
+            f"{video_duration:.3f}",
+            str(output_video_path),
+        ]
+        ffmpeg_process = subprocess.run(
+            ffmpeg_command,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        log_sections.append("$ " + " ".join(ffmpeg_command) + "\n" + (ffmpeg_process.stdout or ""))
+        log_path.write_text("\n\n".join(log_sections), encoding="utf-8")
+        if ffmpeg_process.returncode != 0:
+            raise VoiceoverError(f"Voiceover muxing failed. See {log_path}.")
+
+        return VoiceoverResult(
+            script_path=script_path,
+            audio_path=audio_path,
+            video_path=output_video_path,
+            log_path=log_path,
+            voice=selected_voice,
+        )
+
     def _say_command(
         self,
         *,
@@ -201,6 +436,39 @@ class MacOSSayVoiceover:
             command.extend(["-v", voice])
         command.append(script)
         return command
+
+    def _segmented_script_markdown(self, segments: Sequence[VoiceoverSegment]) -> str:
+        rows = [
+            "# Narration",
+            "",
+            "## Voiceover Segments",
+            "",
+        ]
+        for segment in segments:
+            rows.extend(
+                [
+                    f"### {segment.id} ({segment.duration_seconds:.2f}s)",
+                    "",
+                    segment.text,
+                    "",
+                ]
+            )
+        rows.extend(
+            [
+                "## Voiceover Script",
+                "",
+                "".join(segment.text for segment in segments),
+                "",
+            ]
+        )
+        return "\n".join(rows)
+
+    def _segment_log_header(self, index: int, segment: VoiceoverSegment) -> str:
+        return f"## Segment {index:02d}: {segment.id} ({segment.duration_seconds:.3f}s)\n"
+
+    def _safe_file_stem(self, value: str) -> str:
+        safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("._")
+        return safe or "segment"
 
     def _probe_duration(self, ffprobe_bin: str, video_path: Path) -> float:
         process = subprocess.run(

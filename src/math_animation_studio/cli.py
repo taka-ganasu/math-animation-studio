@@ -265,41 +265,64 @@ def plan(
 
             if voiceover:
                 script_writer = VoiceoverScriptWriter()
-                if artifacts.llm_used:
-                    try:
-                        script = LLMVoiceoverScriptWriter().write(
-                            storyboard=artifacts.storyboard,
+                segments = script_writer.write_segments(
+                    artifacts.storyboard,
+                    target_duration_seconds=duration,
+                )
+                if segments:
+                    voiceover_result = MacOSSayVoiceover().create_segmented(
+                        video_path=render_result.video_path,
+                        segments=segments,
+                        script_path=manager.narration_path,
+                        audio_path=manager.narration_audio_path,
+                        output_video_path=manager.video_with_voice_path,
+                        log_path=manager.voiceover_log_path,
+                        voice=voice,
+                        rate=voice_rate,
+                    )
+                    manager.write_narration(
+                        script_writer.write_markdown(
+                            artifacts.storyboard,
                             target_duration_seconds=duration,
-                            audience=audience,
-                            goal=goal,
+                            segments=segments,
                         )
-                    except LLMUnavailableError:
+                    )
+                else:
+                    if artifacts.llm_used:
+                        try:
+                            script = LLMVoiceoverScriptWriter().write(
+                                storyboard=artifacts.storyboard,
+                                target_duration_seconds=duration,
+                                audience=audience,
+                                goal=goal,
+                            )
+                        except LLMUnavailableError:
+                            script = script_writer.write(
+                                artifacts.storyboard,
+                                target_duration_seconds=duration,
+                            )
+                    else:
                         script = script_writer.write(
                             artifacts.storyboard,
                             target_duration_seconds=duration,
                         )
-                else:
-                    script = script_writer.write(
-                        artifacts.storyboard,
-                        target_duration_seconds=duration,
-                    )
-                voiceover_result = MacOSSayVoiceover().create(
-                    video_path=render_result.video_path,
-                    script=script,
-                    script_path=manager.narration_path,
-                    audio_path=manager.narration_audio_path,
-                    output_video_path=manager.video_with_voice_path,
-                    log_path=manager.voiceover_log_path,
-                    voice=voice,
-                    rate=voice_rate,
-                )
-                manager.write_narration(
-                    script_writer.write_markdown(
-                        artifacts.storyboard,
-                        target_duration_seconds=duration,
+                    voiceover_result = MacOSSayVoiceover().create(
+                        video_path=render_result.video_path,
                         script=script,
+                        script_path=manager.narration_path,
+                        audio_path=manager.narration_audio_path,
+                        output_video_path=manager.video_with_voice_path,
+                        log_path=manager.voiceover_log_path,
+                        voice=voice,
+                        rate=voice_rate,
                     )
-                )
+                    manager.write_narration(
+                        script_writer.write_markdown(
+                            artifacts.storyboard,
+                            target_duration_seconds=duration,
+                            script=script,
+                        )
+                    )
                 voiceover_video_path = voiceover_result.video_path
                 voiceover_audio_path = voiceover_result.audio_path
 

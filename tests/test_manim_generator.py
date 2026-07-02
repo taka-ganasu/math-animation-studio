@@ -95,6 +95,10 @@ def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> N
     assert "model_pipeline" in rendered
     assert "formula_parts_focus" in rendered
     assert "FORMULA_FOCUS_ITEMS" in rendered
+    assert "SEGMENT_DURATIONS" in rendered
+    assert "'focus_y_i'" in rendered
+    assert "'focus_log'" in rendered
+    assert "'negative_log_penalty'" in rendered
     assert "decomposed_formula" in rendered
     assert "正解クラスだけ1になるone-hot" in rendered
     assert "GOOD_DISTRIBUTION = (0.1, 0.9)" in rendered

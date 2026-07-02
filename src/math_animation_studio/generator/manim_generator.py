@@ -11,6 +11,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import BaseModel, ConfigDict, Field
 
 from math_animation_studio.schema import Storyboard, VisualObject
+from math_animation_studio.timing import cross_entropy_timeline_segments, segment_duration_map
 
 
 DEFAULT_FUNCTION_EXPR = (
@@ -81,35 +82,43 @@ class PenaltyCurveParams(BaseModel):
     )
     formula_focus_items: tuple[dict[str, str | int], ...] = (
         {
+            "segment_id": "focus_y_i",
             "part_start": 4,
             "part_end": 4,
             "label": "y_i",
             "description": "正解クラスだけ1になるone-hotのスイッチです。",
         },
         {
+            "segment_id": "focus_y_hat_i",
             "part_start": 7,
             "part_end": 7,
             "label": "ŷ_i",
             "description": "モデルがクラスiへ置いた予測確率です。",
         },
         {
+            "segment_id": "focus_log",
             "part_start": 5,
             "part_end": 8,
             "label": "log(ŷ_i)",
             "description": "小さい確率の差を、損失として見えやすくします。",
         },
         {
+            "segment_id": "focus_sum",
             "part_start": 3,
             "part_end": 3,
             "label": "Σ_i",
             "description": "全クラスを見る記号ですが、one-hotなので正解クラスだけ残ります。",
         },
         {
+            "segment_id": "focus_minus",
             "part_start": 2,
             "part_end": 2,
             "label": "-",
             "description": "log(p)は負になりやすいので、損失を正の罰に変えます。",
         },
+    )
+    segment_durations: dict[str, float] = Field(
+        default_factory=lambda: segment_duration_map(cross_entropy_timeline_segments(30))
     )
     narration_lines: list[str] = Field(default_factory=list)
 
@@ -249,8 +258,14 @@ class ManimGenerator:
         )
         scenario_title = _scenario_title_from_storyboard(storyboard)
 
+        focus_items = _formula_focus_items_from_storyboard(storyboard)
+        active_focus_ids = tuple(
+            str(item["segment_id"]) for item in focus_items if "segment_id" in item
+        )
+        target_duration_seconds = self.target_duration_seconds or 13
+
         return PenaltyCurveParams(
-            target_duration_seconds=self.target_duration_seconds or 13,
+            target_duration_seconds=target_duration_seconds,
             title=_title_from_storyboard(storyboard),
             formula_latex=storyboard.formula or r"L = - \sum_i y_i \log(\hat{y}_i)",
             scenario_title=scenario_title,
@@ -264,7 +279,13 @@ class ManimGenerator:
             good_logits=tuple(_logits_from_distribution(good_distribution)),
             bad_logits=tuple(_logits_from_distribution(bad_distribution)),
             caption_lines=_caption_lines_from_storyboard(storyboard, scenario_title),
-            formula_focus_items=_formula_focus_items_from_storyboard(storyboard),
+            formula_focus_items=focus_items,
+            segment_durations=segment_duration_map(
+                cross_entropy_timeline_segments(
+                    target_duration_seconds,
+                    active_focus_ids=active_focus_ids,
+                )
+            ),
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
@@ -577,30 +598,41 @@ def _caption_lines_from_storyboard(
     storyboard: Storyboard,
     scenario_title: str,
 ) -> tuple[str, ...]:
+    one_hot_caption = _scene_caption_for_keywords(
+        storyboard,
+        ("one-hot", "ワンホット", "正解"),
+        "one-hotラベルは、正解クラスだけを1にするスイッチです。",
+    )
+    penalty_caption = _scene_caption_for_keywords(
+        storyboard,
+        ("-log", "log", "罰", "p", "取り出"),
+        "pが0に近いほど、-log(p)は急激に大きくなります。",
+    )
     lines = [
         f"{scenario_title}で、予測確率が損失へ変わる流れを見ます。",
         "入力xをモデルf_θに通し、logits zをsoftmaxで確率ŷに変えます。",
+        one_hot_caption,
+        "悪い予測と良い予測で、正解クラスの確率pを比べます。",
+        penalty_caption,
+        storyboard.one_sentence_summary,
     ]
-    for scene in storyboard.scenes:
-        text = scene.narration.strip() or scene.title.strip()
-        if text and text not in lines:
-            lines.append(text)
-    if storyboard.one_sentence_summary not in lines:
-        lines.append(storyboard.one_sentence_summary)
-
-    fallback = [
-        "one-hotラベルでは、正解クラスだけが損失に効きます。",
-        "ŷのうち、正解クラスの確率だけを取り出してpと見ます。",
-        "正解クラスの確率が低い予測は、大きく罰されます。",
-        "pが0に近いほど、-log(p)は急激に大きくなります。",
-        "式の中身は、正解確率を取り出して罰へ変換する操作です。",
-    ]
-    for text in fallback:
-        if len(lines) >= 6:
-            break
-        lines.append(text)
 
     return tuple(_shorten_text(_caption_display_text(text), 72) for text in lines[:6])
+
+
+def _scene_caption_for_keywords(
+    storyboard: Storyboard,
+    keywords: tuple[str, ...],
+    fallback: str,
+) -> str:
+    for scene in storyboard.scenes:
+        text = scene.narration.strip() or scene.title.strip()
+        if not text:
+            continue
+        lowered = text.lower()
+        if any(keyword.lower() in lowered for keyword in keywords):
+            return text
+    return fallback
 
 
 def _formula_focus_items_from_storyboard(
@@ -608,16 +640,18 @@ def _formula_focus_items_from_storyboard(
 ) -> tuple[dict[str, str | int], ...]:
     symbol_text = " ".join(symbol.symbol for symbol in storyboard.symbol_ledger)
     scene_text = " ".join(scene.title + " " + scene.narration for scene in storyboard.scenes)
-    combined = symbol_text + " " + scene_text
+    combined = f"{storyboard.formula or ''} {symbol_text} {scene_text}"
 
     items: list[dict[str, str | int]] = [
         {
+            "segment_id": "focus_y_i",
             "part_start": 4,
             "part_end": 4,
             "label": "y_i",
             "description": "正解クラスだけ1になるone-hotのスイッチです。",
         },
         {
+            "segment_id": "focus_y_hat_i",
             "part_start": 7,
             "part_end": 7,
             "label": "ŷ_i",
@@ -627,6 +661,7 @@ def _formula_focus_items_from_storyboard(
     if "log" in combined or "対数" in combined or r"\log" in combined:
         items.append(
             {
+                "segment_id": "focus_log",
                 "part_start": 5,
                 "part_end": 8,
                 "label": "log(ŷ_i)",
@@ -636,6 +671,7 @@ def _formula_focus_items_from_storyboard(
     if "sum" in combined or "総和" in combined or r"\sum" in combined:
         items.append(
             {
+                "segment_id": "focus_sum",
                 "part_start": 3,
                 "part_end": 3,
                 "label": "Σ_i",
@@ -645,6 +681,7 @@ def _formula_focus_items_from_storyboard(
     if "-" in (storyboard.formula or "") or "マイナス" in combined:
         items.append(
             {
+                "segment_id": "focus_minus",
                 "part_start": 2,
                 "part_end": 2,
                 "label": "-",

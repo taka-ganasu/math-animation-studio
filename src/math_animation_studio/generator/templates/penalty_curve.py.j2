@@ -26,10 +26,15 @@ CAPTION_LINES = {{ params.caption_lines | py_repr }}
 FORMULA_FOCUS_ITEMS = {{ params.formula_focus_items | py_repr }}
 NARRATION_LINES = {{ params.narration_lines | py_repr }}
 TIMING_SCALE = {{ params.timing_scale | py_repr }}
+SEGMENT_DURATIONS = {{ params.segment_durations | py_repr }}
 
 
 def rt(seconds: float) -> float:
     return seconds * TIMING_SCALE
+
+
+def segment_duration(segment_id: str, fallback_seconds: float) -> float:
+    return max(0.05, float(SEGMENT_DURATIONS.get(segment_id, rt(fallback_seconds))))
 
 
 class CrossEntropyPenaltyScene(Scene):
@@ -93,8 +98,15 @@ class CrossEntropyPenaltyScene(Scene):
         if parts.width > 8.8:
             parts.scale(8.8 / parts.width)
         parts.next_to(scenario, DOWN, buff=0.48)
-        self.play(TransformFromCopy(source_formula, parts), run_time=rt(0.85))
+        parts_visible = False
         for item in FORMULA_FOCUS_ITEMS:
+            duration = segment_duration(str(item.get("segment_id", "")), 2.2)
+            used = 0.0
+            if not parts_visible:
+                entry_time = min(0.75, duration * 0.2)
+                self.play(TransformFromCopy(source_formula, parts), run_time=entry_time)
+                parts_visible = True
+                used += entry_time
             target = self.formula_focus_target(parts, item)
             highlight = SurroundingRectangle(target, color=YELLOW, buff=0.08)
             target_copy = target.copy()
@@ -103,15 +115,25 @@ class CrossEntropyPenaltyScene(Scene):
             if target_copy.width > 5.8:
                 target_copy.scale(5.8 / target_copy.width)
             card = self.formula_focus_card(item, target_copy)
+            focus_time = min(0.65, max(0.05, (duration - used) * 0.28))
             self.play(
                 FadeIn(highlight),
                 TransformFromCopy(target, target_copy),
                 FadeIn(card),
-                run_time=rt(0.55),
+                run_time=focus_time,
             )
-            self.wait(rt(1.05))
-            self.play(FadeOut(highlight), FadeOut(target_copy), FadeOut(card), run_time=rt(0.2))
+            used += focus_time
+            fade_time = min(0.25, max(0.05, (duration - used) * 0.18))
+            remaining = max(0.0, duration - used - fade_time)
+            if remaining > 0.01:
+                self.wait(remaining)
+            self.play(FadeOut(highlight), FadeOut(target_copy), FadeOut(card), run_time=fade_time)
         return parts
+
+    def wait_remaining(self, segment_seconds: float, used_seconds: float) -> None:
+        remaining = max(0.0, segment_seconds - used_seconds)
+        if remaining > 0.01:
+            self.wait(remaining)
 
     def pipeline_node(self, title: str, body: Mobject | str, color: ManimColor) -> VGroup:
         box = RoundedRectangle(
@@ -286,8 +308,12 @@ class CrossEntropyPenaltyScene(Scene):
         scenario.next_to(formula, DOWN, buff=0.22)
 
         caption = self.caption_at(0)
-        self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=rt(1.5))
-        self.play(FadeIn(scenario), run_time=rt(0.5))
+        intro_duration = segment_duration("intro_formula", 2.0)
+        intro_formula_time = min(1.5, max(0.05, intro_duration * 0.45))
+        intro_scenario_time = min(0.65, max(0.05, intro_duration * 0.18))
+        self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=intro_formula_time)
+        self.play(FadeIn(scenario), run_time=intro_scenario_time)
+        self.wait_remaining(intro_duration, intro_formula_time + intro_scenario_time)
 
         focus_parts = VGroup()
         if self.has_component("formula_parts_focus"):
@@ -295,53 +321,89 @@ class CrossEntropyPenaltyScene(Scene):
 
         pipeline = VGroup()
         if self.has_component("model_pipeline"):
+            duration = segment_duration("model_pipeline", 3.0)
+            used = 0.0
             pipeline = self.model_pipeline()
             pipeline.next_to(scenario, DOWN, buff=0.42)
             if focus_parts:
-                self.play(FadeOut(focus_parts), run_time=rt(0.35))
-            self.play(FadeIn(pipeline), run_time=rt(1.2))
+                fade_time = min(0.45, max(0.05, duration * 0.12))
+                self.play(FadeOut(focus_parts), run_time=fade_time)
+                used += fade_time
+            pipeline_time = min(1.2, max(0.05, (duration - used) * 0.36))
+            self.play(FadeIn(pipeline), run_time=pipeline_time)
+            used += pipeline_time
             next_caption = self.caption_at(1)
-            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption_time = min(0.6, max(0.05, (duration - used) * 0.25))
+            self.play(ReplacementTransform(caption, next_caption), run_time=caption_time)
+            used += caption_time
             caption = next_caption
+            self.wait_remaining(duration, used)
 
         one_hot = VGroup()
         if self.has_component("one_hot_vector"):
+            duration = segment_duration("one_hot_vector", 2.4)
+            used = 0.0
             one_hot = self.one_hot_group()
             one_hot.next_to(scenario, DOWN, buff=0.38)
             if pipeline:
-                self.play(FadeOut(pipeline), run_time=rt(0.45))
-            self.play(Write(one_hot), run_time=rt(1.0))
+                fade_time = min(0.45, max(0.05, duration * 0.12))
+                self.play(FadeOut(pipeline), run_time=fade_time)
+                used += fade_time
+            write_time = min(1.0, max(0.05, (duration - used) * 0.38))
+            self.play(Write(one_hot), run_time=write_time)
+            used += write_time
             next_caption = self.caption_at(2)
-            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption_time = min(0.6, max(0.05, (duration - used) * 0.25))
+            self.play(ReplacementTransform(caption, next_caption), run_time=caption_time)
+            used += caption_time
             caption = next_caption
+            self.wait_remaining(duration, used)
 
         bad_distribution = list(BAD_DISTRIBUTION) if BAD_DISTRIBUTION else self.distribution(BAD_PROBABILITY)
         good_distribution = list(GOOD_DISTRIBUTION) if GOOD_DISTRIBUTION else self.distribution(GOOD_PROBABILITY)
         charts = VGroup()
         if self.has_component("softmax_distribution"):
+            duration = segment_duration("softmax_distribution", 3.6)
+            used = 0.0
             bad_stack = self.prediction_stack(BAD_LOGITS, bad_distribution, BAD_CHART_TITLE)
             good_stack = self.prediction_stack(GOOD_LOGITS, good_distribution, GOOD_CHART_TITLE)
             charts = VGroup(bad_stack, good_stack).arrange(RIGHT, buff=0.62)
             if charts.width > 11.6:
                 charts.scale(11.6 / charts.width)
             charts.next_to(one_hot if one_hot else scenario, DOWN, buff=0.42)
-            self.play(FadeIn(bad_stack), run_time=rt(1.0))
+            bad_time = min(1.0, max(0.05, duration * 0.24))
+            self.play(FadeIn(bad_stack), run_time=bad_time)
+            used += bad_time
             next_caption = self.caption_at(3)
-            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption_time = min(0.6, max(0.05, (duration - used) * 0.18))
+            self.play(ReplacementTransform(caption, next_caption), run_time=caption_time)
+            used += caption_time
             caption = next_caption
-            self.play(FadeIn(good_stack), run_time=rt(1.0))
+            good_time = min(1.0, max(0.05, (duration - used) * 0.28))
+            self.play(FadeIn(good_stack), run_time=good_time)
+            used += good_time
+            self.wait_remaining(duration, used)
 
         selector = VGroup()
         if self.has_component("correct_selector"):
+            duration = segment_duration("correct_selector", 2.5)
+            used = 0.0
             selector = self.correct_selector()
             selector.next_to(scenario, DOWN, buff=0.62)
-            self.play(FadeOut(charts), FadeOut(one_hot), run_time=rt(0.5))
+            fade_time = min(0.5, max(0.05, duration * 0.16))
+            self.play(FadeOut(charts), FadeOut(one_hot), run_time=fade_time)
+            used += fade_time
             charts = VGroup()
             one_hot = VGroup()
-            self.play(FadeIn(selector), run_time=rt(0.8))
+            selector_time = min(0.8, max(0.05, (duration - used) * 0.32))
+            self.play(FadeIn(selector), run_time=selector_time)
+            used += selector_time
             next_caption = self.caption_at(4)
-            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption_time = min(0.6, max(0.05, (duration - used) * 0.24))
+            self.play(ReplacementTransform(caption, next_caption), run_time=caption_time)
+            used += caption_time
             caption = next_caption
+            self.wait_remaining(duration, used)
 
         axes = Axes(
             x_range=[0.05, 1.0, 0.2],
@@ -368,25 +430,40 @@ class CrossEntropyPenaltyScene(Scene):
         graph_layout.next_to(formula, DOWN, buff=0.62)
 
         if self.has_component("negative_log_penalty"):
+            duration = segment_duration("negative_log_penalty", 4.0)
+            used = 0.0
+            fade_time = min(0.7, max(0.05, duration * 0.14))
             self.play(
                 FadeOut(charts),
                 FadeOut(one_hot),
                 FadeOut(selector),
                 FadeOut(scenario),
-                run_time=rt(0.7),
+                run_time=fade_time,
             )
-            self.play(Create(axes), FadeIn(axes_labels), Create(curve), FadeIn(curve_label), run_time=rt(1.5))
+            used += fade_time
+            curve_time = min(1.5, max(0.05, (duration - used) * 0.32))
+            self.play(Create(axes), FadeIn(axes_labels), Create(curve), FadeIn(curve_label), run_time=curve_time)
+            used += curve_time
             next_caption = self.caption_at(4)
-            self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
+            caption_time = min(0.6, max(0.05, (duration - used) * 0.16))
+            self.play(ReplacementTransform(caption, next_caption), run_time=caption_time)
+            used += caption_time
             caption = next_caption
-            self.play(FadeIn(bad_dot), FadeIn(bad_badge), run_time=rt(0.9))
-            self.play(FadeIn(good_dot), FadeIn(good_badge), run_time=rt(0.9))
+            bad_time = min(0.9, max(0.05, (duration - used) * 0.26))
+            self.play(FadeIn(bad_dot), FadeIn(bad_badge), run_time=bad_time)
+            used += bad_time
+            good_time = min(0.9, max(0.05, (duration - used) * 0.38))
+            self.play(FadeIn(good_dot), FadeIn(good_badge), run_time=good_time)
+            used += good_time
+            self.wait_remaining(duration, used)
 
         if self.has_component("summary"):
+            duration = segment_duration("summary", 2.2)
             summary = Text(SUMMARY_TEXT, font_size=26)
             summary.next_to(graph_layout, DOWN, buff=0.28)
             if summary.width > 10.8:
                 summary.scale(10.8 / summary.width)
             next_caption = self.caption_at(5)
-            self.play(ReplacementTransform(caption, next_caption), FadeIn(summary), run_time=rt(0.9))
-        self.wait(rt(2.0))
+            summary_time = min(0.9, max(0.05, duration * 0.35))
+            self.play(ReplacementTransform(caption, next_caption), FadeIn(summary), run_time=summary_time)
+            self.wait_remaining(duration, summary_time)
