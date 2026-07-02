@@ -191,6 +191,7 @@ class PlanArtifactManager:
         video_path: Path | None = None,
         video_with_voice_path: Path | None = None,
         voiceover_audio_path: Path | None = None,
+        duration_seconds_target: int | None = None,
         error: str | None = None,
     ) -> None:
         payload: dict[str, Any] = {
@@ -208,6 +209,8 @@ class PlanArtifactManager:
             payload["video_with_voice_path"] = str(video_with_voice_path)
         if voiceover_audio_path is not None:
             payload["voiceover_audio_path"] = str(voiceover_audio_path)
+        if duration_seconds_target is not None:
+            payload["duration_seconds_target"] = duration_seconds_target
         if error:
             payload["error"] = error
         self.metadata_path.write_text(

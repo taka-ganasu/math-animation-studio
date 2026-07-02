@@ -42,6 +42,8 @@ class GradientDescentParams(BaseModel):
 class PenaltyCurveParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    base_duration_seconds: float = 13.4
+    target_duration_seconds: int = Field(default=30, ge=5, le=180)
     title: str = "Cross Entropy Loss"
     formula_latex: str = r"L = - \sum_i y_i \log(\hat{y}_i)"
     class_labels: tuple[str, str, str] = ("猫", "犬", "鳥")
@@ -50,10 +52,20 @@ class PenaltyCurveParams(BaseModel):
     bad_probability: float = Field(default=0.1, gt=0.0, lt=1.0)
     narration_lines: list[str] = Field(default_factory=list)
 
+    @property
+    def timing_scale(self) -> float:
+        return self.target_duration_seconds / self.base_duration_seconds
+
 
 class ManimGenerator:
-    def __init__(self, *, template: str = "auto") -> None:
+    def __init__(
+        self,
+        *,
+        template: str = "auto",
+        target_duration_seconds: int | None = None,
+    ) -> None:
         self.template = template
+        self.target_duration_seconds = target_duration_seconds
 
     def generate(
         self,
@@ -161,6 +173,7 @@ class ManimGenerator:
     def _penalty_curve_params_from_storyboard(self, storyboard: Storyboard) -> PenaltyCurveParams:
         values = storyboard.examples[0].values if storyboard.examples else {}
         return PenaltyCurveParams(
+            target_duration_seconds=self.target_duration_seconds or 13,
             title=_title_from_storyboard(storyboard),
             formula_latex=storyboard.formula or r"L = - \sum_i y_i \log(\hat{y}_i)",
             good_probability=float(

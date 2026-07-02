@@ -99,6 +99,7 @@ math-anim plan \
   --goal "クロスエントロピー損失を直感的に理解したい" \
   --output-dir outputs/cross_entropy_plan \
   --no-llm \
+  --duration 30 \
   --render
 ```
 
@@ -112,6 +113,7 @@ math-anim plan \
   --goal "クロスエントロピー損失を直感的に理解したい" \
   --output-dir outputs/cross_entropy_plan \
   --no-llm \
+  --duration 30 \
   --render \
   --voiceover
 ```
@@ -122,6 +124,8 @@ math-anim plan \
 - `narration.aiff`
 - `voiceover.log`
 - `video_with_voice.mp4`
+
+`--duration` は対応済みテンプレートの目標動画尺です。Cross Entropyでは、25秒以上を指定するとナレーション台本も少し噛み砕いた版になります。
 
 ## テスト
 

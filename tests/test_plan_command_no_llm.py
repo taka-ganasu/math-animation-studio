@@ -14,6 +14,7 @@ def test_plan_help() -> None:
 
     assert result.exit_code == 0
     assert "--formula" in result.output
+    assert "--duration" in result.output
     assert "--voiceover" in result.output
 
 

@@ -14,10 +14,15 @@ def test_voiceover_script_writer_creates_cross_entropy_script() -> None:
 
     writer = VoiceoverScriptWriter()
     script = writer.write(artifacts.storyboard)
-    markdown = writer.write_markdown(artifacts.storyboard)
+    slow_script = writer.write(artifacts.storyboard, target_duration_seconds=30)
+    markdown = writer.write_markdown(artifacts.storyboard, target_duration_seconds=30)
 
     assert "クロスエントロピー損失" in script
     assert "マイナスログ" in script
     assert len(script) < 170
+    assert "まず、正解は猫" in slow_script
+    assert "右の曲線" in slow_script
+    assert len(slow_script) > len(script)
+    assert "Target duration: 30 seconds" in markdown
     assert "## Voiceover Script" in markdown
     assert "## Source Scenes" in markdown

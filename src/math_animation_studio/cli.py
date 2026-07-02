@@ -174,6 +174,13 @@ def plan(
         "--to-storyboard/--no-storyboard",
         help="Generate storyboard.json compatible with the MVP1 schema.",
     ),
+    duration: int = typer.Option(
+        30,
+        "--duration",
+        min=5,
+        max=180,
+        help="Target rendered video duration in seconds for supported templates.",
+    ),
     render: bool = typer.Option(
         False,
         "--render",
@@ -190,7 +197,7 @@ def plan(
         help="Optional macOS say voice name. Auto-detects a Japanese voice when omitted.",
     ),
     voice_rate: int = typer.Option(
-        220,
+        180,
         "--voice-rate",
         min=80,
         max=360,
@@ -243,7 +250,7 @@ def plan(
                     "--render requires storyboard generation. Remove --no-storyboard."
                 )
             artifact_manager = ArtifactManager(output_dir)
-            generator = ManimGenerator()
+            generator = ManimGenerator(target_duration_seconds=duration)
             generator.generate(artifacts.storyboard, artifact_manager.manim_scene_path)
             validate_python_syntax(artifact_manager.manim_scene_path)
             renderer = ManimRenderer(scene_name=generator.scene_name_for(artifacts.storyboard))
@@ -256,7 +263,10 @@ def plan(
 
             if voiceover:
                 script_writer = VoiceoverScriptWriter()
-                script = script_writer.write(artifacts.storyboard)
+                script = script_writer.write(
+                    artifacts.storyboard,
+                    target_duration_seconds=duration,
+                )
                 voiceover_result = MacOSSayVoiceover().create(
                     video_path=render_result.video_path,
                     script=script,
@@ -267,7 +277,12 @@ def plan(
                     voice=voice,
                     rate=voice_rate,
                 )
-                manager.write_narration(script_writer.write_markdown(artifacts.storyboard))
+                manager.write_narration(
+                    script_writer.write_markdown(
+                        artifacts.storyboard,
+                        target_duration_seconds=duration,
+                    )
+                )
                 voiceover_video_path = voiceover_result.video_path
                 voiceover_audio_path = voiceover_result.audio_path
 
@@ -280,6 +295,7 @@ def plan(
             video_path=rendered_video_path,
             video_with_voice_path=voiceover_video_path,
             voiceover_audio_path=voiceover_audio_path,
+            duration_seconds_target=duration if render else None,
         )
 
         typer.echo(f"Generated planning artifacts in {output_dir}")

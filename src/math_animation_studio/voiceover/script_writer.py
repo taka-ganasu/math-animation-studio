@@ -4,9 +4,20 @@ from math_animation_studio.schema import Storyboard
 
 
 class VoiceoverScriptWriter:
-    def write(self, storyboard: Storyboard) -> str:
+    def write(self, storyboard: Storyboard, *, target_duration_seconds: int | None = None) -> str:
         concept = storyboard.concept.strip().lower().replace("-", "_")
         if concept == "cross_entropy":
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
+                return (
+                    "これは、クロスエントロピー損失です。"
+                    "まず、正解は猫だとします。"
+                    "ワンホットラベルでは、猫だけが一になります。"
+                    "モデルが猫に低い確率しか出していないと、悪い予測です。"
+                    "このとき、損失は大きくなります。"
+                    "右の曲線は、マイナスログです。"
+                    "確率pが小さいほど、罰は急に大きくなります。"
+                    "逆に、正解に高い確率を出せていれば、損失は小さくなります。"
+                )
             return (
                 "クロスエントロピー損失は、正解クラスに低い確率を置いたときに、"
                 "大きな罰を与える損失です。"
@@ -27,10 +38,17 @@ class VoiceoverScriptWriter:
             sentences.append(scene.narration)
         return "".join(_shorten(sentence, 80) for sentence in sentences)
 
-    def write_markdown(self, storyboard: Storyboard) -> str:
-        script = self.write(storyboard)
+    def write_markdown(
+        self,
+        storyboard: Storyboard,
+        *,
+        target_duration_seconds: int | None = None,
+    ) -> str:
+        script = self.write(storyboard, target_duration_seconds=target_duration_seconds)
         rows = [
             "# Narration",
+            "",
+            f"Target duration: {target_duration_seconds or 'auto'} seconds",
             "",
             "## Voiceover Script",
             "",

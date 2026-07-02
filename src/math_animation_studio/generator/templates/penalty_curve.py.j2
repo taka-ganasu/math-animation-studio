@@ -14,6 +14,11 @@ CORRECT_INDEX = {{ params.correct_index | py_repr }}
 GOOD_PROBABILITY = {{ params.good_probability | py_repr }}
 BAD_PROBABILITY = {{ params.bad_probability | py_repr }}
 NARRATION_LINES = {{ params.narration_lines | py_repr }}
+TIMING_SCALE = {{ params.timing_scale | py_repr }}
+
+
+def rt(seconds: float) -> float:
+    return seconds * TIMING_SCALE
 
 
 class CrossEntropyPenaltyScene(Scene):
@@ -105,7 +110,7 @@ class CrossEntropyPenaltyScene(Scene):
         formula.next_to(title, DOWN, buff=0.18)
 
         caption = self.make_caption("クロスエントロピーは、正解クラスの予測確率を罰に変えます。")
-        self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=1.5)
+        self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=rt(1.5))
 
         one_hot = self.make_math(
             r"y = [1, 0, 0]",
@@ -115,9 +120,9 @@ class CrossEntropyPenaltyScene(Scene):
         one_hot.next_to(formula, DOWN, buff=0.32)
         one_hot_label = Text("正解クラスだけが1", font_size=22)
         one_hot_label.next_to(one_hot, RIGHT, buff=0.38)
-        self.play(Write(one_hot), FadeIn(one_hot_label), run_time=1.0)
+        self.play(Write(one_hot), FadeIn(one_hot_label), run_time=rt(1.0))
         next_caption = self.make_caption("one-hotラベルでは、正解クラスだけが損失に効きます。")
-        self.play(ReplacementTransform(caption, next_caption), run_time=0.6)
+        self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
         caption = next_caption
 
         bad_distribution = self.distribution(BAD_PROBABILITY)
@@ -127,11 +132,11 @@ class CrossEntropyPenaltyScene(Scene):
         charts = VGroup(bad_chart, good_chart).arrange(RIGHT, buff=1.0)
         charts.scale(0.92)
         charts.next_to(one_hot, DOWN, buff=0.48)
-        self.play(FadeIn(bad_chart), run_time=1.0)
+        self.play(FadeIn(bad_chart), run_time=rt(1.0))
         next_caption = self.make_caption("正解クラスの確率が低い予測は、大きく罰されます。")
-        self.play(ReplacementTransform(caption, next_caption), run_time=0.6)
+        self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
         caption = next_caption
-        self.play(FadeIn(good_chart), run_time=1.0)
+        self.play(FadeIn(good_chart), run_time=rt(1.0))
 
         axes = Axes(
             x_range=[0.05, 1.0, 0.2],
@@ -157,18 +162,18 @@ class CrossEntropyPenaltyScene(Scene):
         graph_layout.scale(0.92)
         graph_layout.next_to(formula, DOWN, buff=0.62)
 
-        self.play(FadeOut(charts), FadeOut(one_hot), FadeOut(one_hot_label), run_time=0.7)
-        self.play(Create(axes), FadeIn(axes_labels), Create(curve), FadeIn(curve_label), run_time=1.5)
+        self.play(FadeOut(charts), FadeOut(one_hot), FadeOut(one_hot_label), run_time=rt(0.7))
+        self.play(Create(axes), FadeIn(axes_labels), Create(curve), FadeIn(curve_label), run_time=rt(1.5))
         next_caption = self.make_caption("pが0に近いほど、-log(p)は急激に大きくなります。")
-        self.play(ReplacementTransform(caption, next_caption), run_time=0.6)
+        self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))
         caption = next_caption
-        self.play(FadeIn(bad_dot), FadeIn(bad_badge), run_time=0.9)
-        self.play(FadeIn(good_dot), FadeIn(good_badge), run_time=0.9)
+        self.play(FadeIn(bad_dot), FadeIn(bad_badge), run_time=rt(0.9))
+        self.play(FadeIn(good_dot), FadeIn(good_badge), run_time=rt(0.9))
 
         summary = Text("正解に高い確率を置くほど、損失は小さくなる。", font_size=26)
         summary.next_to(graph_layout, DOWN, buff=0.28)
         if summary.width > 10.8:
             summary.scale(10.8 / summary.width)
         next_caption = self.make_caption("式の中身は、正解確率を取り出して罰へ変換する操作です。")
-        self.play(ReplacementTransform(caption, next_caption), FadeIn(summary), run_time=0.9)
-        self.wait(2.0)
+        self.play(ReplacementTransform(caption, next_caption), FadeIn(summary), run_time=rt(0.9))
+        self.wait(rt(2.0))
