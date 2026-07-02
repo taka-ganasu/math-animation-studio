@@ -17,6 +17,7 @@ from math_animation_studio.understanding.formula_understanding_planner import (
 )
 from math_animation_studio.validation import ValidationError, validate_python_syntax
 from math_animation_studio.voiceover import (
+    LLMVoiceoverScriptWriter,
     MacOSSayVoiceover,
     VoiceoverError,
     VoiceoverScriptWriter,
@@ -227,6 +228,7 @@ def plan(
             audience=audience,
             domain_hint=domain_hint,
             to_storyboard=to_storyboard,
+            target_duration_seconds=duration,
         )
 
         if output_format in {"json", "all"}:
@@ -263,10 +265,18 @@ def plan(
 
             if voiceover:
                 script_writer = VoiceoverScriptWriter()
-                script = script_writer.write(
-                    artifacts.storyboard,
-                    target_duration_seconds=duration,
-                )
+                if artifacts.llm_used:
+                    script = LLMVoiceoverScriptWriter().write(
+                        storyboard=artifacts.storyboard,
+                        target_duration_seconds=duration,
+                        audience=audience,
+                        goal=goal,
+                    )
+                else:
+                    script = script_writer.write(
+                        artifacts.storyboard,
+                        target_duration_seconds=duration,
+                    )
                 voiceover_result = MacOSSayVoiceover().create(
                     video_path=render_result.video_path,
                     script=script,
@@ -281,6 +291,7 @@ def plan(
                     script_writer.write_markdown(
                         artifacts.storyboard,
                         target_duration_seconds=duration,
+                        script=script,
                     )
                 )
                 voiceover_video_path = voiceover_result.video_path
@@ -302,6 +313,7 @@ def plan(
     except (
         FormulaUnderstandingPlannerError,
         GeneratorError,
+        LLMUnavailableError,
         RenderError,
         ValidationError,
         VoiceoverError,

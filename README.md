@@ -127,6 +127,29 @@ math-anim plan \
 
 `--duration` は対応済みテンプレートの目標動画尺です。Cross Entropyでは、25秒以上を指定するとナレーション台本も少し噛み砕いた版になります。
 
+## LLMで動的に教材企画を生成
+
+OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。
+
+```bash
+export OPENAI_API_KEY="..."
+export OPENAI_MODEL="gpt-4.1-mini"
+```
+
+`--no-llm` を外すと、入力数式から `formula_analysis.json`、`explanation_plan.json`、`animation_brief.md`、`narration.md` をLLMで生成します。
+
+```bash
+math-anim plan \
+  --formula "L = - \\sum_i y_i \\log(\\hat{y}_i)" \
+  --goal "初学者にクロスエントロピーを噛み砕いて説明したい" \
+  --audience high_school_math \
+  --domain-hint machine_learning \
+  --duration 60 \
+  --output-dir outputs/llm_cross_entropy_plan
+```
+
+`--render --voiceover` を付けると、対応済みテンプレートに変換できる場合だけ動画と音声付き動画まで生成します。
+
 ## テスト
 
 ```bash
@@ -140,4 +163,5 @@ python -m pytest
 - Manimテンプレートは Gradient Descent の3D曲面と Cross Entropy のPenalty Curve に対応
 - Attentionは企画とStoryboard生成まで対応しており、動画テンプレートは未実装
 - 音声合成はmacOSの `say` コマンドを使う簡易版で、シーン単位の厳密な同期は未実装
+- LLMモードでも動画生成は既存Manimテンプレートに合う数式・パターンのみ対応
 - Storyboard内の関数文字列はPythonコードとして評価しません

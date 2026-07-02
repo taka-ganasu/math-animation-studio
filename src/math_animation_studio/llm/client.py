@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+import json
+from typing import TypeVar
+
+from pydantic import BaseModel, ValidationError
+
 from math_animation_studio.config import Settings, load_settings
 
 
 class LLMUnavailableError(RuntimeError):
     pass
+
+
+SchemaModelT = TypeVar("SchemaModelT", bound=BaseModel)
 
 
 class LLMClient:
@@ -40,3 +48,108 @@ class LLMClient:
         if not content:
             raise LLMUnavailableError("LLM returned an empty response.")
         return content
+
+    def complete_model(
+        self,
+        *,
+        prompt: str,
+        response_model: type[SchemaModelT],
+        schema_name: str,
+    ) -> SchemaModelT:
+        raw = self._complete_json_schema(
+            prompt=prompt,
+            response_model=response_model,
+            schema_name=schema_name,
+        )
+        try:
+            return response_model.model_validate_json(raw)
+        except ValidationError as exc:
+            raise LLMUnavailableError(
+                f"LLM output did not match {response_model.__name__}: {exc}"
+            ) from exc
+
+    def _complete_json_schema(
+        self,
+        *,
+        prompt: str,
+        response_model: type[BaseModel],
+        schema_name: str,
+    ) -> str:
+        if not self.settings.openai_api_key:
+            raise LLMUnavailableError(
+                "OPENAI_API_KEY is not set. Use --no-llm for the bundled sample mode."
+            )
+
+        try:
+            from openai import BadRequestError, OpenAI, OpenAIError
+        except ImportError as exc:
+            raise LLMUnavailableError(
+                "openai package is not installed. Install dependencies or use --no-llm."
+            ) from exc
+
+        client = OpenAI(api_key=self.settings.openai_api_key)
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You output JSON only. Do not include Markdown fences. "
+                    "Never output Python code, eval, or exec."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            response = client.chat.completions.create(
+                model=self.settings.openai_model,
+                messages=messages,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": schema_name,
+                        "schema": response_model.model_json_schema(),
+                        "strict": False,
+                    },
+                },
+            )
+        except BadRequestError:
+            try:
+                response = client.chat.completions.create(
+                    model=self.settings.openai_model,
+                    messages=messages
+                    + [
+                        {
+                            "role": "user",
+                            "content": (
+                                "If the schema above is too complex for structured outputs, "
+                                "still return one JSON object matching it."
+                            ),
+                        }
+                    ],
+                    response_format={"type": "json_object"},
+                )
+            except OpenAIError as exc:
+                raise LLMUnavailableError(f"OpenAI API request failed: {exc}") from exc
+        except OpenAIError as exc:
+            raise LLMUnavailableError(f"OpenAI API request failed: {exc}") from exc
+
+        content = response.choices[0].message.content
+        if not content:
+            raise LLMUnavailableError("LLM returned an empty response.")
+        return _extract_json(content)
+
+
+def _extract_json(content: str) -> str:
+    text = content.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+
+    try:
+        json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise LLMUnavailableError(f"LLM returned invalid JSON: {exc}") from exc
+    return text

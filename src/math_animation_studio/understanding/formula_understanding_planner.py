@@ -15,6 +15,7 @@ from .brief_writer import AnimationBriefWriter
 from .concept_classifier import ConceptClassifier
 from .explanation_plan_generator import ExplanationPlanGenerator
 from .formula_analyzer import FormulaAnalyzer
+from .llm_formula_planner import LLMFormulaUnderstandingPlanner
 from .pattern_selector import AnimationPatternSelector
 from .prerequisite_mapper import PrerequisiteMapper
 from .sample_plans import detect_sample_key
@@ -56,21 +57,34 @@ class FormulaUnderstandingPlanner:
         audience: str,
         domain_hint: str | None = None,
         to_storyboard: bool = True,
+        target_duration_seconds: int = 30,
     ) -> PlanArtifacts:
-        if not self.no_llm:
-            raise FormulaUnderstandingPlannerError(
-                "LLM-backed plan mode is not implemented yet. Use --no-llm."
+        if self.no_llm:
+            key = detect_sample_key(" ".join(part for part in [formula, goal or "", domain_hint or ""] if part))
+            formula_analysis = self.formula_analyzer.analyze(formula=formula, sample_key=key)
+            classification = self.concept_classifier.classify(sample_key=key)
+            prerequisite_map = self.prerequisite_mapper.map(sample_key=key)
+            explanation_plan = self.explanation_plan_generator.generate(
+                formula=formula,
+                sample_key=key,
+                audience=audience,
             )
+            llm_used = False
+        else:
+            llm_plan = LLMFormulaUnderstandingPlanner().plan(
+                formula=formula,
+                goal=goal,
+                audience=audience,
+                domain_hint=domain_hint,
+                animation_pattern_ids=list(self.pattern_selector.patterns.keys()),
+                target_duration_seconds=target_duration_seconds,
+            )
+            formula_analysis = llm_plan.formula_analysis
+            classification = llm_plan.concept_classification
+            prerequisite_map = llm_plan.prerequisite_map
+            explanation_plan = llm_plan.explanation_plan
+            llm_used = True
 
-        key = detect_sample_key(" ".join(part for part in [formula, goal or "", domain_hint or ""] if part))
-        formula_analysis = self.formula_analyzer.analyze(formula=formula, sample_key=key)
-        classification = self.concept_classifier.classify(sample_key=key)
-        prerequisite_map = self.prerequisite_mapper.map(sample_key=key)
-        explanation_plan = self.explanation_plan_generator.generate(
-            formula=formula,
-            sample_key=key,
-            audience=audience,
-        )
         selected_pattern = self.pattern_selector.select(
             classification.recommended_animation_family,
             keywords=[classification.primary_concept, classification.primary_domain],
@@ -85,8 +99,8 @@ class FormulaUnderstandingPlanner:
         storyboard = (
             self.storyboard_adapter.convert(
                 formula_analysis=formula_analysis,
-                explanation_plan=explanation_plan,
-            )
+            explanation_plan=explanation_plan,
+        )
             if to_storyboard
             else None
         )
@@ -99,5 +113,5 @@ class FormulaUnderstandingPlanner:
             selected_pattern=selected_pattern,
             animation_brief=animation_brief,
             storyboard=storyboard,
-            llm_used=False,
+            llm_used=llm_used,
         )

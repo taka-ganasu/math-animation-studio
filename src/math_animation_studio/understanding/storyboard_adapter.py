@@ -131,7 +131,7 @@ class StoryboardAdapter:
         ]
 
         return Storyboard(
-            concept=explanation_plan.target_concept,
+            concept=_render_concept(explanation_plan),
             formula=explanation_plan.formula,
             one_sentence_summary=explanation_plan.one_sentence_summary,
             audience=explanation_plan.audience,
@@ -148,3 +148,11 @@ class StoryboardAdapter:
             scenes=scenes,
             misconceptions=explanation_plan.misconceptions,
         )
+
+
+def _render_concept(explanation_plan: ExplanationPlan) -> str:
+    if explanation_plan.selected_animation_pattern_id == "penalty_curve":
+        return "cross_entropy"
+    if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface":
+        return "gradient_descent"
+    return explanation_plan.target_concept

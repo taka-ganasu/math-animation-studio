@@ -43,8 +43,9 @@ class VoiceoverScriptWriter:
         storyboard: Storyboard,
         *,
         target_duration_seconds: int | None = None,
+        script: str | None = None,
     ) -> str:
-        script = self.write(storyboard, target_duration_seconds=target_duration_seconds)
+        script = script or self.write(storyboard, target_duration_seconds=target_duration_seconds)
         rows = [
             "# Narration",
             "",
