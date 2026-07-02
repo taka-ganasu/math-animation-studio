@@ -79,6 +79,36 @@ class StoryboardAdapter:
                         params={"steps": 30},
                     ),
                 )
+            if explanation_plan.selected_animation_pattern_id == "penalty_curve" and index == 2:
+                visual_objects.insert(
+                    0,
+                    VisualObject(
+                        type="axis",
+                        name="probability_bars",
+                        description="各クラスの予測確率を棒として表示する",
+                        params={"correct_index": 0},
+                    ),
+                )
+            if explanation_plan.selected_animation_pattern_id == "penalty_curve" and index == 4:
+                visual_objects.insert(
+                    0,
+                    VisualObject(
+                        type="curve",
+                        name="negative_log_curve",
+                        description="正解確率pに対する-log(p)の罰を表示する",
+                        params={"x_range": [0.05, 1.0], "y_range": [0.0, 3.2]},
+                    ),
+                )
+            if explanation_plan.selected_animation_pattern_id == "penalty_curve" and index == 5:
+                visual_objects.insert(
+                    0,
+                    VisualObject(
+                        type="point",
+                        name="good_bad_probability_points",
+                        description="良い予測と悪い予測を-log(p)曲線上で比較する",
+                        params={"good_probability": 0.9, "bad_probability": 0.1},
+                    ),
+                )
 
             scenes.append(
                 SceneSpec(

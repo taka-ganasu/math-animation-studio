@@ -106,7 +106,7 @@ def generate(
             typer.echo(f"Manim scene: {manager.manim_scene_path}")
             return
 
-        renderer = ManimRenderer()
+        renderer = ManimRenderer(scene_name=generator.scene_name_for(storyboard))
         result = renderer.render(
             scene_path=manager.manim_scene_path,
             output_dir=output_dir,
@@ -225,7 +225,7 @@ def plan(
             generator = ManimGenerator()
             generator.generate(artifacts.storyboard, artifact_manager.manim_scene_path)
             validate_python_syntax(artifact_manager.manim_scene_path)
-            renderer = ManimRenderer()
+            renderer = ManimRenderer(scene_name=generator.scene_name_for(artifacts.storyboard))
             renderer.render(
                 scene_path=artifact_manager.manim_scene_path,
                 output_dir=output_dir,

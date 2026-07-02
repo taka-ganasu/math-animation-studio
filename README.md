@@ -91,6 +91,19 @@ math-anim plan \
 
 `--no-llm` の固定サンプルは、Cross Entropy、Gradient Descent、Attentionに対応しています。`storyboard.json` は既存のStoryboard schemaでparseできる形式です。
 
+Cross Entropy と Gradient Descent は、`--render` を付けるとManim動画まで生成できます。
+
+```bash
+math-anim plan \
+  --formula "L = - \\sum_i y_i \\log(\\hat{y}_i)" \
+  --goal "クロスエントロピー損失を直感的に理解したい" \
+  --output-dir outputs/cross_entropy_plan \
+  --no-llm \
+  --render
+```
+
+成功すると `outputs/cross_entropy_plan/video.mp4` が作成されます。
+
 ## テスト
 
 ```bash
@@ -101,6 +114,7 @@ python -m pytest
 
 - `generate --no-llm` は `concept=gradient_descent` の固定サンプルのみ対応
 - `plan --no-llm` は Cross Entropy、Gradient Descent、Attention の固定サンプルに対応
-- Manimテンプレートは勾配降下法の3D曲面プリセットのみ対応しており、MVP2のCross EntropyやAttentionは企画とStoryboard生成までを主対象にしています
+- Manimテンプレートは Gradient Descent の3D曲面と Cross Entropy のPenalty Curve に対応
+- Attentionは企画とStoryboard生成まで対応しており、動画テンプレートは未実装
 - Storyboard内の関数文字列はPythonコードとして評価しません
 - 自動音声合成は未実装で、ナレーション原稿をMarkdownとして出力します

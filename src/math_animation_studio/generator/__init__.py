@@ -3,6 +3,7 @@ from .manim_generator import (
     GradientDescentParams,
     GeneratorError,
     ManimGenerator,
+    PenaltyCurveParams,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "GradientDescentParams",
     "GeneratorError",
     "ManimGenerator",
+    "PenaltyCurveParams",
 ]

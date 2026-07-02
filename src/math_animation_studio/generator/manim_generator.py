@@ -39,24 +39,74 @@ class GradientDescentParams(BaseModel):
     narration_lines: list[str] = Field(default_factory=list)
 
 
+class PenaltyCurveParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = "Cross Entropy Loss"
+    formula_latex: str = r"L = - \sum_i y_i \log(\hat{y}_i)"
+    class_labels: tuple[str, str, str] = ("猫", "犬", "鳥")
+    correct_index: int = Field(default=0, ge=0, le=2)
+    good_probability: float = Field(default=0.9, gt=0.0, lt=1.0)
+    bad_probability: float = Field(default=0.1, gt=0.0, lt=1.0)
+    narration_lines: list[str] = Field(default_factory=list)
+
+
 class ManimGenerator:
     def __init__(self, *, template: str = "auto") -> None:
         self.template = template
 
-    def generate(self, storyboard: Storyboard, output_path: Path) -> GradientDescentParams:
-        if storyboard.concept.strip().lower().replace("-", "_") != "gradient_descent":
-            raise GeneratorError("MVP supports only concept=gradient_descent.")
-        if self.template not in {"auto", "gradient_descent_3d"}:
-            raise GeneratorError(
-                f"Unsupported template '{self.template}'. Use 'auto' or 'gradient_descent_3d'."
-            )
+    def generate(
+        self,
+        storyboard: Storyboard,
+        output_path: Path,
+    ) -> GradientDescentParams | PenaltyCurveParams:
+        template_name = self._select_template(storyboard)
+        if template_name == "gradient_descent_3d":
+            params = self._gradient_descent_params_from_storyboard(storyboard)
+            template = self._environment().get_template("gradient_descent_3d.py.j2")
+        else:
+            params = self._penalty_curve_params_from_storyboard(storyboard)
+            template = self._environment().get_template("penalty_curve.py.j2")
 
-        params = self._params_from_storyboard(storyboard)
-        template = self._environment().get_template("gradient_descent_3d.py.j2")
         rendered = template.render(params=params)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(rendered, encoding="utf-8")
         return params
+
+    def scene_name_for(self, storyboard: Storyboard) -> str:
+        template_name = self._select_template(storyboard)
+        if template_name == "gradient_descent_3d":
+            return "GradientDescent3DScene"
+        return "CrossEntropyPenaltyScene"
+
+    def _select_template(self, storyboard: Storyboard) -> str:
+        supported_templates = {"auto", "gradient_descent_3d", "penalty_curve"}
+        if self.template not in supported_templates:
+            raise GeneratorError(
+                f"Unsupported template '{self.template}'. "
+                "Use 'auto', 'gradient_descent_3d', or 'penalty_curve'."
+            )
+
+        concept = _normalized_concept(storyboard.concept)
+        if self.template == "auto":
+            if concept == "gradient_descent":
+                return "gradient_descent_3d"
+            if concept == "cross_entropy":
+                return "penalty_curve"
+            raise GeneratorError(
+                "MVP render templates support concept=gradient_descent or concept=cross_entropy."
+            )
+
+        expected_concept = {
+            "gradient_descent_3d": "gradient_descent",
+            "penalty_curve": "cross_entropy",
+        }[self.template]
+        if concept != expected_concept:
+            raise GeneratorError(
+                f"Template '{self.template}' requires concept={expected_concept}, "
+                f"but storyboard concept is {storyboard.concept}."
+            )
+        return self.template
 
     def _environment(self) -> Environment:
         template_dir = files("math_animation_studio.generator.templates")
@@ -71,7 +121,7 @@ class ManimGenerator:
         env.filters["py_repr"] = repr
         return env
 
-    def _params_from_storyboard(self, storyboard: Storyboard) -> GradientDescentParams:
+    def _gradient_descent_params_from_storyboard(self, storyboard: Storyboard) -> GradientDescentParams:
         surface = _first_visual(storyboard, "surface")
         point = _first_visual(storyboard, "point")
         vector = _first_visual(storyboard, "vector")
@@ -108,10 +158,30 @@ class ManimGenerator:
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
+    def _penalty_curve_params_from_storyboard(self, storyboard: Storyboard) -> PenaltyCurveParams:
+        values = storyboard.examples[0].values if storyboard.examples else {}
+        return PenaltyCurveParams(
+            title=_title_from_storyboard(storyboard),
+            formula_latex=storyboard.formula or r"L = - \sum_i y_i \log(\hat{y}_i)",
+            good_probability=float(
+                values.get("cat_probability_good", values.get("good_probability", 0.9))
+            ),
+            bad_probability=float(
+                values.get("cat_probability_bad", values.get("bad_probability", 0.1))
+            ),
+            narration_lines=[scene.narration for scene in storyboard.scenes],
+        )
+
+
+def _normalized_concept(concept: str) -> str:
+    return concept.strip().lower().replace("-", "_")
+
 
 def _title_from_storyboard(storyboard: Storyboard) -> str:
     if storyboard.concept == "gradient_descent":
         return "Gradient Descent"
+    if storyboard.concept == "cross_entropy":
+        return "Cross Entropy Loss"
     return storyboard.concept.replace("_", " ").title()
 
 
