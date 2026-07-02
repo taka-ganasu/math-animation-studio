@@ -23,6 +23,7 @@ GOOD_CHART_TITLE = {{ params.good_chart_title | py_repr }}
 BAD_CHART_TITLE = {{ params.bad_chart_title | py_repr }}
 SCENE_COMPONENTS = {{ params.scene_components | py_repr }}
 CAPTION_LINES = {{ params.caption_lines | py_repr }}
+FORMULA_FOCUS_ITEMS = {{ params.formula_focus_items | py_repr }}
 NARRATION_LINES = {{ params.narration_lines | py_repr }}
 TIMING_SCALE = {{ params.timing_scale | py_repr }}
 
@@ -56,6 +57,61 @@ class CrossEntropyPenaltyScene(Scene):
     def one_hot_latex(self) -> str:
         values = ["1" if index == CORRECT_INDEX else "0" for index in range(len(CLASS_LABELS))]
         return "y = [" + ", ".join(values) + "]"
+
+    def decomposed_formula(self) -> MathTex:
+        return MathTex(
+            "L",
+            "=",
+            "-",
+            r"\sum_i",
+            "y_i",
+            r"\log",
+            "(",
+            r"\hat{y}_i",
+            ")",
+            font_size=42,
+        )
+
+    def formula_focus_target(self, parts: MathTex, item: dict) -> VGroup:
+        start = int(item.get("part_start", item.get("part_index", 0)))
+        end = int(item.get("part_end", start))
+        start = max(0, min(start, len(parts) - 1))
+        end = max(start, min(end, len(parts) - 1))
+        return VGroup(*[parts[index] for index in range(start, end + 1)])
+
+    def formula_focus_card(self, item: dict, target_copy: Mobject) -> VGroup:
+        label = Text(str(item.get("label", "")), font_size=28, color=YELLOW)
+        description = Text(str(item.get("description", "")), font_size=21)
+        if description.width > 9.6:
+            description.scale(9.6 / description.width)
+        card = VGroup(label, description).arrange(DOWN, buff=0.1)
+        card.next_to(target_copy, DOWN, buff=0.2)
+        return card
+
+    def play_formula_focus(self, source_formula: Mobject, scenario: Mobject) -> VGroup:
+        parts = self.decomposed_formula()
+        if parts.width > 8.8:
+            parts.scale(8.8 / parts.width)
+        parts.next_to(scenario, DOWN, buff=0.48)
+        self.play(TransformFromCopy(source_formula, parts), run_time=rt(0.85))
+        for item in FORMULA_FOCUS_ITEMS:
+            target = self.formula_focus_target(parts, item)
+            highlight = SurroundingRectangle(target, color=YELLOW, buff=0.08)
+            target_copy = target.copy()
+            target_copy.scale(1.85)
+            target_copy.next_to(parts, DOWN, buff=0.45)
+            if target_copy.width > 5.8:
+                target_copy.scale(5.8 / target_copy.width)
+            card = self.formula_focus_card(item, target_copy)
+            self.play(
+                FadeIn(highlight),
+                TransformFromCopy(target, target_copy),
+                FadeIn(card),
+                run_time=rt(0.55),
+            )
+            self.wait(rt(0.3))
+            self.play(FadeOut(highlight), FadeOut(target_copy), FadeOut(card), run_time=rt(0.28))
+        return parts
 
     def pipeline_node(self, title: str, body: Mobject | str, color: ManimColor) -> VGroup:
         box = RoundedRectangle(
@@ -233,10 +289,16 @@ class CrossEntropyPenaltyScene(Scene):
         self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=rt(1.5))
         self.play(FadeIn(scenario), run_time=rt(0.5))
 
+        focus_parts = VGroup()
+        if self.has_component("formula_parts_focus"):
+            focus_parts = self.play_formula_focus(formula, scenario)
+
         pipeline = VGroup()
         if self.has_component("model_pipeline"):
             pipeline = self.model_pipeline()
             pipeline.next_to(scenario, DOWN, buff=0.42)
+            if focus_parts:
+                self.play(FadeOut(focus_parts), run_time=rt(0.35))
             self.play(FadeIn(pipeline), run_time=rt(1.2))
             next_caption = self.caption_at(1)
             self.play(ReplacementTransform(caption, next_caption), run_time=rt(0.6))

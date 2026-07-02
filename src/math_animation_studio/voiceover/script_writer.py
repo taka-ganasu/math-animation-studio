@@ -81,6 +81,21 @@ def _storyboard_driven_script(
     sentences = [intro]
     if storyboard.examples:
         sentences.append(f"例は、{storyboard.examples[0].title}です。")
+    if storyboard.concept.strip().lower().replace("-", "_") == "cross_entropy":
+        sentences.extend(
+            [
+                "まず式のy_i。正解クラスだけ一になるスイッチです。",
+                "次にワイハットi。モデルがクラスiに置いた予測確率です。",
+                "logワイハットiは、小さい確率を大きな損失として見せます。",
+                "シグマは全クラスを見る記号です。ただしone-hotなので正解クラスだけが残ります。",
+                "マイナス符号は、負になりやすいlogを正の罰に変えます。",
+                "次に、モデルの出力をlogitsからsoftmaxで確率に変えます。",
+                "one-hotが正解クラスの確率pだけを選びます。",
+                "最後にpをマイナスlogへ通すと、pが小さいほど罰が大きくなります。",
+                _shorten(storyboard.one_sentence_summary, 64),
+            ]
+        )
+        return "".join(sentences)
     for scene in storyboard.scenes[:max_scene_count]:
         sentences.append(_shorten(scene.narration, 72))
     sentences.append(_shorten(storyboard.one_sentence_summary, 72))

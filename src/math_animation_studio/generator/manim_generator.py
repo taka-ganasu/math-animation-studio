@@ -45,7 +45,7 @@ class GradientDescentParams(BaseModel):
 class PenaltyCurveParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    base_duration_seconds: float = 18.0
+    base_duration_seconds: float = 26.0
     target_duration_seconds: int = Field(default=30, ge=5, le=180)
     title: str = "Cross Entropy Loss"
     formula_latex: str = r"L = - \sum_i y_i \log(\hat{y}_i)"
@@ -63,6 +63,7 @@ class PenaltyCurveParams(BaseModel):
     bad_chart_title: str = "悪い予測"
     scene_components: tuple[str, ...] = (
         "intro_formula",
+        "formula_parts_focus",
         "model_pipeline",
         "one_hot_vector",
         "softmax_distribution",
@@ -77,6 +78,38 @@ class PenaltyCurveParams(BaseModel):
         "正解クラスの確率が低い予測は、大きく罰されます。",
         "pが0に近いほど、-log(p)は急激に大きくなります。",
         "式の中身は、正解確率を取り出して罰へ変換する操作です。",
+    )
+    formula_focus_items: tuple[dict[str, str | int], ...] = (
+        {
+            "part_start": 4,
+            "part_end": 4,
+            "label": "y_i",
+            "description": "正解クラスだけ1になるone-hotのスイッチです。",
+        },
+        {
+            "part_start": 7,
+            "part_end": 7,
+            "label": "ŷ_i",
+            "description": "モデルがクラスiへ置いた予測確率です。",
+        },
+        {
+            "part_start": 5,
+            "part_end": 8,
+            "label": "log(ŷ_i)",
+            "description": "小さい確率の差を、損失として見えやすくします。",
+        },
+        {
+            "part_start": 3,
+            "part_end": 3,
+            "label": "Σ_i",
+            "description": "全クラスを見る記号ですが、one-hotなので正解クラスだけ残ります。",
+        },
+        {
+            "part_start": 2,
+            "part_end": 2,
+            "label": "-",
+            "description": "log(p)は負になりやすいので、損失を正の罰に変えます。",
+        },
     )
     narration_lines: list[str] = Field(default_factory=list)
 
@@ -231,6 +264,7 @@ class ManimGenerator:
             good_logits=tuple(_logits_from_distribution(good_distribution)),
             bad_logits=tuple(_logits_from_distribution(bad_distribution)),
             caption_lines=_caption_lines_from_storyboard(storyboard, scenario_title),
+            formula_focus_items=_formula_focus_items_from_storyboard(storyboard),
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
@@ -567,6 +601,57 @@ def _caption_lines_from_storyboard(
         lines.append(text)
 
     return tuple(_shorten_text(_caption_display_text(text), 72) for text in lines[:6])
+
+
+def _formula_focus_items_from_storyboard(
+    storyboard: Storyboard,
+) -> tuple[dict[str, str | int], ...]:
+    symbol_text = " ".join(symbol.symbol for symbol in storyboard.symbol_ledger)
+    scene_text = " ".join(scene.title + " " + scene.narration for scene in storyboard.scenes)
+    combined = symbol_text + " " + scene_text
+
+    items: list[dict[str, str | int]] = [
+        {
+            "part_start": 4,
+            "part_end": 4,
+            "label": "y_i",
+            "description": "正解クラスだけ1になるone-hotのスイッチです。",
+        },
+        {
+            "part_start": 7,
+            "part_end": 7,
+            "label": "ŷ_i",
+            "description": "モデルがクラスiへ置いた予測確率です。",
+        },
+    ]
+    if "log" in combined or "対数" in combined or r"\log" in combined:
+        items.append(
+            {
+                "part_start": 5,
+                "part_end": 8,
+                "label": "log(ŷ_i)",
+                "description": "小さい確率の差を、損失として見えやすくします。",
+            }
+        )
+    if "sum" in combined or "総和" in combined or r"\sum" in combined:
+        items.append(
+            {
+                "part_start": 3,
+                "part_end": 3,
+                "label": "Σ_i",
+                "description": "全クラスを見る記号ですが、one-hotなので正解クラスだけ残ります。",
+            }
+        )
+    if "-" in (storyboard.formula or "") or "マイナス" in combined:
+        items.append(
+            {
+                "part_start": 2,
+                "part_end": 2,
+                "label": "-",
+                "description": "log(p)は負になりやすいので、損失を正の罰に変えます。",
+            }
+        )
+    return tuple(items[:5])
 
 
 def _caption_display_text(text: str) -> str:

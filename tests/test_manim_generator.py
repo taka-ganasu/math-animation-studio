@@ -93,6 +93,10 @@ def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> N
     assert "リンゴへの予測確率だけ" in rendered
     assert "SCENE_COMPONENTS" in rendered
     assert "model_pipeline" in rendered
+    assert "formula_parts_focus" in rendered
+    assert "FORMULA_FOCUS_ITEMS" in rendered
+    assert "decomposed_formula" in rendered
+    assert "正解クラスだけ1になるone-hot" in rendered
     assert "GOOD_DISTRIBUTION = (0.1, 0.9)" in rendered
     assert "BAD_DISTRIBUTION = (0.8, 0.2)" in rendered
     validate_python_syntax(output_path)
