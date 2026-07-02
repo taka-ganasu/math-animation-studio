@@ -47,5 +47,12 @@ def test_plan_no_llm_cross_entropy_outputs_artifacts(tmp_path) -> None:
     storyboard = Storyboard.model_validate_json(
         (tmp_path / "storyboard.json").read_text(encoding="utf-8")
     )
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
     assert storyboard.concept == "cross_entropy"
-    assert "一言でいうと" in (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+    assert "一言でいうと" in brief
+    assert "$$\nL = - \\sum_i y_i \\log(\\hat{y}_i)\n$$" in brief
+    assert "## 記号と操作" in brief
+    assert "$\\log(\\hat{y}_i)$" in brief
+    assert "注目する式: $y_i$" in brief
+    assert "\\[" not in brief

@@ -8,6 +8,28 @@ from math_animation_studio.schema import (
 )
 
 
+def _strip_math_delimiters(value: str) -> str:
+    text = value.strip()
+    delimiter_pairs = [
+        ("$$", "$$"),
+        ("$", "$"),
+        (r"\[", r"\]"),
+        (r"\(", r"\)"),
+    ]
+    for left, right in delimiter_pairs:
+        if text.startswith(left) and text.endswith(right) and len(text) > len(left) + len(right):
+            return text[len(left) : -len(right)].strip()
+    return text
+
+
+def _inline_math(value: str) -> str:
+    return f"${_strip_math_delimiters(value)}$"
+
+
+def _block_math(value: str) -> str:
+    return f"$$\n{_strip_math_delimiters(value)}\n$$"
+
+
 class AnimationBriefWriter:
     def write(
         self,
@@ -40,10 +62,37 @@ class AnimationBriefWriter:
                 "",
                 "対象の数式:",
                 "",
-                f"\\[{explanation_plan.formula}\\]",
+                _block_math(explanation_plan.formula),
                 "",
                 formula_analysis.short_description,
                 "",
+                "## 記号と操作",
+                "",
+            ]
+        )
+
+        if formula_analysis.symbols:
+            rows.append("### 記号")
+            rows.append("")
+            for symbol in formula_analysis.symbols:
+                rows.append(f"- {_inline_math(symbol.symbol)}: {symbol.meaning}")
+                if symbol.intuition:
+                    rows.append(f"  - 直感: {symbol.intuition}")
+            rows.append("")
+
+        if formula_analysis.operations:
+            rows.append("### 操作")
+            rows.append("")
+            for operation in formula_analysis.operations:
+                rows.append(f"- {_inline_math(operation.operation)}: {operation.meaning}")
+                if operation.intuition:
+                    rows.append(f"  - 直感: {operation.intuition}")
+                if operation.visual_hint:
+                    rows.append(f"  - 視覚化: {operation.visual_hint}")
+            rows.append("")
+
+        rows.extend(
+            [
                 "## 使う題材",
                 "",
             ]
@@ -75,7 +124,7 @@ class AnimationBriefWriter:
                 ]
             )
             if step.formula_focus:
-                rows.append(f"   - 注目する式: `{step.formula_focus}`")
+                rows.append(f"   - 注目する式: {_inline_math(step.formula_focus)}")
 
         rows.extend(
             [
