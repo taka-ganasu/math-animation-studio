@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "math-animation-studio"
+version = "0.1.0"
+description = "CLI tool for generating Manim math intuition videos from storyboard JSON."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "jinja2>=3.1",
+  "numpy>=1.26",
+  "openai>=1.0",
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+  "sympy>=1.12",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+render = [
+  "manim>=0.18",
+]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+math-anim = "math_animation_studio.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+math_animation_studio = [
+  "samples/*.json",
+  "generator/templates/*.j2",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

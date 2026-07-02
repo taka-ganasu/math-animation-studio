@@ -1,0 +1,168 @@
+{
+  "concept": "gradient_descent",
+  "formula": "\\theta_{t+1} = \\theta_t - \\eta \\nabla L(\\theta_t)",
+  "one_sentence_summary": "勾配降下法は、損失が最も増える方向の逆向きに少しずつ進むことで、損失の小さい場所を探す方法である。",
+  "audience": "engineer_beginner_math",
+  "prerequisites": [
+    "関数",
+    "微分",
+    "ベクトルの基本"
+  ],
+  "symbol_ledger": [
+    {
+      "symbol": "\\theta_t",
+      "meaning": "時刻tにおける現在のパラメータ",
+      "intuition": "今立っている場所"
+    },
+    {
+      "symbol": "\\eta",
+      "meaning": "学習率",
+      "intuition": "一歩の大きさ"
+    },
+    {
+      "symbol": "\\nabla L(\\theta_t)",
+      "meaning": "損失が最も増える方向",
+      "intuition": "一番急な上り坂の方向"
+    },
+    {
+      "symbol": "L(\\theta)",
+      "meaning": "パラメータ\\thetaに対する損失",
+      "intuition": "地形の高さ"
+    }
+  ],
+  "examples": [
+    {
+      "title": "山の斜面を下る例",
+      "description": "損失関数を山や谷の地形として考え、点が低い場所へ移動する様子を見る。",
+      "values": {
+        "initial_x": 2.5,
+        "initial_y": 2.0,
+        "learning_rate": 0.15,
+        "steps": 30
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene_01",
+      "title": "損失関数を地形として見る",
+      "learning_goal": "損失関数を高さのある曲面として捉える",
+      "narration": "まず、損失関数を地形として見てみます。高さが高いほど損失が大きく、低いほど損失が小さいと考えます。",
+      "visual_objects": [
+        {
+          "type": "axis",
+          "name": "parameter_axes",
+          "description": "2つのパラメータと損失を表す3D座標軸",
+          "params": {
+            "x_label": "theta_1",
+            "y_label": "theta_2",
+            "z_label": "L"
+          }
+        },
+        {
+          "type": "surface",
+          "name": "loss_surface",
+          "description": "2変数の損失関数を3D曲面として描画する",
+          "params": {
+            "function_preset": "quadratic_ripple",
+            "function": "0.35*x**2 + y**2 + 0.25*x*y + 0.8*sin(1.5*x)*cos(y)",
+            "x_range": [-3, 3],
+            "y_range": [-3, 3]
+          }
+        }
+      ],
+      "duration_seconds": 10
+    },
+    {
+      "id": "scene_02",
+      "title": "現在地を点として置く",
+      "learning_goal": "パラメータの現在値を曲面上の点として見る",
+      "narration": "現在のパラメータは、曲面上の一点です。この点の高さが、今の損失を表します。",
+      "visual_objects": [
+        {
+          "type": "point",
+          "name": "current_position",
+          "description": "初期パラメータ位置を赤い点で示す",
+          "params": {
+            "x": 2.5,
+            "y": 2.0
+          }
+        }
+      ],
+      "duration_seconds": 8
+    },
+    {
+      "id": "scene_03",
+      "title": "勾配は一番急な上り方向",
+      "learning_goal": "勾配ベクトルの向きを理解する",
+      "narration": "勾配は損失が最も増える方向を指します。下りたいなら、その逆向きに進みます。",
+      "visual_objects": [
+        {
+          "type": "vector",
+          "name": "negative_gradient",
+          "description": "負の勾配方向を黄色い矢印で示す",
+          "params": {
+            "learning_rate": 0.15
+          }
+        }
+      ],
+      "duration_seconds": 10
+    },
+    {
+      "id": "scene_04",
+      "title": "少しずつ更新する",
+      "learning_goal": "学習率が一歩の大きさであることを理解する",
+      "narration": "学習率は一歩の大きさです。大きすぎると飛び越え、小さすぎると進みが遅くなります。",
+      "visual_objects": [
+        {
+          "type": "text",
+          "name": "learning_rate_note",
+          "description": "学習率の直感を短い説明として表示する",
+          "params": {
+            "text": "learning rate = step size"
+          }
+        }
+      ],
+      "duration_seconds": 10
+    },
+    {
+      "id": "scene_05",
+      "title": "軌跡として見る",
+      "learning_goal": "更新を繰り返すと谷に近づくことを理解する",
+      "narration": "この更新を繰り返すと、点は損失の低い谷へ向かって移動していきます。",
+      "visual_objects": [
+        {
+          "type": "curve",
+          "name": "descent_path",
+          "description": "更新で移動した点の軌跡を黄色い線で示す",
+          "params": {
+            "steps": 30
+          }
+        }
+      ],
+      "duration_seconds": 12
+    },
+    {
+      "id": "scene_06",
+      "title": "最後に数式へ戻る",
+      "learning_goal": "更新式の各項目を視覚的な意味と結びつける",
+      "narration": "更新式は、今いる場所から、勾配の逆方向へ、学習率の分だけ進むことを表しています。",
+      "visual_objects": [
+        {
+          "type": "formula",
+          "name": "update_formula",
+          "description": "勾配降下法の更新式を表示する",
+          "params": {
+            "latex": "\\theta_{t+1} = \\theta_t - \\eta \\nabla L(\\theta_t)"
+          }
+        }
+      ],
+      "duration_seconds": 10
+    }
+  ],
+  "misconceptions": [
+    "勾配は下る方向ではなく、上る方向を示す",
+    "学習率が大きいほど常に早く収束するわけではない",
+    "一度の更新で最小値に到達する必要はない"
+  ]
+}
