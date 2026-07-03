@@ -16,6 +16,8 @@ from math_animation_studio.timing import (
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     segment_duration_map,
+    segment_metadata_map,
+    TimelineSegment,
 )
 
 
@@ -49,6 +51,8 @@ class GradientDescentParams(BaseModel):
     y_range: tuple[float, float] = (-3.0, 3.0)
     formula_latex: str = r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)"
     segment_durations: dict[str, float] = Field(default_factory=dict)
+    segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
     narration_lines: list[str] = Field(default_factory=list)
 
 
@@ -129,6 +133,10 @@ class PenaltyCurveParams(BaseModel):
     segment_durations: dict[str, float] = Field(
         default_factory=lambda: segment_duration_map(cross_entropy_timeline_segments(30))
     )
+    segment_metadata: dict[str, dict[str, str]] = Field(
+        default_factory=lambda: segment_metadata_map(cross_entropy_timeline_segments(30))
+    )
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
     narration_lines: list[str] = Field(default_factory=list)
 
     @property
@@ -235,6 +243,10 @@ class ManimGenerator:
         values = storyboard.examples[0].values if storyboard.examples else {}
         x_range = _range_tuple(surface.params.get("x_range"), (-3.0, 3.0))
         y_range = _range_tuple(surface.params.get("y_range"), (-3.0, 3.0))
+        timeline = _gradient_timeline_segments(
+            visualization_style,
+            self.target_duration_seconds,
+        )
 
         return GradientDescentParams(
             title=_title_from_storyboard(storyboard),
@@ -267,10 +279,9 @@ class ManimGenerator:
             y_range=y_range,
             formula_latex=storyboard.formula
             or r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
-            segment_durations=_gradient_segment_durations(
-                visualization_style,
-                self.target_duration_seconds,
-            ),
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
@@ -298,6 +309,11 @@ class ManimGenerator:
         )
         target_duration_seconds = self.target_duration_seconds or 13
 
+        timeline = cross_entropy_timeline_segments(
+            target_duration_seconds,
+            active_focus_ids=active_focus_ids,
+        )
+
         return PenaltyCurveParams(
             target_duration_seconds=target_duration_seconds,
             title=_title_from_storyboard(storyboard),
@@ -314,12 +330,9 @@ class ManimGenerator:
             bad_logits=tuple(_logits_from_distribution(bad_distribution)),
             caption_lines=_caption_lines_from_storyboard(storyboard, scenario_title),
             formula_focus_items=focus_items,
-            segment_durations=segment_duration_map(
-                cross_entropy_timeline_segments(
-                    target_duration_seconds,
-                    active_focus_ids=active_focus_ids,
-                )
-            ),
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
@@ -328,19 +341,34 @@ def _normalized_concept(concept: str) -> str:
     return concept.strip().lower().replace("-", "_")
 
 
-def _gradient_segment_durations(
+def _gradient_timeline_segments(
     visualization_style: str,
     target_duration_seconds: int | None,
-) -> dict[str, float]:
+) -> tuple[TimelineSegment, ...]:
     if visualization_style == "double_well_2d":
-        return segment_duration_map(
-            gradient_double_well_timeline_segments(target_duration_seconds or 52)
-        )
+        return gradient_double_well_timeline_segments(target_duration_seconds or 52)
     if visualization_style == "double_well_1d":
-        return segment_duration_map(
-            gradient_double_well_1d_timeline_segments(target_duration_seconds or 50)
-        )
-    return {}
+        return gradient_double_well_1d_timeline_segments(target_duration_seconds or 50)
+    return ()
+
+
+def _template_components_from_storyboard(storyboard: Storyboard) -> tuple[dict[str, str], ...]:
+    components: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for scene in storyboard.scenes:
+        for component in scene.components:
+            if component.id in seen:
+                continue
+            seen.add(component.id)
+            item = {
+                "id": component.id,
+                "kind": component.kind,
+                "description": component.description,
+            }
+            if component.label:
+                item["label"] = component.label
+            components.append(item)
+    return tuple(components)
 
 
 def _title_from_storyboard(storyboard: Storyboard) -> str:

@@ -5,6 +5,7 @@ from typing import Sequence
 
 from math_animation_studio.schema import Storyboard
 from math_animation_studio.timing import (
+    TimelineSegment,
     cross_entropy_timeline_segments,
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
@@ -16,6 +17,8 @@ class VoiceoverSegment:
     id: str
     text: str
     duration_seconds: float
+    component_id: str | None = None
+    formula_focus: str | None = None
 
 
 class VoiceoverScriptWriter:
@@ -76,18 +79,13 @@ class VoiceoverScriptWriter:
             else:
                 timeline = gradient_double_well_timeline_segments(target_duration_seconds)
                 text_by_id = _gradient_double_well_segment_text()
-            return [
-                VoiceoverSegment(
-                    id=segment.id,
-                    text=text_by_id.get(segment.id, ""),
-                    duration_seconds=segment.duration_seconds,
-                )
-                for segment in timeline
-                if text_by_id.get(segment.id, "").strip()
-            ]
+            return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
-            return []
+            return _segments_from_storyboard_cues(
+                storyboard,
+                target_duration_seconds=target_duration_seconds,
+            )
 
         focus_ids = _cross_entropy_focus_ids_from_storyboard(storyboard)
         timeline = cross_entropy_timeline_segments(
@@ -95,15 +93,7 @@ class VoiceoverScriptWriter:
             active_focus_ids=focus_ids,
         )
         text_by_id = _cross_entropy_segment_text(storyboard)
-        return [
-            VoiceoverSegment(
-                id=segment.id,
-                text=text_by_id.get(segment.id, ""),
-                duration_seconds=segment.duration_seconds,
-            )
-            for segment in timeline
-            if text_by_id.get(segment.id, "").strip()
-        ]
+        return _segments_from_timeline(timeline, text_by_id)
 
     def write_markdown(
         self,
@@ -129,9 +119,16 @@ class VoiceoverScriptWriter:
         if segments is not None:
             rows.extend(["## Voiceover Segments", ""])
             for segment in segments:
+                metadata = []
+                if segment.component_id:
+                    metadata.append(f"- Component: `{segment.component_id}`")
+                if segment.formula_focus:
+                    metadata.append(f"- Focus: ${segment.formula_focus}$")
                 rows.extend(
                     [
                         f"### {segment.id} ({segment.duration_seconds:.2f}s)",
+                        "",
+                        *metadata,
                         "",
                         segment.text,
                         "",
@@ -165,6 +162,86 @@ def _shorten(value: str, max_length: int) -> str:
     if len(text) <= max_length:
         return text
     return text[: max_length - 1].rstrip("、。") + "。"
+
+
+def _segments_from_timeline(
+    timeline: Sequence[TimelineSegment],
+    text_by_id: dict[str, str],
+) -> list[VoiceoverSegment]:
+    return [
+        VoiceoverSegment(
+            id=segment.id,
+            text=text_by_id.get(segment.id, ""),
+            duration_seconds=segment.duration_seconds,
+            component_id=segment.component_id,
+            formula_focus=segment.formula_focus,
+        )
+        for segment in timeline
+        if text_by_id.get(segment.id, "").strip()
+    ]
+
+
+def _segments_from_storyboard_cues(
+    storyboard: Storyboard,
+    *,
+    target_duration_seconds: int | None,
+) -> list[VoiceoverSegment]:
+    segments: list[VoiceoverSegment] = []
+    for scene in storyboard.scenes:
+        if scene.narration_cues:
+            for cue in scene.narration_cues:
+                text = cue.text or scene.narration
+                if not text.strip():
+                    continue
+                segments.append(
+                    VoiceoverSegment(
+                        id=cue.segment_id,
+                        text=text,
+                        duration_seconds=cue.duration_seconds or scene.duration_seconds,
+                        component_id=cue.component_id,
+                        formula_focus=cue.formula_focus,
+                    )
+                )
+            continue
+        if scene.narration.strip():
+            segments.append(
+                VoiceoverSegment(
+                    id=scene.id,
+                    text=scene.narration,
+                    duration_seconds=scene.duration_seconds,
+                )
+            )
+
+    if not segments or target_duration_seconds is None:
+        return segments
+
+    total = sum(segment.duration_seconds for segment in segments)
+    if total <= 0:
+        return segments
+    scale = target_duration_seconds / total
+    scaled = [
+        VoiceoverSegment(
+            id=segment.id,
+            text=segment.text,
+            duration_seconds=round(max(0.05, segment.duration_seconds * scale), 3),
+            component_id=segment.component_id,
+            formula_focus=segment.formula_focus,
+        )
+        for segment in segments
+    ]
+    correction = round(
+        target_duration_seconds - sum(segment.duration_seconds for segment in scaled),
+        3,
+    )
+    last = scaled[-1]
+    scaled[-1] = VoiceoverSegment(
+        id=last.id,
+        text=last.text,
+        duration_seconds=round(max(0.05, last.duration_seconds + correction), 3),
+        component_id=last.component_id,
+        formula_focus=last.formula_focus,
+    )
+    return scaled
 
 
 def _cross_entropy_focus_ids_from_storyboard(storyboard: Storyboard) -> tuple[str, ...]:

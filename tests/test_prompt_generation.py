@@ -19,6 +19,8 @@ def test_prompt_contains_schema_and_constraints() -> None:
 
     assert "JSON schema" in prompt
     assert "Manimコードそのものは生成しない" in prompt
+    assert "LLMの役割" in prompt
+    assert "レンダラー" in prompt
     assert "gradient_descent" in prompt
 
 
@@ -44,6 +46,8 @@ def test_formula_understanding_plan_prompt_contains_schema_and_patterns() -> Non
     assert "penalty_curve" in prompt
     assert "60秒" in prompt
     assert "Pythonコード" in prompt
+    assert "generation_boundary.code_generation_allowedは必ずfalse" in prompt
+    assert "既存preset名" in prompt
 
 
 def test_voiceover_script_prompt_contains_storyboard_and_constraints() -> None:

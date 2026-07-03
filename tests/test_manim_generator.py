@@ -96,8 +96,11 @@ def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> N
     assert "formula_parts_focus" in rendered
     assert "FORMULA_FOCUS_ITEMS" in rendered
     assert "SEGMENT_DURATIONS" in rendered
+    assert "SEGMENT_METADATA" in rendered
+    assert "TEMPLATE_COMPONENTS" in rendered
     assert "'focus_y_i'" in rendered
     assert "'focus_log'" in rendered
+    assert "'formula_focus'" in rendered
     assert "'negative_log_penalty'" in rendered
     assert "decomposed_formula" in rendered
     assert "正解クラスだけ1になるone-hot" in rendered
@@ -175,7 +178,10 @@ def test_gradient_descent_double_well_uses_2d_landscape_template(tmp_path) -> No
     assert "construct_double_well_2d" in rendered
     assert "double_well_loss" in rendered
     assert "SEGMENT_DURATIONS" in rendered
+    assert "SEGMENT_METADATA" in rendered
+    assert "TEMPLATE_COMPONENTS" in rendered
     assert "intro_landscape" in rendered
+    assert "'contour_map'" in rendered
     validate_python_syntax(output_path)
 
 
@@ -196,4 +202,6 @@ def test_gradient_descent_double_well_1d_uses_loss_curve_template(tmp_path) -> N
     assert "construct_double_well_1d" in rendered
     assert "double_well_1d_loss" in rendered
     assert "intro_curve" in rendered
+    assert "SEGMENT_METADATA" in rendered
+    assert "'loss_curve'" in rendered
     validate_python_syntax(output_path)

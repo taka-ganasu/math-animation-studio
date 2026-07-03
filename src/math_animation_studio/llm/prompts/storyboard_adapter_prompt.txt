@@ -13,4 +13,7 @@ ExplanationPlan:
 - 既存のStoryboard schemaに完全準拠してください
 - scenesはExplanationPlanのexplanation_stepsに対応させてください
 - visual_objectsにはManimで表現しやすい単位を入れてください
+- componentsには既存テンプレート部品に対応する宣言的な意図を入れてください
+- narration_cuesには、ナレーション文、対応するcomponent_id、注目するformula_focusを入れてください
 - 不明な値は空にせず、合理的なデフォルトを入れてください
+- Pythonコード、Manimコード、関数本体、eval、exec前提の表現は出力しないでください

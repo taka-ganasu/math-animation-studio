@@ -44,10 +44,15 @@ def test_voiceover_script_writer_creates_cross_entropy_script() -> None:
     ]
     assert "model_pipeline" in {segment.id for segment in segments}
     assert "negative_log_penalty" in {segment.id for segment in segments}
+    focus_log = next(segment for segment in segments if segment.id == "focus_log")
+    assert focus_log.component_id == "formula_parts_focus"
+    assert focus_log.formula_focus == r"\log(\hat{y}_i)"
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(30.0)
     assert "Target duration: 30 seconds" in markdown
     assert "## Voiceover Segments" in markdown
     assert "### focus_log" in markdown
+    assert "Component: `formula_parts_focus`" in markdown
+    assert r"Focus: $\log(\hat{y}_i)$" in markdown
     assert "## Voiceover Script" in markdown
     assert "## Source Scenes" in markdown
 
@@ -74,6 +79,8 @@ def test_voiceover_script_writer_segments_gradient_double_well() -> None:
         "sgd_bridge",
         "summary",
     ]
+    assert segments[2].component_id == "gradient_arrow"
+    assert segments[2].formula_focus == r"-\nabla L"
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(52.0)
     assert "局所最小" in script
     assert "SGD" in script
@@ -101,6 +108,9 @@ def test_voiceover_script_writer_segments_gradient_double_well_1d() -> None:
         "sgd_bridge_1d",
         "summary_1d",
     ]
+    assert segments[0].component_id == "loss_curve"
+    assert segments[2].component_id == "gradient_arrow"
+    assert segments[2].formula_focus == r"-\nabla L(\theta_t)"
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(50.0)
     assert "損失曲線" in script
     assert "山を越え" in script

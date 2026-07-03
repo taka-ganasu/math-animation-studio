@@ -8,6 +8,8 @@ from typing import Iterable, Sequence
 class TimelineSegment:
     id: str
     duration_seconds: float
+    component_id: str | None = None
+    formula_focus: str | None = None
 
 
 CROSS_ENTROPY_FORMULA_FOCUS_SEGMENT_IDS = (
@@ -20,42 +22,52 @@ CROSS_ENTROPY_FORMULA_FOCUS_SEGMENT_IDS = (
 
 
 CROSS_ENTROPY_BASE_TIMELINE = (
-    TimelineSegment("intro_formula", 5.8),
-    TimelineSegment("focus_y_i", 4.4),
-    TimelineSegment("focus_y_hat_i", 4.2),
-    TimelineSegment("focus_log", 4.5),
-    TimelineSegment("focus_sum", 4.8),
-    TimelineSegment("focus_minus", 3.8),
-    TimelineSegment("model_pipeline", 5.4),
-    TimelineSegment("one_hot_vector", 4.7),
-    TimelineSegment("softmax_distribution", 6.5),
-    TimelineSegment("correct_selector", 4.7),
-    TimelineSegment("negative_log_penalty", 6.2),
-    TimelineSegment("summary", 5.0),
+    TimelineSegment("intro_formula", 5.8, "intro_formula"),
+    TimelineSegment("focus_y_i", 4.4, "formula_parts_focus", r"y_i"),
+    TimelineSegment("focus_y_hat_i", 4.2, "formula_parts_focus", r"\hat{y}_i"),
+    TimelineSegment("focus_log", 4.5, "formula_parts_focus", r"\log(\hat{y}_i)"),
+    TimelineSegment("focus_sum", 4.8, "formula_parts_focus", r"\sum_i"),
+    TimelineSegment("focus_minus", 3.8, "formula_parts_focus", "-"),
+    TimelineSegment("model_pipeline", 5.4, "model_pipeline"),
+    TimelineSegment("one_hot_vector", 4.7, "one_hot_vector"),
+    TimelineSegment("softmax_distribution", 6.5, "softmax_distribution"),
+    TimelineSegment("correct_selector", 4.7, "correct_selector"),
+    TimelineSegment("negative_log_penalty", 6.2, "negative_log_penalty"),
+    TimelineSegment("summary", 5.0, "summary"),
 )
 
 
 GRADIENT_DOUBLE_WELL_BASE_TIMELINE = (
-    TimelineSegment("intro_landscape", 5.0),
-    TimelineSegment("two_valleys", 6.0),
-    TimelineSegment("local_slope", 6.0),
-    TimelineSegment("left_descent", 8.0),
-    TimelineSegment("right_descent", 8.0),
-    TimelineSegment("compare_minima", 7.0),
-    TimelineSegment("sgd_bridge", 7.0),
-    TimelineSegment("summary", 5.0),
+    TimelineSegment("intro_landscape", 5.0, "contour_map"),
+    TimelineSegment("two_valleys", 6.0, "contour_map"),
+    TimelineSegment("local_slope", 6.0, "gradient_arrow", r"-\nabla L"),
+    TimelineSegment("left_descent", 8.0, "descent_path"),
+    TimelineSegment("right_descent", 8.0, "descent_path"),
+    TimelineSegment("compare_minima", 7.0, "summary"),
+    TimelineSegment("sgd_bridge", 7.0, "sgd_jitter"),
+    TimelineSegment(
+        "summary",
+        5.0,
+        "summary",
+        r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)",
+    ),
 )
 
 
 GRADIENT_DOUBLE_WELL_1D_BASE_TIMELINE = (
-    TimelineSegment("intro_curve", 5.0),
-    TimelineSegment("two_valleys_1d", 6.0),
-    TimelineSegment("local_slope_1d", 6.0),
-    TimelineSegment("left_descent_1d", 7.0),
-    TimelineSegment("right_descent_1d", 7.0),
-    TimelineSegment("compare_minima_1d", 7.0),
-    TimelineSegment("sgd_bridge_1d", 6.0),
-    TimelineSegment("summary_1d", 5.0),
+    TimelineSegment("intro_curve", 5.0, "loss_curve"),
+    TimelineSegment("two_valleys_1d", 6.0, "loss_curve"),
+    TimelineSegment("local_slope_1d", 6.0, "gradient_arrow", r"-\nabla L(\theta_t)"),
+    TimelineSegment("left_descent_1d", 7.0, "descent_path"),
+    TimelineSegment("right_descent_1d", 7.0, "descent_path"),
+    TimelineSegment("compare_minima_1d", 7.0, "summary"),
+    TimelineSegment("sgd_bridge_1d", 6.0, "sgd_jitter"),
+    TimelineSegment(
+        "summary_1d",
+        5.0,
+        "summary",
+        r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)",
+    ),
 )
 
 
@@ -72,6 +84,19 @@ def cross_entropy_timeline_segments(
 
 def segment_duration_map(segments: Iterable[TimelineSegment]) -> dict[str, float]:
     return {segment.id: segment.duration_seconds for segment in segments}
+
+
+def segment_metadata_map(segments: Iterable[TimelineSegment]) -> dict[str, dict[str, str]]:
+    metadata: dict[str, dict[str, str]] = {}
+    for segment in segments:
+        item: dict[str, str] = {}
+        if segment.component_id:
+            item["component_id"] = segment.component_id
+        if segment.formula_focus:
+            item["formula_focus"] = segment.formula_focus
+        if item:
+            metadata[segment.id] = item
+    return metadata
 
 
 def gradient_double_well_timeline_segments(
@@ -100,11 +125,24 @@ def scale_timeline(
     base_total = sum(segment.duration_seconds for segment in segments)
     if base_total <= 0:
         even_duration = target / len(segments)
-        return tuple(TimelineSegment(segment.id, even_duration) for segment in segments)
+        return tuple(
+            TimelineSegment(
+                segment.id,
+                even_duration,
+                segment.component_id,
+                segment.formula_focus,
+            )
+            for segment in segments
+        )
 
     scale = target / base_total
     scaled = [
-        TimelineSegment(segment.id, round(max(0.05, segment.duration_seconds * scale), 3))
+        TimelineSegment(
+            segment.id,
+            round(max(0.05, segment.duration_seconds * scale), 3),
+            segment.component_id,
+            segment.formula_focus,
+        )
         for segment in segments
     ]
     rounded_total = sum(segment.duration_seconds for segment in scaled)
@@ -113,6 +151,8 @@ def scale_timeline(
     scaled[-1] = TimelineSegment(
         last.id,
         round(max(0.05, last.duration_seconds + correction), 3),
+        last.component_id,
+        last.formula_focus,
     )
     return tuple(scaled)
 

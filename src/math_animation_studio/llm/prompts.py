@@ -42,12 +42,14 @@ def build_concept_planner_prompt(
 - 数式はLaTeXで表現する
 - 説明は日本語
 - Manimで表現しやすいvisual_objectsに分解する
+- LLMの役割は教育設計と宣言的な視覚意図の作成に限定する
+- レンダラーは既存の安全なテンプレートだけを使って動画化する
 - いきなり抽象説明をせず、具体例から始める
 - 誤解しやすいポイントを必ず含める
 - 1シーンあたりのナレーションは短くする
 - 全体で5〜7シーンにする
 - Manimコードそのものは生成しない
-- Pythonコード、疑似コード、eval/exec前提の表現は出力しない
+- Pythonコード、Manimコード、疑似コード、関数本体、eval/exec前提の表現は出力しない
 
 重視すること:
 - 数式を意味のある部品に分解する
@@ -116,6 +118,10 @@ def build_formula_understanding_plan_prompt(
 - JSON schemaに完全に従う
 - 数式はLaTeXとして扱う
 - 説明は日本語
+- LLMの役割は、教育設計、シーン分割、記号の意味づけ、宣言的な視覚意図の作成に限定する
+- レンダラーの役割は、既存の安全なJinja2/Manimテンプレートへ写像すること
+- concrete_valuesには、数値、短い文字列、既存preset名、JSON配列だけを入れる
+- 損失関数や描画処理が必要な場合は、Python式ではなく既存preset名を選ぶ
 - 初学者が「何を見るべきか」が分かるように、具体例から始める
 - 記号の数学的意味と直感的意味を分ける
 - 操作ごとに「何をしているか」と「視覚化ヒント」を出す
@@ -123,7 +129,8 @@ def build_formula_understanding_plan_prompt(
 - explanation_planは5〜7 stepsにする
 - explanation_stepsのexplanationは、ナレーション素材として短く具体的にする
 - selected_animation_pattern_idは、利用可能なアニメーションパターンIDから選ぶ
-- Pythonコード、疑似コード、eval、exec前提の表現は出力しない
+- Pythonコード、Manimコード、疑似コード、関数本体、eval、exec前提の表現は出力しない
+- generation_boundary.code_generation_allowedは必ずfalseにする
 - 不確実な場合はformula_analysis.ambiguity_notesに明記し、confidenceを低めにする
 
 JSON schema:

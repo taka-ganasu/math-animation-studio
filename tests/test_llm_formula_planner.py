@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from math_animation_studio.schema import FormulaUnderstandingLLMPlan
+import pytest
+
+from math_animation_studio.llm import LLMUnavailableError
+from math_animation_studio.schema import FormulaUnderstandingLLMPlan, LLMGenerationBoundary
 from math_animation_studio.understanding import LLMFormulaUnderstandingPlanner
 from math_animation_studio.understanding.sample_plans import (
     sample_classification,
@@ -35,6 +38,18 @@ class FakeLLMClient:
         )
 
 
+class UnsafeFakeLLMClient(FakeLLMClient):
+    def complete_model(self, **kwargs: Any) -> FormulaUnderstandingLLMPlan:
+        plan = super().complete_model(**kwargs)
+        return plan.model_copy(
+            update={
+                "generation_boundary": LLMGenerationBoundary(
+                    code_generation_allowed=True,
+                )
+            }
+        )
+
+
 def test_llm_formula_planner_builds_structured_plan() -> None:
     client = FakeLLMClient()
     planner = LLMFormulaUnderstandingPlanner(client=client)  # type: ignore[arg-type]
@@ -50,6 +65,22 @@ def test_llm_formula_planner_builds_structured_plan() -> None:
 
     assert result.formula_analysis.detected_name == "cross_entropy"
     assert result.explanation_plan.selected_animation_pattern_id == "penalty_curve"
+    assert result.generation_boundary.llm_role == "education_planner"
+    assert result.generation_boundary.code_generation_allowed is False
     assert "60秒" in client.last_prompt
     assert "penalty_curve" in client.last_prompt
     assert client.last_schema_name == "formula_understanding_plan"
+
+
+def test_llm_formula_planner_rejects_code_generation_boundary() -> None:
+    planner = LLMFormulaUnderstandingPlanner(client=UnsafeFakeLLMClient())  # type: ignore[arg-type]
+
+    with pytest.raises(LLMUnavailableError, match="code generation"):
+        planner.plan(
+            formula=r"L = - \sum_i y_i \log(\hat{y}_i)",
+            goal="初学者向けに理解したい",
+            audience="engineer_beginner_math",
+            domain_hint="machine_learning",
+            animation_pattern_ids=["penalty_curve"],
+            target_duration_seconds=60,
+        )

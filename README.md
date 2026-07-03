@@ -188,6 +188,16 @@ math-anim plan \
 
 `--render --voiceover` を付けると、対応済みテンプレートに変換できる場合だけ動画と音声付き動画まで生成します。
 
+## 安全な拡張方針
+
+MVP2以降は、完全自由なManimコード生成ではなく、Storyboard内の宣言的な部品を既存テンプレートへ写像します。
+
+- `components`: 数式パーツ強調、確率バー、損失曲線、勾配矢印などの再利用可能なアニメーション部品
+- `narration_cues`: ナレーションの区間、対応する部品、注目する数式パーツ
+- `generation_boundary`: LLMの役割を教材企画に限定し、コード生成を禁止する安全境界
+
+LLMに任せることは、数式の分解、説明順、具体例、ナレーション素材、どの部品に注目させるかの選択です。Pythonコード、Manimコード、関数本体、`eval`、`exec` 前提の出力は受け付けません。
+
 ## テスト
 
 ```bash
@@ -203,3 +213,4 @@ python -m pytest
 - 音声合成はmacOSの `say` コマンドを使う簡易版で、シーン単位の厳密な同期は未実装
 - LLMモードでも動画生成は既存Manimテンプレートに合う数式・パターンのみ対応
 - Storyboard内の関数文字列はPythonコードとして評価しません
+- LLM出力は `generation_boundary.code_generation_allowed=false` を要求します

@@ -24,6 +24,8 @@ FUNCTION_PRESET = {{ params.function_preset | py_repr }}
 COMPARISON_INITIAL_X = {{ params.comparison_initial_x | py_repr }}
 COMPARISON_INITIAL_Y = {{ params.comparison_initial_y | py_repr }}
 SEGMENT_DURATIONS = {{ params.segment_durations | py_repr }}
+SEGMENT_METADATA = {{ params.segment_metadata | py_repr }}
+TEMPLATE_COMPONENTS = {{ params.template_components | py_repr }}
 
 
 def segment_duration(segment_id: str, fallback_seconds: float) -> float:

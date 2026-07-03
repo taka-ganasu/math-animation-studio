@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from math_animation_studio.schema import (
+    AnimationComponent,
     Example,
     ExplanationPlan,
+    ExplanationStep,
     FormulaAnalysis,
+    NarrationCue,
     SceneSpec,
     Storyboard,
     SymbolDefinition,
@@ -25,6 +28,7 @@ class StoryboardAdapter:
             else {}
         )
         for index, step in enumerate(explanation_plan.explanation_steps, start=1):
+            components = _base_components_for_step(step)
             visual_objects = [
                 VisualObject(
                     type="formula",
@@ -63,6 +67,16 @@ class StoryboardAdapter:
                             "y_range": [-0.5, 5.8],
                         }
                     )
+                components.insert(
+                    0,
+                    AnimationComponent(
+                        id="loss_landscape",
+                        kind=_loss_landscape_kind(function_preset),
+                        description="損失関数の全体像を表示する",
+                        label="loss landscape",
+                        params={"function_preset": function_preset},
+                    ),
+                )
                 visual_objects.insert(
                     0,
                     VisualObject(
@@ -81,6 +95,16 @@ class StoryboardAdapter:
                     point_params["comparison_x"] = float(example_values["comparison_initial_x"])
                 if "comparison_initial_y" in example_values:
                     point_params["comparison_y"] = float(example_values["comparison_initial_y"])
+                components.insert(
+                    0,
+                    AnimationComponent(
+                        id="descent_start_points",
+                        kind="descent_path",
+                        description="初期位置と到達する谷を比較する",
+                        label="start points",
+                        params=point_params,
+                    ),
+                )
                 visual_objects.insert(
                     0,
                     VisualObject(
@@ -91,6 +115,16 @@ class StoryboardAdapter:
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 3:
+                components.insert(
+                    0,
+                    AnimationComponent(
+                        id="negative_gradient_arrow",
+                        kind="gradient_arrow",
+                        description="負の勾配方向を矢印として示す",
+                        label="-gradient",
+                        params={"learning_rate": float(example_values.get("learning_rate", 0.15))},
+                    ),
+                )
                 visual_objects.insert(
                     0,
                     VisualObject(
@@ -101,6 +135,16 @@ class StoryboardAdapter:
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 5:
+                components.insert(
+                    0,
+                    AnimationComponent(
+                        id="descent_path",
+                        kind="descent_path",
+                        description="更新で移動した点の軌跡を示す",
+                        label="path",
+                        params={"steps": int(example_values.get("steps", 30))},
+                    ),
+                )
                 visual_objects.insert(
                     0,
                     VisualObject(
@@ -111,6 +155,16 @@ class StoryboardAdapter:
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "penalty_curve" and index == 2:
+                components.insert(
+                    0,
+                    AnimationComponent(
+                        id="probability_bars",
+                        kind="probability_bars",
+                        description="各クラスの予測確率を棒として表示する",
+                        label="probabilities",
+                        params={"correct_index": 0},
+                    ),
+                )
                 visual_objects.insert(
                     0,
                     VisualObject(
@@ -121,6 +175,16 @@ class StoryboardAdapter:
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "penalty_curve" and index == 4:
+                components.insert(
+                    0,
+                    AnimationComponent(
+                        id="negative_log_curve",
+                        kind="negative_log_curve",
+                        description="正解確率pに対する-log(p)の罰を表示する",
+                        label="-log(p)",
+                        params={"x_range": [0.05, 1.0], "y_range": [0.0, 3.2]},
+                    ),
+                )
                 visual_objects.insert(
                     0,
                     VisualObject(
@@ -131,6 +195,16 @@ class StoryboardAdapter:
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "penalty_curve" and index == 5:
+                components.insert(
+                    0,
+                    AnimationComponent(
+                        id="probability_selector",
+                        kind="probability_selector",
+                        description="one-hotが選ぶ正解確率を表示する",
+                        label="selected p",
+                        params={"good_probability": 0.9, "bad_probability": 0.1},
+                    ),
+                )
                 visual_objects.insert(
                     0,
                     VisualObject(
@@ -148,6 +222,8 @@ class StoryboardAdapter:
                     learning_goal=step.learning_goal,
                     narration=step.explanation,
                     visual_objects=visual_objects,
+                    components=components,
+                    narration_cues=_narration_cues_for_step(step, components),
                     duration_seconds=10,
                 )
             )
@@ -187,3 +263,48 @@ def _render_concept(explanation_plan: ExplanationPlan) -> str:
     if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface":
         return "gradient_descent"
     return explanation_plan.target_concept
+
+
+def _base_components_for_step(step: ExplanationStep) -> list[AnimationComponent]:
+    if step.formula_focus:
+        return [
+            AnimationComponent(
+                id=f"{step.id}_formula_focus",
+                kind="formula_focus",
+                description=f"数式パーツ {step.formula_focus} に注目する",
+                label=step.formula_focus,
+                params={"formula_focus": step.formula_focus},
+            )
+        ]
+    return [
+        AnimationComponent(
+            id=f"{step.id}_caption",
+            kind="text_caption",
+            description=step.visual_idea,
+            label=step.title,
+            params={},
+        )
+    ]
+
+
+def _narration_cues_for_step(
+    step: ExplanationStep,
+    components: list[AnimationComponent],
+) -> list[NarrationCue]:
+    component_id = components[0].id if components else None
+    return [
+        NarrationCue(
+            segment_id=step.id,
+            text=step.explanation,
+            component_id=component_id,
+            formula_focus=step.formula_focus,
+        )
+    ]
+
+
+def _loss_landscape_kind(function_preset: str) -> str:
+    if function_preset == "double_well_1d":
+        return "loss_curve"
+    if function_preset == "double_well_2d":
+        return "contour_map"
+    return "surface_plot"

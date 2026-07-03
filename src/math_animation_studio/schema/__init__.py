@@ -6,10 +6,12 @@ from .explanation_plan import (
     TeachingExample,
 )
 from .formula_analysis import FormulaAnalysis, OperationAnalysis, SymbolRole
-from .llm_plan import FormulaUnderstandingLLMPlan
+from .llm_plan import FormulaUnderstandingLLMPlan, LLMGenerationBoundary
 from .prerequisite_map import PrerequisiteItem, PrerequisiteMap
 from .storyboard import (
+    AnimationComponent,
     Example,
+    NarrationCue,
     SceneSpec,
     Storyboard,
     SymbolDefinition,
@@ -21,12 +23,15 @@ from .voiceover import VoiceoverScript
 
 __all__ = [
     "AnimationPattern",
+    "AnimationComponent",
     "ConceptClassification",
     "Example",
     "ExplanationPlan",
     "ExplanationStep",
     "FormulaAnalysis",
     "FormulaUnderstandingLLMPlan",
+    "LLMGenerationBoundary",
+    "NarrationCue",
     "OperationAnalysis",
     "PrerequisiteItem",
     "PrerequisiteMap",

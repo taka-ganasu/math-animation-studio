@@ -39,12 +39,45 @@ class VisualObject(StrictModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
 
+class AnimationComponent(StrictModel):
+    id: str
+    kind: Literal[
+        "contour_map",
+        "descent_path",
+        "formula_focus",
+        "gradient_arrow",
+        "loss_curve",
+        "model_pipeline",
+        "negative_log_curve",
+        "one_hot_vector",
+        "probability_bars",
+        "probability_selector",
+        "sgd_jitter",
+        "summary",
+        "surface_plot",
+        "text_caption",
+    ]
+    description: str
+    label: str | None = None
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
+class NarrationCue(StrictModel):
+    segment_id: str
+    text: str | None = None
+    duration_seconds: float | None = Field(default=None, gt=0)
+    component_id: str | None = None
+    formula_focus: str | None = None
+
+
 class SceneSpec(StrictModel):
     id: str
     title: str
     learning_goal: str
     narration: str
     visual_objects: list[VisualObject]
+    components: list[AnimationComponent] = Field(default_factory=list)
+    narration_cues: list[NarrationCue] = Field(default_factory=list)
     duration_seconds: int = Field(default=10, gt=0)
 
 

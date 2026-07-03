@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from math_animation_studio.llm import LLMClient, build_formula_understanding_plan_prompt
+from math_animation_studio.llm import (
+    LLMClient,
+    LLMUnavailableError,
+    build_formula_understanding_plan_prompt,
+)
 from math_animation_studio.schema import FormulaUnderstandingLLMPlan
 
 
@@ -26,8 +30,14 @@ class LLMFormulaUnderstandingPlanner:
             animation_pattern_ids=animation_pattern_ids,
             target_duration_seconds=target_duration_seconds,
         )
-        return self.client.complete_model(
+        plan = self.client.complete_model(
             prompt=prompt,
             response_model=FormulaUnderstandingLLMPlan,
             schema_name="formula_understanding_plan",
         )
+        if plan.generation_boundary.code_generation_allowed:
+            raise LLMUnavailableError(
+                "LLM output requested code generation, but this renderer only accepts "
+                "declarative plans mapped to built-in templates."
+            )
+        return plan
