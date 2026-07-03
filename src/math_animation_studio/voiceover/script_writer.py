@@ -6,6 +6,7 @@ from typing import Sequence
 from math_animation_studio.schema import Storyboard
 from math_animation_studio.timing import (
     cross_entropy_timeline_segments,
+    gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
 )
 
@@ -69,8 +70,12 @@ class VoiceoverScriptWriter:
     ) -> list[VoiceoverSegment]:
         concept = storyboard.concept.strip().lower().replace("-", "_")
         if concept == "gradient_descent" and _is_gradient_double_well_storyboard(storyboard):
-            timeline = gradient_double_well_timeline_segments(target_duration_seconds)
-            text_by_id = _gradient_double_well_segment_text()
+            if _is_gradient_double_well_1d_storyboard(storyboard):
+                timeline = gradient_double_well_1d_timeline_segments(target_duration_seconds)
+                text_by_id = _gradient_double_well_1d_segment_text()
+            else:
+                timeline = gradient_double_well_timeline_segments(target_duration_seconds)
+                text_by_id = _gradient_double_well_segment_text()
             return [
                 VoiceoverSegment(
                     id=segment.id,
@@ -221,7 +226,10 @@ def _cross_entropy_segment_text(storyboard: Storyboard) -> dict[str, str]:
 
 def _is_gradient_double_well_storyboard(storyboard: Storyboard) -> bool:
     for example in storyboard.examples:
-        if str(example.values.get("function_preset", "")).lower() == "double_well_2d":
+        if str(example.values.get("function_preset", "")).lower() in {
+            "double_well_2d",
+            "double_well_1d",
+        }:
             return True
     text = " ".join(
         [storyboard.one_sentence_summary]
@@ -229,6 +237,18 @@ def _is_gradient_double_well_storyboard(storyboard: Storyboard) -> bool:
         + [scene.title + " " + scene.narration for scene in storyboard.scenes]
     )
     return any(keyword in text for keyword in ("2つの谷", "二つの谷", "谷が複数", "局所最小"))
+
+
+def _is_gradient_double_well_1d_storyboard(storyboard: Storyboard) -> bool:
+    for example in storyboard.examples:
+        if str(example.values.get("function_preset", "")).lower() == "double_well_1d":
+            return True
+    text = " ".join(
+        [storyboard.one_sentence_summary]
+        + [example.title + " " + example.description for example in storyboard.examples]
+        + [scene.title + " " + scene.narration for scene in storyboard.scenes]
+    )
+    return any(keyword in text for keyword in ("1変数", "損失曲線", "谷・山・谷"))
 
 
 def _gradient_double_well_segment_text() -> dict[str, str]:
@@ -241,6 +261,19 @@ def _gradient_double_well_segment_text() -> dict[str, str]:
         "compare_minima": "勾配降下法は谷を見比べません。初期位置と局所的な傾きで行き先が決まります。",
         "sgd_bridge": "SGDでは勾配に揺れが入ります。ただし、常に深い谷を選べるわけではありません。",
         "summary": "まとめると、現在地の斜面だけを見て、一歩ずつ下る方法です。",
+    }
+
+
+def _gradient_double_well_1d_segment_text() -> dict[str, str]:
+    return {
+        "intro_curve": "今回は、1変数の損失曲線で勾配降下法を見ます。",
+        "two_valleys_1d": "曲線には、低い谷、山、浅い谷があります。",
+        "local_slope_1d": "1変数では、勾配は曲線の傾きです。下る向きへ一歩進みます。",
+        "left_descent_1d": "左側から始めると、点は左の低い谷へ下っていきます。",
+        "right_descent_1d": "右側から始めると、山を越えずに近くの浅い谷へ下ります。",
+        "compare_minima_1d": "勾配降下法は左右の谷を見比べません。現在地の傾きだけで次の一歩を決めます。",
+        "sgd_bridge_1d": "SGDでは軌跡が少し揺れます。ただし、いつも山を越えられるわけではありません。",
+        "summary_1d": "まとめると、現在地の傾きだけを見て、一歩ずつ損失を下げる方法です。",
     }
 
 

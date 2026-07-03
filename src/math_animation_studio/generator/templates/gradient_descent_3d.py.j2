@@ -32,6 +32,8 @@ def segment_duration(segment_id: str, fallback_seconds: float) -> float:
 
 class GradientDescent3DScene(ThreeDScene):
     def loss(self, x: float, y: float) -> float:
+        if FUNCTION_PRESET == "double_well_1d":
+            return self.double_well_1d_loss(x)
         if FUNCTION_PRESET == "double_well_2d":
             return self.double_well_loss(x, y)
         return (
@@ -42,6 +44,8 @@ class GradientDescent3DScene(ThreeDScene):
         )
 
     def gradient(self, x: float, y: float) -> np.ndarray:
+        if FUNCTION_PRESET == "double_well_1d":
+            return np.array([self.double_well_1d_gradient(x), 0.0], dtype=float)
         if FUNCTION_PRESET == "double_well_2d":
             return self.double_well_gradient(x, y)
         return np.array(
@@ -51,6 +55,26 @@ class GradientDescent3DScene(ThreeDScene):
             ],
             dtype=float,
         )
+
+    def double_well_1d_loss(self, theta: float) -> float:
+        return (theta**2 - 1.0) ** 2 + 0.2 * theta
+
+    def double_well_1d_gradient(self, theta: float) -> float:
+        return 4.0 * theta * (theta**2 - 1.0) + 0.2
+
+    def descent_points_1d_from(self, start_theta: float) -> list[tuple[float, float]]:
+        theta = float(start_theta)
+        points: list[tuple[float, float]] = []
+        for _ in range(STEPS + 1):
+            points.append((theta, self.double_well_1d_loss(theta)))
+            theta = float(
+                np.clip(
+                    theta - LEARNING_RATE * self.double_well_1d_gradient(theta),
+                    X_RANGE[0],
+                    X_RANGE[1],
+                )
+            )
+        return points
 
     def double_well_loss(self, x: float, y: float) -> float:
         left = np.exp(-(((x + 1.45) ** 2) / 0.85 + ((y - 0.75) ** 2) / 0.65))
@@ -216,6 +240,263 @@ class GradientDescent3DScene(ThreeDScene):
             dashed.add(DashedLine(start, end, dash_length=0.08, color=ORANGE, stroke_width=4))
         return dashed
 
+    def double_well_1d_axes(self) -> Axes:
+        axes = Axes(
+            x_range=[X_RANGE[0], X_RANGE[1], 0.5],
+            y_range=[Y_RANGE[0], Y_RANGE[1], 1.0],
+            x_length=8.8,
+            y_length=4.65,
+            tips=False,
+        )
+        axes.shift(DOWN * 0.28)
+        return axes
+
+    def point1d(self, axes: Axes, point: tuple[float, float]) -> np.ndarray:
+        return axes.c2p(point[0], point[1])
+
+    def gradient_step_arrow_1d(self, axes: Axes, theta: float, color: ManimColor) -> Arrow:
+        start = (theta, self.double_well_1d_loss(theta))
+        next_theta = float(
+            np.clip(
+                theta - LEARNING_RATE * self.double_well_1d_gradient(theta),
+                X_RANGE[0],
+                X_RANGE[1],
+            )
+        )
+        end = (next_theta, self.double_well_1d_loss(next_theta))
+        return Arrow(
+            axes.c2p(*start),
+            axes.c2p(*end),
+            buff=0.04,
+            color=color,
+            stroke_width=5,
+        )
+
+    def play_descent_path_1d(
+        self,
+        axes: Axes,
+        points: list[tuple[float, float]],
+        *,
+        color: ManimColor,
+        duration: float,
+        label: str,
+    ) -> tuple[Dot, VGroup]:
+        display_points = points[::2]
+        if display_points[-1] != points[-1]:
+            display_points.append(points[-1])
+        dot = Dot(self.point1d(axes, display_points[0]), color=color, radius=0.075)
+        label_mobject = Text(label, font_size=19, color=color)
+        label_mobject.next_to(dot, UP, buff=0.12)
+        entry_time = min(0.45, duration * 0.1)
+        self.play(FadeIn(dot), FadeIn(label_mobject), run_time=entry_time)
+        path_segments = VGroup()
+        step_time = max(0.075, (duration - entry_time - 0.2) / max(1, len(display_points) - 1))
+        for start, end in zip(display_points[:-1], display_points[1:]):
+            start_point = self.point1d(axes, start)
+            end_point = self.point1d(axes, end)
+            segment = Line(start_point, end_point, color=color)
+            segment.set_stroke(width=4)
+            path_segments.add(segment)
+            self.play(
+                dot.animate.move_to(end_point),
+                label_mobject.animate.next_to(dot, UP, buff=0.12),
+                Create(segment),
+                run_time=step_time,
+            )
+        self.play(FadeOut(label_mobject), run_time=0.18)
+        return dot, path_segments
+
+    def final_loss_badge_1d(
+        self,
+        label: str,
+        point: tuple[float, float],
+        color: ManimColor,
+    ) -> VGroup:
+        box = RoundedRectangle(
+            corner_radius=0.12,
+            width=3.15,
+            height=0.9,
+            stroke_color=color,
+            stroke_width=2,
+            fill_color=BLACK,
+            fill_opacity=0.72,
+        )
+        title = Text(label, font_size=19, color=color)
+        value = self.make_math(rf"L={point[1]:.2f}", f"L={point[1]:.2f}", font_size=23)
+        lines = VGroup(title, value).arrange(DOWN, buff=0.04)
+        lines.move_to(box.get_center())
+        return VGroup(box, lines)
+
+    def sgd_jitter_path_1d(self, axes: Axes, points: list[tuple[float, float]]) -> VGroup:
+        dashed = VGroup()
+        sampled = points[::4]
+        jittered: list[np.ndarray] = []
+        for index, point in enumerate(sampled):
+            theta = point[0] + 0.05 * np.sin(index * 1.8)
+            loss = self.double_well_1d_loss(theta) + 0.08 * np.cos(index * 1.3)
+            jittered.append(axes.c2p(theta, loss))
+        for start, end in zip(jittered[:-1], jittered[1:]):
+            dashed.add(DashedLine(start, end, dash_length=0.08, color=ORANGE, stroke_width=4))
+        return dashed
+
+    def construct_double_well_1d(self) -> None:
+        left_points = self.descent_points_1d_from(float(INITIAL_X))
+        right_points = self.descent_points_1d_from(float(COMPARISON_INITIAL_X))
+
+        title = Text("Gradient Descent: 1D Loss Curve", font_size=32)
+        title.to_edge(UP, buff=0.25)
+        formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=31)
+        formula.next_to(title, DOWN, buff=0.14)
+        axes = self.double_well_1d_axes()
+        x_label = self.make_math(r"\theta", "theta", font_size=24)
+        y_label = self.make_math(r"L(\theta)", "L(theta)", font_size=24)
+        axis_labels = axes.get_axis_labels(x_label, y_label)
+        curve = axes.plot(
+            lambda theta: self.double_well_1d_loss(theta),
+            x_range=[X_RANGE[0], X_RANGE[1], 0.01],
+            color=BLUE_B,
+        )
+        curve.set_stroke(width=4)
+
+        caption = self.make_caption("横軸をパラメータθ、縦軸を損失L(θ)として見ます。")
+        duration = segment_duration("intro_curve", 5.0)
+        first_time = min(1.45, duration * 0.34)
+        second_time = min(1.75, duration * 0.38)
+        self.play(FadeIn(title), Write(formula), FadeIn(caption), run_time=first_time)
+        self.play(Create(axes), FadeIn(axis_labels), Create(curve), run_time=second_time)
+        self.wait_remaining(duration, first_time + second_time)
+
+        global_min = (-1.024, self.double_well_1d_loss(-1.024))
+        local_min = (0.974, self.double_well_1d_loss(0.974))
+        hill = (0.05, self.double_well_1d_loss(0.05))
+        global_dot = Dot(axes.c2p(*global_min), color=GREEN, radius=0.085)
+        local_dot = Dot(axes.c2p(*local_min), color=YELLOW, radius=0.085)
+        hill_dot = Dot(axes.c2p(*hill), color=RED, radius=0.07)
+        global_label = Text("低い谷: 大域最小", font_size=21, color=GREEN)
+        global_label.next_to(global_dot, DOWN, buff=0.16)
+        local_label = Text("浅い谷: 局所最小", font_size=21, color=YELLOW)
+        local_label.next_to(local_dot, DOWN, buff=0.16)
+        hill_label = Text("山", font_size=20, color=RED)
+        hill_label.next_to(hill_dot, UP, buff=0.14)
+        next_caption = self.make_caption("曲線には、低い谷、山、浅い谷があります。")
+        duration = segment_duration("two_valleys_1d", 6.0)
+        reveal_time = min(1.2, duration * 0.3)
+        self.play(
+            FadeIn(global_dot),
+            FadeIn(local_dot),
+            FadeIn(hill_dot),
+            FadeIn(global_label),
+            FadeIn(local_label),
+            FadeIn(hill_label),
+            ReplacementTransform(caption, next_caption),
+            run_time=reveal_time,
+        )
+        caption = next_caption
+        self.wait_remaining(duration, reveal_time)
+
+        slope_theta = 1.55
+        slope_point = (slope_theta, self.double_well_1d_loss(slope_theta))
+        slope_dot = Dot(axes.c2p(*slope_point), color=RED, radius=0.075)
+        slope_arrow = self.gradient_step_arrow_1d(axes, slope_theta, RED)
+        slope_label = Text("次の一歩", font_size=20, color=RED)
+        slope_label.next_to(slope_arrow, UP, buff=0.1)
+        next_caption = self.make_caption("1変数では、勾配は曲線の傾きです。下る向きへ一歩進みます。")
+        duration = segment_duration("local_slope_1d", 6.0)
+        slope_time = min(1.3, duration * 0.32)
+        self.play(
+            FadeIn(slope_dot),
+            GrowArrow(slope_arrow),
+            FadeIn(slope_label),
+            ReplacementTransform(caption, next_caption),
+            run_time=slope_time,
+        )
+        caption = next_caption
+        self.wait_remaining(duration, slope_time)
+        self.play(FadeOut(slope_dot), FadeOut(slope_arrow), FadeOut(slope_label), run_time=0.22)
+
+        next_caption = self.make_caption("左側から始めると、点は左の低い谷へ下っていきます。")
+        duration = segment_duration("left_descent_1d", 7.0)
+        self.play(ReplacementTransform(caption, next_caption), run_time=0.35)
+        caption = next_caption
+        left_dot, left_path = self.play_descent_path_1d(
+            axes,
+            left_points,
+            color=GREEN,
+            duration=max(0.5, duration - 0.35),
+            label="start A",
+        )
+
+        next_caption = self.make_caption("右側から始めると、山を越えずに近くの浅い谷へ下ります。")
+        duration = segment_duration("right_descent_1d", 7.0)
+        self.play(ReplacementTransform(caption, next_caption), run_time=0.35)
+        caption = next_caption
+        right_dot, right_path = self.play_descent_path_1d(
+            axes,
+            right_points,
+            color=YELLOW,
+            duration=max(0.5, duration - 0.35),
+            label="start B",
+        )
+
+        hill_line = DashedLine(
+            axes.c2p(hill[0], Y_RANGE[0]),
+            axes.c2p(hill[0], min(Y_RANGE[1], hill[1] + 1.2)),
+            dash_length=0.1,
+            color=RED,
+            stroke_width=3,
+        )
+        hill_line_label = Text("山を越えて比較しない", font_size=20, color=RED)
+        hill_line_label.next_to(hill_line, UP, buff=0.1)
+        left_badge = self.final_loss_badge_1d("A: 大域最小", left_points[-1], GREEN)
+        right_badge = self.final_loss_badge_1d("B: 局所最小", right_points[-1], YELLOW)
+        badges = VGroup(left_badge, right_badge).arrange(DOWN, buff=0.16)
+        badges.to_corner(UR, buff=0.5)
+        next_caption = self.make_caption("勾配降下法は左右の谷を見比べず、現在地の傾きだけで次の一歩を決めます。")
+        duration = segment_duration("compare_minima_1d", 7.0)
+        compare_time = min(1.2, duration * 0.3)
+        self.play(
+            FadeIn(hill_line),
+            FadeIn(hill_line_label),
+            FadeIn(badges),
+            ReplacementTransform(caption, next_caption),
+            run_time=compare_time,
+        )
+        caption = next_caption
+        self.wait_remaining(duration, compare_time)
+
+        jitter = self.sgd_jitter_path_1d(axes, right_points)
+        sgd_note = Text("SGD: 勾配に小さな揺れが入る", font_size=22, color=ORANGE)
+        sgd_note.to_corner(UL, buff=0.55)
+        next_caption = self.make_caption("SGDでは軌跡が少し揺れます。ただし、いつも山を越えられるわけではありません。")
+        duration = segment_duration("sgd_bridge_1d", 6.0)
+        sgd_time = min(1.15, duration * 0.32)
+        self.play(
+            FadeIn(jitter),
+            FadeIn(sgd_note),
+            ReplacementTransform(caption, next_caption),
+            run_time=sgd_time,
+        )
+        caption = next_caption
+        self.wait_remaining(duration, sgd_time)
+
+        summary_formula = self.make_math(
+            r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)",
+            "theta_next = theta - eta grad L",
+            font_size=34,
+        )
+        summary_formula.move_to(ORIGIN + DOWN * 2.65)
+        summary_box = SurroundingRectangle(summary_formula, color=YELLOW, buff=0.12)
+        next_caption = self.make_caption("まとめると、現在地の傾きだけを見て、一歩ずつ損失を下げる方法です。")
+        duration = segment_duration("summary_1d", 5.0)
+        summary_time = min(1.0, duration * 0.32)
+        self.play(
+            FadeIn(summary_formula),
+            Create(summary_box),
+            ReplacementTransform(caption, next_caption),
+            run_time=summary_time,
+        )
+        self.wait_remaining(duration, summary_time)
+
     def construct_double_well_2d(self) -> None:
         left_points = self.descent_points_from(float(INITIAL_X), float(INITIAL_Y))
         right_points = self.descent_points_from(float(COMPARISON_INITIAL_X), float(COMPARISON_INITIAL_Y))
@@ -359,6 +640,9 @@ class GradientDescent3DScene(ThreeDScene):
         self.wait_remaining(duration, min(1.0, duration * 0.32))
 
     def construct(self) -> None:
+        if VISUALIZATION_STYLE == "double_well_1d":
+            self.construct_double_well_1d()
+            return
         if VISUALIZATION_STYLE == "double_well_2d":
             self.construct_double_well_2d()
             return

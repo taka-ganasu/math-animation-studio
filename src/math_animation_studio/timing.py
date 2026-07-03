@@ -47,6 +47,18 @@ GRADIENT_DOUBLE_WELL_BASE_TIMELINE = (
 )
 
 
+GRADIENT_DOUBLE_WELL_1D_BASE_TIMELINE = (
+    TimelineSegment("intro_curve", 5.0),
+    TimelineSegment("two_valleys_1d", 6.0),
+    TimelineSegment("local_slope_1d", 6.0),
+    TimelineSegment("left_descent_1d", 7.0),
+    TimelineSegment("right_descent_1d", 7.0),
+    TimelineSegment("compare_minima_1d", 7.0),
+    TimelineSegment("sgd_bridge_1d", 6.0),
+    TimelineSegment("summary_1d", 5.0),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -68,6 +80,14 @@ def gradient_double_well_timeline_segments(
     if target_duration_seconds is None:
         return GRADIENT_DOUBLE_WELL_BASE_TIMELINE
     return scale_timeline(GRADIENT_DOUBLE_WELL_BASE_TIMELINE, float(target_duration_seconds))
+
+
+def gradient_double_well_1d_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return GRADIENT_DOUBLE_WELL_1D_BASE_TIMELINE
+    return scale_timeline(GRADIENT_DOUBLE_WELL_1D_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(

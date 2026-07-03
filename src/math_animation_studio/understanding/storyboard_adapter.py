@@ -55,6 +55,14 @@ class StoryboardAdapter:
                             "y_range": [-2.4, 2.4],
                         }
                     )
+                if function_preset == "double_well_1d":
+                    surface_params.update(
+                        {
+                            "function": "builtin_double_well_1d",
+                            "x_range": [-1.9, 1.9],
+                            "y_range": [-0.5, 5.8],
+                        }
+                    )
                 visual_objects.insert(
                     0,
                     VisualObject(

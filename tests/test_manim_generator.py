@@ -177,3 +177,23 @@ def test_gradient_descent_double_well_uses_2d_landscape_template(tmp_path) -> No
     assert "SEGMENT_DURATIONS" in rendered
     assert "intro_landscape" in rendered
     validate_python_syntax(output_path)
+
+
+def test_gradient_descent_double_well_1d_uses_loss_curve_template(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        goal="1変数の損失曲線で、谷→山→谷がある時に勾配降下法がどう判断するか知りたい",
+        audience="high_school_math",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    ManimGenerator(target_duration_seconds=50).generate(artifacts.storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert "VISUALIZATION_STYLE = 'double_well_1d'" in rendered
+    assert "FUNCTION_PRESET = 'double_well_1d'" in rendered
+    assert "construct_double_well_1d" in rendered
+    assert "double_well_1d_loss" in rendered
+    assert "intro_curve" in rendered
+    validate_python_syntax(output_path)

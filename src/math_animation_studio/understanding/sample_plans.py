@@ -15,6 +15,24 @@ from math_animation_studio.schema import (
 
 def detect_sample_key(formula: str) -> str:
     normalized = formula.lower().replace(" ", "")
+    wants_1d_double_well = any(
+        keyword in normalized
+        for keyword in (
+            "1次元",
+            "一次元",
+            "1変数",
+            "一変数",
+            "1d",
+            "曲線",
+            "3次関数",
+            "三次関数",
+            "4次関数",
+            "四次関数",
+            "谷→山→谷",
+            "谷山谷",
+            "損失曲線",
+        )
+    )
     wants_double_well = any(
         keyword in normalized
         for keyword in (
@@ -33,6 +51,8 @@ def detect_sample_key(formula: str) -> str:
     if ("log" in normalized and "sum" in normalized) or "cross" in normalized:
         return "cross_entropy"
     if "nabla" in normalized or "grad" in normalized or "∇" in normalized:
+        if wants_1d_double_well:
+            return "gradient_descent_double_well_1d"
         if wants_double_well:
             return "gradient_descent_double_well"
         return "gradient_descent"
@@ -63,7 +83,7 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["ラベルがone-hotか確率分布かは文脈に依存する。"],
             confidence=0.9,
         )
-    if key in {"gradient_descent", "gradient_descent_double_well"}:
+    if key in {"gradient_descent", "gradient_descent_double_well", "gradient_descent_double_well_1d"}:
         return FormulaAnalysis(
             raw_formula=formula,
             normalized_formula_latex=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
@@ -119,7 +139,7 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
 def sample_classification(key: str) -> ConceptClassification:
     if key == "cross_entropy":
         return ConceptClassification(primary_domain="machine_learning", primary_concept="cross_entropy", related_concepts=["log_loss", "negative_log_likelihood", "softmax"], difficulty_level="undergraduate_intro", recommended_animation_family="penalty_curve", confidence=0.9)
-    if key in {"gradient_descent", "gradient_descent_double_well"}:
+    if key in {"gradient_descent", "gradient_descent_double_well", "gradient_descent_double_well_1d"}:
         return ConceptClassification(primary_domain="optimization", primary_concept="gradient_descent", related_concepts=["gradient", "learning_rate", "loss_minimization"], difficulty_level="undergraduate_intro", recommended_animation_family="trajectory_on_surface", confidence=0.95)
     if key == "scaled_dot_product_attention":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="scaled_dot_product_attention", related_concepts=["matrix_multiplication", "softmax", "weighted_sum"], difficulty_level="undergraduate_advanced", recommended_animation_family="matrix_similarity_heatmap", confidence=0.85)
@@ -137,7 +157,7 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
             ],
             likely_blockers=["logがなぜ出るのか", "sumの全項が効くと誤解すること"],
         )
-    if key in {"gradient_descent", "gradient_descent_double_well"}:
+    if key in {"gradient_descent", "gradient_descent_double_well", "gradient_descent_double_well_1d"}:
         return PrerequisiteMap(
             target_concept="gradient_descent",
             prerequisites=[
@@ -238,6 +258,43 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             ],
             misconceptions=["勾配降下法が常に一番深い谷を見つけるわけではない", "勾配は全体地図ではなく現在地の局所情報である", "SGDのノイズは助けになることもあるが万能ではない"],
             next_questions_to_study=["局所最小", "大域最小", "ランダム初期化", "確率的勾配降下法", "Momentum"],
+        )
+    if key == "gradient_descent_double_well_1d":
+        return ExplanationPlan(
+            formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+            target_concept="gradient_descent",
+            one_sentence_summary="1変数の損失曲線では、勾配降下法は曲線上の現在地の傾きだけを見て、近い谷へ一歩ずつ下る。",
+            audience=audience,
+            teaching_strategy="geometric_intuition",
+            recommended_examples=[
+                TeachingExample(
+                    title="谷・山・谷がある1変数の損失曲線",
+                    description="横軸をパラメータθ、縦軸を損失L(θ)として、左右の谷へ落ちる2本の軌跡を比べる。",
+                    why_it_works="局所最小、大域最小、現在地の傾きだけで進むことを1枚の曲線で直感化できる。",
+                    concrete_values={
+                        "function_preset": "double_well_1d",
+                        "learning_rate": 0.012,
+                        "steps": 60,
+                        "initial_x": -1.8,
+                        "initial_y": 0.0,
+                        "comparison_initial_x": 1.8,
+                        "comparison_initial_y": 0.0,
+                    },
+                )
+            ],
+            selected_animation_pattern_id="trajectory_on_surface",
+            explanation_steps=[
+                ExplanationStep(id="step_01", title="1変数の損失曲線を見る", learning_goal="横軸θと縦軸L(θ)の関係を読む", explanation="横軸をパラメータθ、縦軸を損失L(θ)として見ます。曲線が低い場所ほど良い状態です。", visual_idea="谷・山・谷を持つ損失曲線を描く。", formula_focus=r"L(\theta)"),
+                ExplanationStep(id="step_02", title="谷・山・谷を確認する", learning_goal="局所最小と大域最小を見分ける", explanation="右の谷は近くでは低い局所最小ですが、左の谷の方がさらに低い大域最小です。", visual_idea="左の大域最小、中央の山、右の局所最小にラベルを付ける。"),
+                ExplanationStep(id="step_03", title="傾きだけを見て進む", learning_goal="1変数の勾配が傾きであることを理解する", explanation="1変数では、勾配は曲線の傾きです。傾きが上りなら、その逆向きへ進みます。", visual_idea="現在地の接線と負の勾配方向を表示する。", formula_focus=r"-\nabla L(\theta_t)"),
+                ExplanationStep(id="step_04", title="左側から始める", learning_goal="大域最小へ向かう例を見る", explanation="左側から始めると、点は左の深い谷へ下っていきます。", visual_idea="左の初期点から大域最小へ進む軌跡を描く。"),
+                ExplanationStep(id="step_05", title="右側から始める", learning_goal="局所最小へ止まる例を見る", explanation="右側から始めると、中央の山を越えて左を探すのではなく、近くの右の谷へ下ります。", visual_idea="右の初期点から局所最小へ進む軌跡を描く。"),
+                ExplanationStep(id="step_06", title="どう判断しているか", learning_goal="勾配降下法が全体比較をしないことを理解する", explanation="勾配降下法は左右の谷を見比べて選びません。現在地の傾きだけで、次の一歩を決めます。", visual_idea="2本の軌跡と最終損失を比較する。"),
+                ExplanationStep(id="step_07", title="SGDへのつながり", learning_goal="ノイズが入る場合の直感を持つ", explanation="SGDでは勾配に揺れが入るので、軌跡が少しぶれます。ただし、常に山を越えて大域最小へ行けるわけではありません。", visual_idea="右側の軌跡に小さな揺れを点線で重ねる。"),
+                ExplanationStep(id="step_08", title="式へ戻る", learning_goal="更新式と曲線上の移動を結びつける", explanation="式は、今いる位置から、損失が下がる向きへ、学習率の分だけ進むことを表します。", visual_idea="更新式のθ_t、η、∇Lをラベル付けする。", formula_focus=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)"),
+            ],
+            misconceptions=["勾配降下法が常に一番低い谷を見つけるわけではない", "1変数の勾配は曲線の傾きとして読める", "3次関数より下に有界な4次関数の方が損失曲線として自然である"],
+            next_questions_to_study=["局所最小", "大域最小", "学習率", "確率的勾配降下法", "ランダム初期化"],
         )
     if key == "scaled_dot_product_attention":
         return ExplanationPlan(

@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from math_animation_studio.schema import Storyboard, VisualObject
 from math_animation_studio.timing import (
     cross_entropy_timeline_segments,
+    gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     segment_duration_map,
 )
@@ -33,8 +34,8 @@ class GradientDescentParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = "Gradient Descent"
-    visualization_style: Literal["surface_3d", "double_well_2d"] = "surface_3d"
-    function_preset: Literal["quadratic_ripple", "double_well_2d"] = "quadratic_ripple"
+    visualization_style: Literal["surface_3d", "double_well_2d", "double_well_1d"] = "surface_3d"
+    function_preset: Literal["quadratic_ripple", "double_well_2d", "double_well_1d"] = "quadratic_ripple"
     function_expr: str = DEFAULT_FUNCTION_EXPR
     gradient_expr_x: str = DEFAULT_GRADIENT_X
     gradient_expr_y: str = DEFAULT_GRADIENT_Y
@@ -220,7 +221,9 @@ class ManimGenerator:
         function_preset = surface.params.get("function_preset", "quadratic_ripple")
         function_expr = surface.params.get("function", DEFAULT_FUNCTION_EXPR)
         if function_preset == "double_well_2d":
-            visualization_style: Literal["surface_3d", "double_well_2d"] = "double_well_2d"
+            visualization_style: Literal["surface_3d", "double_well_2d", "double_well_1d"] = "double_well_2d"
+        elif function_preset == "double_well_1d":
+            visualization_style = "double_well_1d"
         elif function_preset == "quadratic_ripple" and function_expr == DEFAULT_FUNCTION_EXPR:
             visualization_style = "surface_3d"
         else:
@@ -239,7 +242,7 @@ class ManimGenerator:
             function_preset=function_preset,
             function_expr=DEFAULT_FUNCTION_EXPR
             if function_preset == "quadratic_ripple"
-            else "builtin_double_well_2d",
+            else f"builtin_{function_preset}",
             gradient_expr_x=DEFAULT_GRADIENT_X,
             gradient_expr_y=DEFAULT_GRADIENT_Y,
             initial_x=float(point.params.get("x", values.get("initial_x", 2.5))),
@@ -264,11 +267,10 @@ class ManimGenerator:
             y_range=y_range,
             formula_latex=storyboard.formula
             or r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
-            segment_durations=segment_duration_map(
-                gradient_double_well_timeline_segments(self.target_duration_seconds or 52)
-            )
-            if visualization_style == "double_well_2d"
-            else {},
+            segment_durations=_gradient_segment_durations(
+                visualization_style,
+                self.target_duration_seconds,
+            ),
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
@@ -324,6 +326,21 @@ class ManimGenerator:
 
 def _normalized_concept(concept: str) -> str:
     return concept.strip().lower().replace("-", "_")
+
+
+def _gradient_segment_durations(
+    visualization_style: str,
+    target_duration_seconds: int | None,
+) -> dict[str, float]:
+    if visualization_style == "double_well_2d":
+        return segment_duration_map(
+            gradient_double_well_timeline_segments(target_duration_seconds or 52)
+        )
+    if visualization_style == "double_well_1d":
+        return segment_duration_map(
+            gradient_double_well_1d_timeline_segments(target_duration_seconds or 50)
+        )
+    return {}
 
 
 def _title_from_storyboard(storyboard: Storyboard) -> str:

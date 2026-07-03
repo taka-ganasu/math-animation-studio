@@ -126,19 +126,9 @@ class AnimationBriefWriter:
             if step.formula_focus:
                 rows.append(f"   - 注目する式: {_inline_math(step.formula_focus)}")
 
-        rows.extend(
-            [
-                "",
-                "## アニメーション方針",
-                "",
-                f"- パターン: {selected_pattern.name}",
-                f"- 方針: {selected_pattern.description}",
-                f"- 比喩: {selected_pattern.visual_metaphor}",
-                "",
-                "## 誤解しやすいポイント",
-                "",
-            ]
-        )
+        rows.extend(["", "## アニメーション方針", ""])
+        rows.extend(_animation_policy_rows(explanation_plan, selected_pattern))
+        rows.extend(["", "## 誤解しやすいポイント", ""])
         for misconception in explanation_plan.misconceptions:
             rows.append(f"- {misconception}")
 
@@ -148,3 +138,34 @@ class AnimationBriefWriter:
 
         rows.append("")
         return "\n".join(rows)
+
+
+def _animation_policy_rows(
+    explanation_plan: ExplanationPlan,
+    selected_pattern: AnimationPattern,
+) -> list[str]:
+    preset = ""
+    if explanation_plan.recommended_examples:
+        preset = str(
+            explanation_plan.recommended_examples[0].concrete_values.get(
+                "function_preset",
+                "",
+            )
+        )
+    if preset == "double_well_1d":
+        return [
+            "- パターン: Trajectory on 1D Loss Curve",
+            "- 方針: 1変数の損失曲線を2Dグラフとして描き、点が左右どちらの谷へ下るかを比較する。",
+            "- 比喩: 曲線上の現在地から、傾きだけを見て近くの谷へ下る。",
+        ]
+    if preset == "double_well_2d":
+        return [
+            "- パターン: Trajectory on 2D Contour Map",
+            "- 方針: 2変数の損失を等高線として描き、初期位置によって到達する谷が変わる様子を比較する。",
+            "- 比喩: 地図上の現在地から、局所的な斜面だけを頼りに谷へ下る。",
+        ]
+    return [
+        f"- パターン: {selected_pattern.name}",
+        f"- 方針: {selected_pattern.description}",
+        f"- 比喩: {selected_pattern.visual_metaphor}",
+    ]

@@ -103,3 +103,30 @@ def test_plan_no_llm_gradient_double_well_outputs_storyboard(tmp_path) -> None:
     assert storyboard.examples[0].values["function_preset"] == "double_well_2d"
     assert "局所最小" in brief
     assert "SGD" in brief
+
+
+def test_plan_no_llm_gradient_double_well_1d_outputs_storyboard(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+            "--goal",
+            "1変数の損失曲線で、谷→山→谷がある時に勾配降下法がどう判断するか知りたい",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
+    assert storyboard.concept == "gradient_descent"
+    assert storyboard.examples[0].values["function_preset"] == "double_well_1d"
+    assert "損失曲線" in brief
+    assert "谷・山・谷" in brief

@@ -77,3 +77,30 @@ def test_voiceover_script_writer_segments_gradient_double_well() -> None:
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(52.0)
     assert "局所最小" in script
     assert "SGD" in script
+
+
+def test_voiceover_script_writer_segments_gradient_double_well_1d() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        goal="1変数の損失曲線で、谷→山→谷がある時に勾配降下法がどう判断するか知りたい",
+        audience="high_school_math",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=50)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=50)
+
+    assert [segment.id for segment in segments] == [
+        "intro_curve",
+        "two_valleys_1d",
+        "local_slope_1d",
+        "left_descent_1d",
+        "right_descent_1d",
+        "compare_minima_1d",
+        "sgd_bridge_1d",
+        "summary_1d",
+    ]
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(50.0)
+    assert "損失曲線" in script
+    assert "山を越え" in script
