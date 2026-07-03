@@ -124,6 +124,10 @@ def build_formula_understanding_plan_prompt(
 - 損失関数や描画処理が必要な場合は、Python式ではなく既存preset名を選ぶ
 - 初学者が「何を見るべきか」が分かるように、具体例から始める
 - 記号の数学的意味と直感的意味を分ける
+- recommended_examplesは2〜3個出す。身近さ、動画化しやすさ、誤解の解消しやすさが異なる候補にする
+- 1番目のrecommended_examplesをデフォルト採用候補にする
+- explanation_stepsは、1番目の候補に自然に合い、かつ他候補を選んでも大きく破綻しない表現にする
+- 具体例候補が複数ある場合でも、Pythonコードや新しい描画処理ではなく、既存テンプレートで表現できる値だけをconcrete_valuesへ入れる
 - 操作ごとに「何をしているか」と「視覚化ヒント」を出す
 - prerequisite_mapでは、理解に必要な前提知識と詰まりやすい点を出す
 - explanation_planは5〜7 stepsにする

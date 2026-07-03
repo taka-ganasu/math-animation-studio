@@ -48,6 +48,7 @@ def test_formula_understanding_plan_prompt_contains_schema_and_patterns() -> Non
     assert "Pythonコード" in prompt
     assert "generation_boundary.code_generation_allowedは必ずfalse" in prompt
     assert "既存preset名" in prompt
+    assert "recommended_examplesは2〜3個" in prompt
 
 
 def test_voiceover_script_prompt_contains_storyboard_and_constraints() -> None:

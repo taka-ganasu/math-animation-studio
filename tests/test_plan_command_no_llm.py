@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from typer.testing import CliRunner
 
 from math_animation_studio.cli import app
@@ -67,9 +69,12 @@ def test_plan_no_llm_cross_entropy_outputs_artifacts(tmp_path) -> None:
     storyboard = Storyboard.model_validate_json(
         (tmp_path / "storyboard.json").read_text(encoding="utf-8")
     )
+    explanation_plan = json.loads((tmp_path / "explanation_plan.json").read_text(encoding="utf-8"))
     brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
 
     assert storyboard.concept == "cross_entropy"
+    assert len(storyboard.examples) == 1
+    assert len(explanation_plan["recommended_examples"]) >= 3
     assert storyboard.scenes[0].components
     assert storyboard.scenes[0].narration_cues
     assert "一言でいうと" in brief
@@ -94,7 +99,7 @@ def test_plan_interactive_example_accepts_recommended_example(tmp_path) -> None:
             "--no-llm",
             "--interactive-example",
         ],
-        input="\n",
+        input="\n\n",
     )
 
     assert result.exit_code == 0, result.output
@@ -104,6 +109,35 @@ def test_plan_interactive_example_accepts_recommended_example(tmp_path) -> None:
     )
 
     assert storyboard.examples[0].title == "3クラス分類: 猫・犬・鳥"
+
+
+def test_plan_interactive_example_can_choose_llm_style_candidate(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"L = - \sum_i y_i \log(\hat{y}_i)",
+            "--goal",
+            "クロスエントロピー損失を直感的に理解したい",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+            "--interactive-example",
+        ],
+        input="2\n\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "2. サイコロの目予測例" in result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
+    assert storyboard.examples[0].title == "サイコロの目予測例"
+    assert storyboard.examples[0].values["y"] == "[0, 0, 1, 0, 0, 0]"
+    assert "サイコロの目予測例" in brief
 
 
 def test_plan_interactive_example_allows_editing_example(tmp_path) -> None:
@@ -121,6 +155,7 @@ def test_plan_interactive_example_allows_editing_example(tmp_path) -> None:
             "--interactive-example",
         ],
         input=(
+            "1\n"
             "n\n"
             "サイコロの目予測\n"
             "正解が目3のとき、6個の候補のうち正解の確率だけを罰に変える。\n"

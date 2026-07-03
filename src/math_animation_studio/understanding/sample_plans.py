@@ -188,12 +188,37 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             audience=audience,
             teaching_strategy="concrete_to_abstract",
             recommended_examples=[
-                TeachingExample(title="3クラス分類: 猫・犬・鳥", description="正解が猫のとき、モデルの予測確率を棒グラフで見る。", why_it_works="正解クラスの確率だけを取り出して-log(p)へ通す流れを視覚化しやすい。", concrete_values={"cat_probability_good": 0.9, "cat_probability_bad": 0.1})
+                TeachingExample(
+                    title="3クラス分類: 猫・犬・鳥",
+                    description="正解が猫のとき、モデルの予測確率を棒グラフで見る。",
+                    why_it_works="正解クラスの確率だけを取り出して-log(p)へ通す流れを視覚化しやすい。",
+                    concrete_values={"cat_probability_good": 0.9, "cat_probability_bad": 0.1},
+                ),
+                TeachingExample(
+                    title="サイコロの目予測例",
+                    description="正解が目3のとき、6個の候補のうち正解の確率だけを罰に変える。",
+                    why_it_works="one-hotが6次元になるため、正解以外の項が0倍されることを確認しやすい。",
+                    concrete_values={
+                        "y": "[0, 0, 1, 0, 0, 0]",
+                        r"\hat{y}_good": "[0.03, 0.04, 0.80, 0.05, 0.04, 0.04]",
+                        r"\hat{y}_bad": "[0.20, 0.25, 0.05, 0.20, 0.15, 0.15]",
+                    },
+                ),
+                TeachingExample(
+                    title="天気予測: 晴れ・雨・曇り",
+                    description="正解が雨のとき、雨に置いた確率が高い予測と低い予測を比べる。",
+                    why_it_works="確率予測の良し悪しを日常的な例で捉えやすい。",
+                    concrete_values={
+                        "y": "[0, 1, 0]",
+                        r"\hat{y}_good": "[0.08, 0.84, 0.08]",
+                        r"\hat{y}_bad": "[0.62, 0.12, 0.26]",
+                    },
+                ),
             ],
             selected_animation_pattern_id="penalty_curve",
             explanation_steps=[
-                ExplanationStep(id="step_01", title="正解クラスを決める", learning_goal="one-hotラベルの役割を理解する", explanation="まず正解が猫である状況を考えます。one-hotラベルでは猫だけが1になります。", visual_idea="猫・犬・鳥の3クラスを並べ、猫だけをハイライトする。", formula_focus="y_i"),
-                ExplanationStep(id="step_02", title="予測確率を見る", learning_goal="モデル出力を確率分布として読む", explanation="モデルは各クラスに確率を割り当てます。正解クラスに高い確率を置けるほど良い予測です。", visual_idea="3本の確率バーを表示する。", formula_focus=r"\hat{y}_i"),
+                ExplanationStep(id="step_01", title="正解クラスを決める", learning_goal="one-hotラベルの役割を理解する", explanation="まず、どのクラスが正解かを決めます。one-hotラベルでは正解だけが1になります。", visual_idea="候補クラスを並べ、正解クラスだけをハイライトする。", formula_focus="y_i"),
+                ExplanationStep(id="step_02", title="予測確率を見る", learning_goal="モデル出力を確率分布として読む", explanation="モデルは各クラスに確率を割り当てます。正解クラスに高い確率を置けるほど良い予測です。", visual_idea="各候補の予測確率を棒グラフで表示する。", formula_focus=r"\hat{y}_i"),
                 ExplanationStep(id="step_03", title="正解クラスだけが残る", learning_goal="sumの中でどの項が効くかを理解する", explanation="one-hotラベルでは、正解クラス以外の項は0倍されます。", visual_idea="sumの各項を並べ、0になる項を薄くする。", formula_focus=r"\sum_i y_i \log(\hat{y}_i)", common_misunderstanding_addressed="全クラスが同じ強さで損失に効くわけではない。"),
                 ExplanationStep(id="step_04", title="-log(p)の罰を見る", learning_goal="低い正解確率が強く罰される理由を理解する", explanation="正解確率pが小さいほど-log(p)は急激に大きくなります。", visual_idea="-log(p)曲線上でp=0.9とp=0.1を比較する。", formula_focus=r"-\log(p)"),
                 ExplanationStep(id="step_05", title="良い予測と悪い予測を比べる", learning_goal="損失値の直感を得る", explanation="正解に高い確率を置く予測は損失が小さく、低い確率しか置かない予測は損失が大きくなります。", visual_idea="2つの予測バーと損失値を左右に並べる。"),

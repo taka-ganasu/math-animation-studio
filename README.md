@@ -105,7 +105,7 @@ math-anim plan \
 
 成功すると `outputs/cross_entropy_plan/video.mp4` が作成されます。
 
-具体例を自動提案させたあと、人間が確認してから進めたい場合は `--interactive-example` を付けます。Enterで提案例を採用し、`n` を入力するとタイトル、説明、採用理由を書き換えられます。
+具体例を自動提案させたあと、人間が確認してから進めたい場合は `--interactive-example` を付けます。候補が複数ある場合は番号で選び、Enterで採用します。`n` を入力するとタイトル、説明、採用理由を書き換えられます。LLMモードでは2〜3個の候補を出すように促します。`--no-llm` では固定候補で同じUIを試せます。
 
 ```bash
 math-anim plan \

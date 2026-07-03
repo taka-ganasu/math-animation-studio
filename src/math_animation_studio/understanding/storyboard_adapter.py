@@ -234,7 +234,7 @@ class StoryboardAdapter:
                 description=example.description,
                 values=example.concrete_values,
             )
-            for example in explanation_plan.recommended_examples
+            for example in explanation_plan.recommended_examples[:1]
         ]
 
         return Storyboard(
