@@ -80,6 +80,65 @@ def test_plan_no_llm_cross_entropy_outputs_artifacts(tmp_path) -> None:
     assert "\\[" not in brief
 
 
+def test_plan_interactive_example_accepts_recommended_example(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"L = - \sum_i y_i \log(\hat{y}_i)",
+            "--goal",
+            "クロスエントロピー損失を直感的に理解したい",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+            "--interactive-example",
+        ],
+        input="\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Recommended teaching example" in result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+
+    assert storyboard.examples[0].title == "3クラス分類: 猫・犬・鳥"
+
+
+def test_plan_interactive_example_allows_editing_example(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"L = - \sum_i y_i \log(\hat{y}_i)",
+            "--goal",
+            "クロスエントロピー損失を直感的に理解したい",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+            "--interactive-example",
+        ],
+        input=(
+            "n\n"
+            "サイコロの目予測\n"
+            "正解が目3のとき、6個の候補のうち正解の確率だけを罰に変える。\n"
+            "分類の候補数が見えやすく、one-hotの意味を確認しやすい。\n"
+        ),
+    )
+
+    assert result.exit_code == 0, result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
+    assert storyboard.examples[0].title == "サイコロの目予測"
+    assert "サイコロの目予測" in brief
+    assert "分類の候補数が見えやすく" in brief
+
+
 def test_plan_no_llm_gradient_double_well_outputs_storyboard(tmp_path) -> None:
     result = runner.invoke(
         app,

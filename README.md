@@ -105,6 +105,17 @@ math-anim plan \
 
 成功すると `outputs/cross_entropy_plan/video.mp4` が作成されます。
 
+具体例を自動提案させたあと、人間が確認してから進めたい場合は `--interactive-example` を付けます。Enterで提案例を採用し、`n` を入力するとタイトル、説明、採用理由を書き換えられます。
+
+```bash
+math-anim plan \
+  --formula "L = - \\sum_i y_i \\log(\\hat{y}_i)" \
+  --goal "クロスエントロピー損失を直感的に理解したい" \
+  --output-dir outputs/cross_entropy_plan \
+  --no-llm \
+  --interactive-example
+```
+
 macOSでは、`--voiceover` を付けると `say` コマンドで日本語ナレーションを生成し、`ffmpeg` で動画に合成します。
 
 ```bash

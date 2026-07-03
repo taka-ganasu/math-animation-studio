@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Optional
 
@@ -14,7 +15,9 @@ from math_animation_studio.renderer import ManimRenderer, RenderError
 from math_animation_studio.understanding.formula_understanding_planner import (
     FormulaUnderstandingPlanner,
     FormulaUnderstandingPlannerError,
+    PlanArtifacts,
 )
+from math_animation_studio.schema import TeachingExample
 from math_animation_studio.validation import ValidationError, validate_python_syntax
 from math_animation_studio.voiceover import (
     LLMVoiceoverScriptWriter,
@@ -209,6 +212,11 @@ def plan(
         "--format",
         help="Output format: json, markdown, or all.",
     ),
+    interactive_example: bool = typer.Option(
+        False,
+        "--interactive-example",
+        help="Review and optionally edit the recommended teaching example before writing artifacts.",
+    ),
 ) -> None:
     if output_format not in {"json", "markdown", "all"}:
         typer.echo("Error: --format must be one of json, markdown, all.", err=True)
@@ -230,6 +238,12 @@ def plan(
             to_storyboard=to_storyboard,
             target_duration_seconds=duration,
         )
+        if interactive_example:
+            artifacts = _review_teaching_example(
+                artifacts,
+                planner=planner,
+                to_storyboard=to_storyboard,
+            )
 
         if output_format in {"json", "all"}:
             manager.write_formula_analysis(artifacts.formula_analysis)
@@ -361,3 +375,99 @@ def plan(
         )
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc
+
+
+def _review_teaching_example(
+    artifacts: PlanArtifacts,
+    *,
+    planner: FormulaUnderstandingPlanner,
+    to_storyboard: bool,
+) -> PlanArtifacts:
+    examples = artifacts.explanation_plan.recommended_examples
+    if not examples:
+        typer.echo("No recommended teaching examples were generated.")
+        return artifacts
+
+    typer.echo("")
+    typer.echo("Recommended teaching example")
+    typer.echo("----------------------------")
+    for index, example in enumerate(examples, start=1):
+        typer.echo(f"{index}. {example.title}")
+        typer.echo(f"   {example.description}")
+        typer.echo(f"   Why: {example.why_it_works}")
+
+    selected = examples[0]
+    if len(examples) > 1:
+        selected = examples[_prompt_example_index(len(examples)) - 1]
+    if typer.confirm("Use this example?", default=True):
+        return _replace_teaching_example(
+            artifacts,
+            planner=planner,
+            example=selected,
+            to_storyboard=to_storyboard,
+        )
+
+    typer.echo("Edit the example. Press Enter to keep the current value.")
+    title = typer.prompt("Title", default=selected.title)
+    description = typer.prompt("Description", default=selected.description)
+    why_it_works = typer.prompt("Why it works", default=selected.why_it_works)
+    edited = TeachingExample(
+        title=title,
+        description=description,
+        why_it_works=why_it_works,
+        concrete_values=selected.concrete_values,
+    )
+    return _replace_teaching_example(
+        artifacts,
+        planner=planner,
+        example=edited,
+        to_storyboard=to_storyboard,
+    )
+
+
+def _prompt_example_index(example_count: int) -> int:
+    while True:
+        raw_choice = typer.prompt(
+            f"Choose example number [1-{example_count}]",
+            default="1",
+        )
+        try:
+            choice = int(raw_choice)
+        except ValueError:
+            typer.echo("Please enter a number.")
+            continue
+        if 1 <= choice <= example_count:
+            return choice
+        typer.echo(f"Please enter a number from 1 to {example_count}.")
+
+
+def _replace_teaching_example(
+    artifacts: PlanArtifacts,
+    *,
+    planner: FormulaUnderstandingPlanner,
+    example: TeachingExample,
+    to_storyboard: bool,
+) -> PlanArtifacts:
+    explanation_plan = artifacts.explanation_plan.model_copy(
+        update={"recommended_examples": [example]},
+    )
+    animation_brief = planner.brief_writer.write(
+        formula_analysis=artifacts.formula_analysis,
+        classification=artifacts.concept_classification,
+        explanation_plan=explanation_plan,
+        selected_pattern=artifacts.selected_pattern,
+    )
+    storyboard = (
+        planner.storyboard_adapter.convert(
+            formula_analysis=artifacts.formula_analysis,
+            explanation_plan=explanation_plan,
+        )
+        if to_storyboard
+        else None
+    )
+    return replace(
+        artifacts,
+        explanation_plan=explanation_plan,
+        animation_brief=animation_brief,
+        storyboard=storyboard,
+    )
