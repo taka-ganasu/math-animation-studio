@@ -6,6 +6,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
+ExampleValue = str | int | float | list[str | int | float]
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -19,7 +22,7 @@ class SymbolDefinition(StrictModel):
 class Example(StrictModel):
     title: str
     description: str
-    values: dict[str, float | int | str] = Field(default_factory=dict)
+    values: dict[str, ExampleValue] = Field(default_factory=dict)
 
 
 class VisualObject(StrictModel):

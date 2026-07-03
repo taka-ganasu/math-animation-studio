@@ -10,7 +10,7 @@ from typing import Any, Literal
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import BaseModel, ConfigDict, Field
 
-from math_animation_studio.schema import Storyboard, VisualObject
+from math_animation_studio.schema import ExampleValue, Storyboard, VisualObject
 from math_animation_studio.timing import (
     cross_entropy_timeline_segments,
     gradient_double_well_1d_timeline_segments,
@@ -471,7 +471,7 @@ def _penalty_curve_example_data(storyboard: Storyboard) -> dict[str, Any]:
     }
 
 
-def _indexed_values(values: dict[str, float | int | str], *, kind: str) -> list[float] | None:
+def _indexed_values(values: dict[str, ExampleValue], *, kind: str) -> list[float] | None:
     indexed: dict[int, float] = {}
     for key, value in values.items():
         match = re.search(r"_(\d+)$", key.strip())
@@ -502,7 +502,7 @@ def _indexed_values(values: dict[str, float | int | str], *, kind: str) -> list[
     return [_clamp_probability(indexed.get(index, 0.0)) for index in range(max_index + 1)]
 
 
-def _json_vector_for_role(values: dict[str, float | int | str], role: str) -> list[float] | None:
+def _json_vector_for_role(values: dict[str, ExampleValue], role: str) -> list[float] | None:
     for key, value in values.items():
         normalized = key.lower()
         if role not in normalized:
@@ -514,7 +514,7 @@ def _json_vector_for_role(values: dict[str, float | int | str], role: str) -> li
 
 
 def _json_vector_for_keys(
-    values: dict[str, float | int | str],
+    values: dict[str, ExampleValue],
     candidate_keys: set[str],
 ) -> list[float] | None:
     normalized_candidates = {key.lower() for key in candidate_keys}
@@ -552,7 +552,7 @@ def _parse_json_number_list(value: object) -> list[float] | None:
     return numbers
 
 
-def _float_for_keys(values: dict[str, float | int | str], keys: set[str]) -> float | None:
+def _float_for_keys(values: dict[str, ExampleValue], keys: set[str]) -> float | None:
     normalized_keys = {key.lower() for key in keys}
     for key, value in values.items():
         if key.lower() not in normalized_keys:

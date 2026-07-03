@@ -4,14 +4,14 @@ from typing import Literal
 
 from pydantic import Field
 
-from .storyboard import StrictModel
+from .storyboard import ExampleValue, StrictModel
 
 
 class TeachingExample(StrictModel):
     title: str
     description: str
     why_it_works: str
-    concrete_values: dict[str, str | int | float] = Field(default_factory=dict)
+    concrete_values: dict[str, ExampleValue] = Field(default_factory=dict)
 
 
 class ExplanationStep(StrictModel):

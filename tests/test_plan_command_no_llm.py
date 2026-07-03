@@ -136,7 +136,7 @@ def test_plan_interactive_example_can_choose_llm_style_candidate(tmp_path) -> No
     brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
 
     assert storyboard.examples[0].title == "サイコロの目予測例"
-    assert storyboard.examples[0].values["y"] == "[0, 0, 1, 0, 0, 0]"
+    assert storyboard.examples[0].values["y"] == [0, 0, 1, 0, 0, 0]
     assert "サイコロの目予測例" in brief
 
 

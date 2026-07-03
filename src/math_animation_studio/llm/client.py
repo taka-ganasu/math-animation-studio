@@ -64,9 +64,22 @@ class LLMClient:
         try:
             return response_model.model_validate_json(raw)
         except ValidationError as exc:
-            raise LLMUnavailableError(
-                f"LLM output did not match {response_model.__name__}: {exc}"
-            ) from exc
+            retry_prompt = _validation_retry_prompt(
+                original_prompt=prompt,
+                raw_response=raw,
+                error_message=str(exc),
+            )
+            retry_raw = self._complete_json_schema(
+                prompt=retry_prompt,
+                response_model=response_model,
+                schema_name=schema_name,
+            )
+            try:
+                return response_model.model_validate_json(retry_raw)
+            except ValidationError as retry_exc:
+                raise LLMUnavailableError(
+                    f"LLM output did not match {response_model.__name__}: {retry_exc}"
+                ) from retry_exc
 
     def _complete_json_schema(
         self,
@@ -153,3 +166,24 @@ def _extract_json(content: str) -> str:
     except json.JSONDecodeError as exc:
         raise LLMUnavailableError(f"LLM returned invalid JSON: {exc}") from exc
     return text
+
+
+def _validation_retry_prompt(
+    *,
+    original_prompt: str,
+    raw_response: str,
+    error_message: str,
+) -> str:
+    return f"""{original_prompt}
+
+前回のJSONはschema validationに失敗しました。
+
+Validation error:
+{error_message}
+
+前回のJSON:
+{raw_response}
+
+上記のエラーを修正し、JSON schemaに合うJSONオブジェクトだけを再出力してください。
+Markdown fences、説明文、Pythonコード、Manimコードは出力しないでください。
+"""

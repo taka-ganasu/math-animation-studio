@@ -11,6 +11,7 @@ from .prerequisite_map import PrerequisiteItem, PrerequisiteMap
 from .storyboard import (
     AnimationComponent,
     Example,
+    ExampleValue,
     NarrationCue,
     SceneSpec,
     Storyboard,
@@ -26,6 +27,7 @@ __all__ = [
     "AnimationComponent",
     "ConceptClassification",
     "Example",
+    "ExampleValue",
     "ExplanationPlan",
     "ExplanationStep",
     "FormulaAnalysis",

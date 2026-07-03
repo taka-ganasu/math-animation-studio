@@ -199,6 +199,8 @@ math-anim plan \
 
 `--render --voiceover` を付けると、対応済みテンプレートに変換できる場合だけ動画と音声付き動画まで生成します。
 
+LLM出力がschemaに少し合わない場合は、validation errorと前回JSONを渡して1回だけ自動修正を試みます。具体例の `concrete_values` では、数値、文字列、既存preset名に加えて、確率分布やone-hotのようなJSON配列も受け付けます。
+
 ## 安全な拡張方針
 
 MVP2以降は、完全自由なManimコード生成ではなく、Storyboard内の宣言的な部品を既存テンプレートへ写像します。

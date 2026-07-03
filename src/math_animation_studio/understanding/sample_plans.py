@@ -199,9 +199,9 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     description="正解が目3のとき、6個の候補のうち正解の確率だけを罰に変える。",
                     why_it_works="one-hotが6次元になるため、正解以外の項が0倍されることを確認しやすい。",
                     concrete_values={
-                        "y": "[0, 0, 1, 0, 0, 0]",
-                        r"\hat{y}_good": "[0.03, 0.04, 0.80, 0.05, 0.04, 0.04]",
-                        r"\hat{y}_bad": "[0.20, 0.25, 0.05, 0.20, 0.15, 0.15]",
+                        "y": [0, 0, 1, 0, 0, 0],
+                        r"\hat{y}_good": [0.03, 0.04, 0.80, 0.05, 0.04, 0.04],
+                        r"\hat{y}_bad": [0.20, 0.25, 0.05, 0.20, 0.15, 0.15],
                     },
                 ),
                 TeachingExample(
@@ -209,9 +209,9 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     description="正解が雨のとき、雨に置いた確率が高い予測と低い予測を比べる。",
                     why_it_works="確率予測の良し悪しを日常的な例で捉えやすい。",
                     concrete_values={
-                        "y": "[0, 1, 0]",
-                        r"\hat{y}_good": "[0.08, 0.84, 0.08]",
-                        r"\hat{y}_bad": "[0.62, 0.12, 0.26]",
+                        "y": [0, 1, 0],
+                        r"\hat{y}_good": [0.08, 0.84, 0.08],
+                        r"\hat{y}_bad": [0.62, 0.12, 0.26],
                     },
                 ),
             ],
