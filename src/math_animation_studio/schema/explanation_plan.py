@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from .storyboard import ExampleValue, StrictModel
+from .storyboard import ExampleValue, SceneRole, StrictModel
 
 
 class TeachingExample(StrictModel):
@@ -23,6 +23,7 @@ class PlannedAnimationComponent(StrictModel):
 
 class ExplanationStep(StrictModel):
     id: str
+    scene_role: SceneRole | None = None
     title: str
     learning_goal: str
     explanation: str

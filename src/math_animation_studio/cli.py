@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from pathlib import Path
 from typing import Optional
@@ -16,6 +17,14 @@ from math_animation_studio.understanding.formula_understanding_planner import (
     FormulaUnderstandingPlanner,
     FormulaUnderstandingPlannerError,
     PlanArtifacts,
+)
+from math_animation_studio.understanding.storyboard_dsl import (
+    default_formula_first_blueprint,
+    storyboard_dsl_prompt_summary,
+)
+from math_animation_studio.understanding.visual_component_catalog import (
+    load_visual_component_catalog,
+    visual_component_prompt_summary,
 )
 from math_animation_studio.schema import TeachingExample
 from math_animation_studio.validation import ValidationError, validate_python_syntax
@@ -50,6 +59,47 @@ def main(
     ),
 ) -> None:
     pass
+
+
+@app.command()
+def catalog(
+    output_format: str = typer.Option(
+        "markdown",
+        "--format",
+        help="Output format: markdown or json.",
+    ),
+) -> None:
+    if output_format not in {"markdown", "json"}:
+        typer.echo("Error: --format must be one of markdown, json.", err=True)
+        raise typer.Exit(code=1)
+
+    blueprint = default_formula_first_blueprint()
+    components = load_visual_component_catalog()
+    if output_format == "json":
+        typer.echo(
+            json.dumps(
+                {
+                    "storyboard_dsl": blueprint.model_dump(mode="json"),
+                    "visual_components": [
+                        component.model_dump(mode="json")
+                        for component in components.values()
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
+
+    typer.echo("# Math Animation Studio Catalog")
+    typer.echo("")
+    typer.echo("## Storyboard DSL")
+    typer.echo("")
+    typer.echo(storyboard_dsl_prompt_summary())
+    typer.echo("")
+    typer.echo("## Visual Components")
+    typer.echo("")
+    typer.echo(visual_component_prompt_summary())
 
 
 @app.command()

@@ -82,9 +82,16 @@ def test_formula_understanding_plan_prompt_contains_visual_component_catalog() -
             "- formula_focus: 数式の一部を強調する (category=formula)\n"
             "- terrain_metaphor: 損失を地形として見せる (category=metaphor)"
         ),
+        storyboard_dsl=(
+            "Storyboard DSL v1: formula_first\n"
+            "Scene roles must be one of: title_intro, formula_structure, visualization, summary"
+        ),
     )
 
     assert "利用可能な視覚部品カタログ" in prompt
+    assert "共通Storyboard DSL" in prompt
+    assert "explanation_steps[].scene_role" in prompt
+    assert "formula_first" in prompt
     assert "planned_components" in prompt
     assert "formula_focus" in prompt
     assert "視覚部品カタログにあるidだけ" in prompt
@@ -104,12 +111,15 @@ def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:
         animation_pattern_ids=["penalty_curve", "trajectory_on_surface"],
         plan_json='{"concept_classification":{"primary_concept":"cross_entropy"}}',
         visual_component_catalog="- gradient_arrow: 勾配方向を矢印で示す",
+        storyboard_dsl="Storyboard DSL v1: formula_first",
     )
 
     assert "一貫しているか" in prompt
     assert "数式名だけに引っ張られず" in prompt
     assert "goalと優先概念を主題" in prompt
     assert "planned_components" in prompt
+    assert "scene_role" in prompt
+    assert "Storyboard DSL" in prompt
     assert "地形、現在地、上り勾配、下り更新、足跡、式への橋渡し" in prompt
     assert "gradient_arrow" in prompt
     assert "FormulaPlanConsistencyReview" in prompt or "is_consistent" in prompt

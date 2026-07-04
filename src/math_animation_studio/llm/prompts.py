@@ -87,6 +87,7 @@ def build_formula_understanding_plan_prompt(
     target_duration_seconds: int,
     concept_hint: str | None = None,
     visual_component_catalog: str | None = None,
+    storyboard_dsl: str | None = None,
 ) -> str:
     schema_json = json.dumps(
         FormulaUnderstandingLLMPlan.model_json_schema(),
@@ -122,6 +123,9 @@ def build_formula_understanding_plan_prompt(
 利用可能な視覚部品カタログ:
 {visual_component_catalog or ""}
 
+共通Storyboard DSL:
+{storyboard_dsl or ""}
+
 重要な制約:
 - 出力は必ずJSONのみ。Markdown fencesや説明文をJSONの外に書かない
 - JSON schemaに完全に従う
@@ -139,6 +143,10 @@ def build_formula_understanding_plan_prompt(
 - recommended_examplesは2〜3個出す。身近さ、動画化しやすさ、誤解の解消しやすさが異なる候補にする
 - 1番目のrecommended_examplesをデフォルト採用候補にする
 - explanation_stepsは、1番目の候補に自然に合い、かつ他候補を選んでも大きく破綻しない表現にする
+- explanation_steps[].scene_roleにはStoryboard DSLのscene roleを入れる
+- formula_firstの基本構成は、title_intro, formula_structure, concrete_example, visualization, summary
+- title_introはテンプレート側が自動生成できるため、必ず独立stepにしなくてもよい
+- ただし、formula_structure、visualization、summaryに相当する説明は必ず含める
 - 具体例候補が複数ある場合でも、Pythonコードや新しい描画処理ではなく、既存テンプレートで表現できる値だけをconcrete_valuesへ入れる
 - 操作ごとに「何をしているか」と「視覚化ヒント」を出す
 - explanation_steps[].planned_componentsには、視覚部品カタログにあるidだけをkindとして入れる
@@ -172,6 +180,7 @@ def build_formula_plan_consistency_prompt(
     animation_pattern_ids: list[str],
     plan_json: str,
     visual_component_catalog: str | None = None,
+    storyboard_dsl: str | None = None,
 ) -> str:
     schema_json = json.dumps(
         FormulaPlanConsistencyReview.model_json_schema(),
@@ -205,6 +214,9 @@ def build_formula_plan_consistency_prompt(
 利用可能な視覚部品カタログ:
 {visual_component_catalog or ""}
 
+共通Storyboard DSL:
+{storyboard_dsl or ""}
+
 生成済み教材企画JSON:
 {plan_json}
 
@@ -215,6 +227,8 @@ def build_formula_plan_consistency_prompt(
 - formulaとgoalが別概念を指す場合は、goalと優先概念を主題として扱う
 - selected_animation_pattern_idは、利用可能なアニメーションパターンIDから最も適切なものを選ぶ
 - explanation_steps[].planned_componentsが、視覚部品カタログ内のidだけを使っているか確認する
+- explanation_steps[].scene_roleがStoryboard DSLのroleから選ばれているか確認する
+- formula_firstの流れとして、式の構造説明、実際の可視化、まとめが不足していないか確認する
 - ナレーションで説明する数式パーツとplanned_componentsが対応しているか確認する
 - 勾配降下法を幾何的・比喩的に説明しているのに、地形、現在地、上り勾配、下り更新、足跡、式への橋渡しに対応する部品が不足していないか確認する
 - 修正が必要な場合は、revision_instructionsに「どの概念を主題にするか」「どの説明を削る/残すか」「どのパターンを使うか」を具体的に書く

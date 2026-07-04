@@ -22,6 +22,25 @@ def test_generate_help() -> None:
     assert "--no-llm" in result.output
 
 
+def test_catalog_markdown() -> None:
+    result = runner.invoke(app, ["catalog"])
+
+    assert result.exit_code == 0, result.output
+    assert "Storyboard DSL" in result.output
+    assert "formula_first" in result.output
+    assert "Visual Components" in result.output
+    assert "formula_focus" in result.output
+
+
+def test_catalog_json() -> None:
+    result = runner.invoke(app, ["catalog", "--format", "json"])
+
+    assert result.exit_code == 0, result.output
+    assert '"storyboard_dsl"' in result.output
+    assert '"visual_components"' in result.output
+    assert '"formula_first"' in result.output
+
+
 def test_generate_no_llm_no_render(tmp_path) -> None:
     result = runner.invoke(
         app,

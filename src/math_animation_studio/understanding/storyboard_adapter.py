@@ -20,6 +20,7 @@ from .visual_component_catalog import (
     visual_component_definition,
     visual_component_ids,
 )
+from .storyboard_dsl import formula_first_blueprint, infer_scene_role
 
 
 SUPPORTED_COMPONENT_KINDS = set(get_args(AnimationComponent.model_fields["kind"].annotation))
@@ -41,6 +42,12 @@ class StoryboardAdapter:
         )
         step_count = len(explanation_plan.explanation_steps)
         for index, step in enumerate(explanation_plan.explanation_steps, start=1):
+            scene_role = infer_scene_role(
+                step,
+                step_index=index,
+                step_count=step_count,
+                animation_pattern_id=explanation_plan.selected_animation_pattern_id,
+            )
             components = _components_for_step(
                 explanation_plan,
                 step,
@@ -269,6 +276,8 @@ class StoryboardAdapter:
             scenes.append(
                 SceneSpec(
                     id=step.id,
+                    scene_role=scene_role,
+                    beat_id=scene_role,
                     title=step.title,
                     learning_goal=step.learning_goal,
                     narration=step.explanation,
@@ -291,6 +300,7 @@ class StoryboardAdapter:
         return Storyboard(
             concept=_render_concept(explanation_plan),
             formula=explanation_plan.formula,
+            blueprint=formula_first_blueprint(explanation_plan),
             one_sentence_summary=explanation_plan.one_sentence_summary,
             audience=explanation_plan.audience,
             prerequisites=[],

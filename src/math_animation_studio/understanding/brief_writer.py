@@ -7,6 +7,8 @@ from math_animation_studio.schema import (
     FormulaAnalysis,
 )
 
+from .storyboard_dsl import FORMULA_FIRST_ROLE_ORDER, infer_scene_role
+
 
 def _strip_math_delimiters(value: str) -> str:
     text = value.strip()
@@ -111,14 +113,29 @@ class AnimationBriefWriter:
         rows.extend(
             [
                 "",
+                "## Storyboard DSL",
+                "",
+                f"- フロー: `formula_first`",
+                "- 章立て: "
+                + " -> ".join(f"`{role}`" for role in FORMULA_FIRST_ROLE_ORDER),
+                "- 方針: タイトル導入、式の構造、具体例、実際の可視化、まとめに分けて設計する。",
+                "",
                 "## シーン構成",
                 "",
             ]
         )
+        step_count = len(explanation_plan.explanation_steps)
         for index, step in enumerate(explanation_plan.explanation_steps, start=1):
+            scene_role = infer_scene_role(
+                step,
+                step_index=index,
+                step_count=step_count,
+                animation_pattern_id=explanation_plan.selected_animation_pattern_id,
+            )
             rows.extend(
                 [
                     f"{index}. {step.title}",
+                    f"   - 役割: `{scene_role}`",
                     f"   - 学習ゴール: {step.learning_goal}",
                     f"   - 視覚化: {step.visual_idea}",
                 ]

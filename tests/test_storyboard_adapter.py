@@ -18,6 +18,7 @@ def test_storyboard_adapter_uses_planned_components_from_explanation_step() -> N
     )
     first_step = explanation_plan.explanation_steps[0].model_copy(
         update={
+            "scene_role": "formula_structure",
             "planned_components": [
                 PlannedAnimationComponent(
                     kind="formula_focus",
@@ -40,6 +41,11 @@ def test_storyboard_adapter_uses_planned_components_from_explanation_step() -> N
         formula_analysis=formula_analysis,
         explanation_plan=explanation_plan,
     )
+
+    assert storyboard.blueprint is not None
+    assert storyboard.blueprint.flow_name == "formula_first"
+    assert storyboard.scenes[0].scene_role == "formula_structure"
+    assert storyboard.scenes[0].beat_id == "formula_structure"
 
     first_scene = storyboard.scenes[0]
     component_kinds = [component.kind for component in first_scene.components]

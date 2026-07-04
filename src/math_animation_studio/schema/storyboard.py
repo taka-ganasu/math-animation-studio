@@ -7,6 +7,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 ExampleValue = str | int | float | list[str | int | float]
+SceneRole = Literal[
+    "title_intro",
+    "formula_structure",
+    "concrete_example",
+    "visualization",
+    "summary",
+]
 
 
 class StrictModel(BaseModel):
@@ -23,6 +30,21 @@ class Example(StrictModel):
     title: str
     description: str
     values: dict[str, ExampleValue] = Field(default_factory=dict)
+
+
+class StoryboardBeat(StrictModel):
+    id: str
+    role: SceneRole
+    title: str
+    intent: str
+    preferred_component_kinds: list[str] = Field(default_factory=list)
+    duration_weight: float = Field(default=1.0, gt=0)
+
+
+class StoryboardBlueprint(StrictModel):
+    version: str = "storyboard_dsl_v1"
+    flow_name: str = "formula_first"
+    beats: list[StoryboardBeat]
 
 
 class VisualObject(StrictModel):
@@ -81,6 +103,8 @@ class NarrationCue(StrictModel):
 
 class SceneSpec(StrictModel):
     id: str
+    scene_role: SceneRole = "visualization"
+    beat_id: str | None = None
     title: str
     learning_goal: str
     narration: str
@@ -93,6 +117,7 @@ class SceneSpec(StrictModel):
 class Storyboard(StrictModel):
     concept: str
     formula: str | None = None
+    blueprint: StoryboardBlueprint | None = None
     one_sentence_summary: str
     audience: str
     prerequisites: list[str] = Field(default_factory=list)

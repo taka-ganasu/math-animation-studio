@@ -6,6 +6,13 @@ LLMはここにある部品IDを `explanation_steps[].planned_components[].kind`
 
 実行時に使う正本は `src/math_animation_studio/knowledge/visual_components.yaml` です。このMarkdownは人間が読むための説明版です。
 
+Storyboardの章立ては `docs/storyboard-dsl.md` を参照してください。現在のDSLと部品一覧はCLIでも確認できます。
+
+```bash
+math-anim catalog
+math-anim catalog --format json
+```
+
 ## 読み方
 
 - **id**: LLM/Storyboardで使う部品名
