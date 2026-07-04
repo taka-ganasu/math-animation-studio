@@ -358,9 +358,12 @@ def _gradient_double_well_1d_segment_text() -> dict[str, str]:
 
 def _gradient_surface_3d_segment_text() -> dict[str, str]:
     return {
+        "title_intro": (
+            "今回は、勾配降下法について見ていきます。損失を下げる一歩を、式と地形で理解します。"
+        ),
         "formula_parts": (
-            "まず更新式を分解します。シータtは今いる場所、イータは一歩の大きさ、"
-            "ナブラLは損失が増える上り方向です。マイナスは、その逆へ進む意味です。"
+            "まず更新式を分解します。シータtは今いる場所。イータは一歩の大きさ。"
+            "ナブラLは上り方向。マイナスで逆へ進みます。"
         ),
         "intro_surface": "次に、曲面の高さを損失として見ます。低い場所ほどよい状態です。",
         "current_point": "現在のパラメータは、この曲面上の一点として表せます。",

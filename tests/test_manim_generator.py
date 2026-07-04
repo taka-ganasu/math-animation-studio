@@ -318,8 +318,9 @@ def test_gradient_descent_generator_normalizes_llm_surface_alias(tmp_path) -> No
     assert "FUNCTION_PRESET = 'quadratic_ripple'" in rendered
     assert "custom_function_that_must_not_run" not in rendered
     assert sum(params.segment_durations.values()) == pytest.approx(30.0)
-    assert params.segment_durations["formula_parts"] == pytest.approx(6.0)
-    assert params.segment_durations["descent_path"] == pytest.approx(10.5)
+    assert params.segment_durations["title_intro"] == pytest.approx(2.727)
+    assert params.segment_durations["formula_parts"] == pytest.approx(6.545)
+    assert params.segment_durations["descent_path"] == pytest.approx(8.727)
     validate_python_syntax(output_path)
 
 
@@ -372,9 +373,10 @@ def test_gradient_descent_surface_3d_uses_target_duration_timeline(tmp_path) -> 
     rendered = output_path.read_text(encoding="utf-8")
 
     assert sum(params.segment_durations.values()) == pytest.approx(60.0)
-    assert params.segment_durations["formula_parts"] == pytest.approx(12.0)
-    assert params.segment_durations["intro_surface"] == pytest.approx(7.5)
-    assert params.segment_durations["descent_path"] == pytest.approx(21.0)
+    assert params.segment_durations["title_intro"] == pytest.approx(5.455)
+    assert params.segment_durations["formula_parts"] == pytest.approx(13.091)
+    assert params.segment_durations["intro_surface"] == pytest.approx(6.545)
+    assert params.segment_durations["descent_path"] == pytest.approx(17.455)
     assert params.surface_y_shift == pytest.approx(2.7)
     assert params.surface_z_length == pytest.approx(2.4)
     assert params.surface_camera_zoom == pytest.approx(0.52)
@@ -389,6 +391,7 @@ def test_gradient_descent_surface_3d_uses_target_duration_timeline(tmp_path) -> 
     assert "SURFACE_CAMERA_ZOOM = 0.52" in rendered
     assert "SURFACE_CAMERA_PHI = 55.0" in rendered
     assert "SURFACE_CAMERA_THETA = -48.0" in rendered
+    assert 'segment_duration("title_intro", 5.0)' in rendered
     assert 'segment_duration("formula_parts", 8.0)' in rendered
     assert "axes.shift(DOWN * SURFACE_Y_SHIFT)" in rendered
     assert "z_length=SURFACE_Z_LENGTH" in rendered
@@ -556,6 +559,8 @@ def test_gradient_descent_surface_3d_renders_metaphor_components(tmp_path) -> No
     ManimGenerator(target_duration_seconds=60).generate(storyboard, output_path)
     rendered = output_path.read_text(encoding="utf-8")
 
+    assert "今回は勾配降下法について見ていきます" in rendered
+    assert "損失を下げる一歩の決め方を、式と地形で理解する" in rendered
     assert "まず更新式を分解する" in rendered
     assert "今いる場所から、上り方向の逆へ、一歩ぶん進む" in rendered
     assert "損失曲面を地形として見る" in rendered

@@ -100,6 +100,7 @@ def test_voiceover_script_writer_segments_gradient_surface_formula_parts() -> No
     script = writer.write(artifacts.storyboard, target_duration_seconds=30)
 
     assert [segment.id for segment in segments] == [
+        "title_intro",
         "formula_parts",
         "intro_surface",
         "current_point",
@@ -107,9 +108,11 @@ def test_voiceover_script_writer_segments_gradient_surface_formula_parts() -> No
         "descent_path",
         "summary_surface",
     ]
-    assert segments[0].component_id == "formula_parts_focus"
-    assert segments[0].formula_focus == r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)"
+    assert segments[0].component_id == "intro_formula"
+    assert segments[1].component_id == "formula_parts_focus"
+    assert segments[1].formula_focus == r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)"
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(30.0)
+    assert "勾配降下法について見ていきます" in script
     assert "更新式を分解" in script
     assert "シータt" in script
     assert "イータ" in script

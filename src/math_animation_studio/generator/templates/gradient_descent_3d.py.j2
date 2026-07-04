@@ -246,6 +246,27 @@ class GradientDescent3DScene(ThreeDScene):
         lines.move_to(box.get_center())
         return VGroup(box, lines)
 
+    def construct_title_intro(self) -> None:
+        duration = segment_duration("title_intro", 5.0)
+        if duration <= 0.05:
+            return
+
+        title = Text("今回は勾配降下法について見ていきます", font_size=30)
+        title.to_edge(UP, buff=TITLE_TOP_BUFF)
+        formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=34)
+        formula.move_to(ORIGIN + UP * 0.45)
+        subtitle = Text("損失を下げる一歩の決め方を、式と地形で理解する", font_size=23, color=YELLOW)
+        subtitle.next_to(formula, DOWN, buff=0.45)
+
+        title_time = min(1.0, duration * 0.25)
+        formula_time = min(1.2, duration * 0.3)
+        subtitle_time = min(0.7, duration * 0.18)
+        self.play(FadeIn(title), run_time=title_time)
+        self.play(Write(formula), run_time=formula_time)
+        self.play(FadeIn(subtitle), run_time=subtitle_time)
+        self.wait_remaining(duration, title_time + formula_time + subtitle_time)
+        self.play(FadeOut(VGroup(title, formula, subtitle)), run_time=0.35)
+
     def construct_formula_parts_intro(self) -> None:
         duration = segment_duration("formula_parts", 8.0)
         if duration <= 0.05:
@@ -280,21 +301,22 @@ class GradientDescent3DScene(ThreeDScene):
         ]
 
         intro_time = min(1.2, duration * 0.18)
-        focus_time = min(0.55, max(0.18, duration * 0.08))
+        focus_time = min(1.8, max(0.65, duration * 0.13))
+        focus_in_time = min(0.35, focus_time * 0.28)
+        focus_out_time = min(0.16, focus_time * 0.18)
         self.play(FadeIn(title), Write(parts), run_time=intro_time)
         active_box = None
         active_label = None
         used_time = intro_time
         for part, label_text, color in focus_items:
+            if active_box is not None and active_label is not None:
+                self.play(FadeOut(active_box), FadeOut(active_label), run_time=focus_out_time)
+                used_time += focus_out_time
             box = SurroundingRectangle(part, color=color, buff=0.08)
             label = Text(label_text, font_size=20, color=color)
             label.next_to(part, DOWN, buff=0.24)
-            animations = [Create(box), FadeIn(label)]
-            if active_box is not None:
-                animations.append(FadeOut(active_box))
-            if active_label is not None:
-                animations.append(FadeOut(active_label))
-            self.play(*animations, run_time=focus_time)
+            self.play(Create(box), FadeIn(label), run_time=focus_in_time)
+            self.wait(max(0.0, focus_time - focus_in_time))
             active_box = box
             active_label = label
             used_time += focus_time
@@ -760,6 +782,7 @@ class GradientDescent3DScene(ThreeDScene):
             self.construct_double_well_2d()
             return
 
+        self.construct_title_intro()
         self.construct_formula_parts_intro()
 
         points = self.descent_points()
