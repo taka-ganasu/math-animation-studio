@@ -23,3 +23,4 @@ def test_visual_component_prompt_summary_is_llm_readable() -> None:
     assert "visual_type=formula" in summary
     assert "templates=penalty_curve" in summary
     assert "gradient_descent_3d" in summary
+    assert "function_preset=['quadratic_ripple', 'double_well_2d']" in summary

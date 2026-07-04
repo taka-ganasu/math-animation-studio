@@ -11,6 +11,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import BaseModel, ConfigDict, Field
 
 from math_animation_studio.schema import ExampleValue, Storyboard, VisualObject
+from math_animation_studio.safe_presets import normalize_loss_surface_preset
 from math_animation_studio.timing import (
     cross_entropy_timeline_segments,
     gradient_double_well_1d_timeline_segments,
@@ -226,19 +227,15 @@ class ManimGenerator:
         vector = _first_visual(storyboard, "vector")
         curve = _first_visual(storyboard, "curve")
 
-        function_preset = surface.params.get("function_preset", "quadratic_ripple")
-        function_expr = surface.params.get("function", DEFAULT_FUNCTION_EXPR)
+        function_preset = normalize_loss_surface_preset(
+            surface.params.get("function_preset", "quadratic_ripple")
+        )
         if function_preset == "double_well_2d":
             visualization_style: Literal["surface_3d", "double_well_2d", "double_well_1d"] = "double_well_2d"
         elif function_preset == "double_well_1d":
             visualization_style = "double_well_1d"
-        elif function_preset == "quadratic_ripple" and function_expr == DEFAULT_FUNCTION_EXPR:
-            visualization_style = "surface_3d"
         else:
-            raise GeneratorError(
-                "MVP uses built-in loss surface presets only. "
-                "Storyboard function strings are not executed as Python code."
-            )
+            visualization_style = "surface_3d"
 
         values = storyboard.examples[0].values if storyboard.examples else {}
         x_range = _range_tuple(surface.params.get("x_range"), (-3.0, 3.0))

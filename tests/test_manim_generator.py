@@ -253,3 +253,59 @@ def test_gradient_descent_double_well_1d_uses_loss_curve_template(tmp_path) -> N
     assert "SEGMENT_METADATA" in rendered
     assert "'loss_curve'" in rendered
     validate_python_syntax(output_path)
+
+
+def test_gradient_descent_generator_normalizes_llm_surface_alias(tmp_path) -> None:
+    storyboard = Storyboard(
+        concept="gradient_descent",
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        one_sentence_summary="点が損失曲面を下る。",
+        audience="high_school_math",
+        symbol_ledger=[],
+        examples=[],
+        scenes=[
+            SceneSpec(
+                id="step1",
+                title="損失曲面を見る",
+                learning_goal="曲面を見る。",
+                narration="曲面上の点を見ます。",
+                visual_objects=[
+                    VisualObject(
+                        type="surface",
+                        name="loss_surface",
+                        description="LLMが自然名で指定した曲面",
+                        params={
+                            "function_preset": "hill_surface",
+                            "function": "custom_function_that_must_not_run",
+                        },
+                    ),
+                    VisualObject(
+                        type="point",
+                        name="current_position",
+                        description="現在地",
+                        params={"x": 2.0, "y": -2.0},
+                    ),
+                    VisualObject(
+                        type="vector",
+                        name="negative_gradient",
+                        description="負の勾配",
+                        params={"learning_rate": 0.05},
+                    ),
+                    VisualObject(
+                        type="curve",
+                        name="descent_path",
+                        description="軌跡",
+                        params={"steps": 8},
+                    ),
+                ],
+            )
+        ],
+    )
+    output_path = tmp_path / "manim_scene.py"
+
+    ManimGenerator(target_duration_seconds=30).generate(storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert "FUNCTION_PRESET = 'quadratic_ripple'" in rendered
+    assert "custom_function_that_must_not_run" not in rendered
+    validate_python_syntax(output_path)

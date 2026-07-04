@@ -14,6 +14,7 @@ from math_animation_studio.schema import (
     SymbolDefinition,
     VisualObject,
 )
+from math_animation_studio.safe_presets import normalize_loss_surface_preset
 
 from .visual_component_catalog import (
     visual_component_definition,
@@ -56,7 +57,9 @@ class StoryboardAdapter:
             ]
             visual_objects.extend(_visual_objects_for_components(components))
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 1:
-                function_preset = str(example_values.get("function_preset", "quadratic_ripple"))
+                function_preset = normalize_loss_surface_preset(
+                    example_values.get("function_preset", "quadratic_ripple")
+                )
                 surface_params = {
                     "function_preset": function_preset,
                     "function": "0.35*x**2 + y**2 + 0.25*x*y + 0.8*sin(1.5*x)*cos(y)",
@@ -99,9 +102,20 @@ class StoryboardAdapter:
                     ),
                 )
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 2:
+                initial_position = _number_pair(example_values.get("initial_position"))
                 point_params = {
-                    "x": float(example_values.get("initial_x", 2.5)),
-                    "y": float(example_values.get("initial_y", 2.0)),
+                    "x": float(
+                        example_values.get(
+                            "initial_x",
+                            initial_position[0] if initial_position else 2.5,
+                        )
+                    ),
+                    "y": float(
+                        example_values.get(
+                            "initial_y",
+                            initial_position[1] if initial_position else 2.0,
+                        )
+                    ),
                 }
                 if "comparison_initial_x" in example_values:
                     point_params["comparison_x"] = float(example_values["comparison_initial_x"])
@@ -301,6 +315,7 @@ def _planned_components_for_step(step: ExplanationStep) -> list[AnimationCompone
             continue
         definition = visual_component_definition(kind)
         params = dict(planned.params)
+        params = _sanitize_component_params(kind, params)
         if kind == "formula_focus" and step.formula_focus:
             params.setdefault("formula_focus", step.formula_focus)
         label = planned.label or str(params.get("formula_focus") or "")
@@ -364,6 +379,25 @@ def _safe_visual_type(visual_type: str) -> str:
     if visual_type in SUPPORTED_VISUAL_TYPES:
         return visual_type
     return "text"
+
+
+def _sanitize_component_params(kind: str, params: dict[str, object]) -> dict[str, object]:
+    if kind in {"surface_plot", "contour_map", "loss_curve"}:
+        default = "double_well_1d" if kind == "loss_curve" else "quadratic_ripple"
+        params["function_preset"] = normalize_loss_surface_preset(
+            params.get("function_preset"),
+            default=default,
+        )
+    return params
+
+
+def _number_pair(value: object) -> tuple[float, float] | None:
+    if not isinstance(value, list | tuple) or len(value) != 2:
+        return None
+    try:
+        return float(value[0]), float(value[1])
+    except (TypeError, ValueError):
+        return None
 
 
 def _narration_cues_for_step(
