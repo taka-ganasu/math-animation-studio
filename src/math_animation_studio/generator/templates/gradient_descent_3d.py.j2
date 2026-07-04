@@ -33,6 +33,14 @@ SURFACE_CAMERA_PHI = {{ params.surface_camera_phi | py_repr }}
 SURFACE_CAMERA_THETA = {{ params.surface_camera_theta | py_repr }}
 TITLE_TOP_BUFF = {{ params.title_top_buff | py_repr }}
 CAPTION_BOTTOM_BUFF = {{ params.caption_bottom_buff | py_repr }}
+LABEL_TRANSLATIONS = {
+    "height = loss": "高さ = 損失",
+    "current position": "現在地",
+    "gradient = uphill": "勾配 = 上り方向",
+    "update = downhill": "更新 = 下り方向",
+    "one step at a time": "一歩ずつ進む",
+    "downhill step in formula": "式の中の下る一歩",
+}
 
 
 def segment_duration(segment_id: str, fallback_seconds: float) -> float:
@@ -46,8 +54,9 @@ def has_component(kind: str) -> bool:
 def component_label(kind: str, fallback: str) -> str:
     for component in TEMPLATE_COMPONENTS:
         if component.get("kind") == kind:
-            return component.get("label") or fallback
-    return fallback
+            label = component.get("label") or fallback
+            return LABEL_TRANSLATIONS.get(label, label)
+    return LABEL_TRANSLATIONS.get(fallback, fallback)
 
 
 class GradientDescent3DScene(ThreeDScene):
@@ -237,6 +246,70 @@ class GradientDescent3DScene(ThreeDScene):
         lines.move_to(box.get_center())
         return VGroup(box, lines)
 
+    def construct_formula_parts_intro(self) -> None:
+        duration = segment_duration("formula_parts", 8.0)
+        if duration <= 0.05:
+            return
+
+        title = Text("まず更新式を分解する", font_size=30)
+        title.to_edge(UP, buff=TITLE_TOP_BUFF)
+        parts = VGroup(
+            self.make_math(r"\theta_{t+1}", "theta t+1", font_size=34),
+            self.make_math("=", "=", font_size=34),
+            self.make_math(r"\theta_t", "theta t", font_size=34),
+            self.make_math("-", "-", font_size=34),
+            self.make_math(r"\eta", "eta", font_size=34),
+            self.make_math(r"\nabla L(\theta_t)", "grad L theta t", font_size=34),
+        )
+        parts.arrange(RIGHT, buff=0.16)
+        parts.move_to(UP * 0.75)
+
+        meaning = Text(
+            "今いる場所から、上り方向の逆へ、一歩ぶん進む",
+            font_size=24,
+            color=YELLOW,
+        )
+        meaning.next_to(parts, DOWN, buff=0.72)
+
+        focus_items = [
+            (parts[0], "次の場所", BLUE_B),
+            (parts[2], "今いる場所", ORANGE),
+            (parts[3], "逆向きへ", YELLOW),
+            (parts[4], "一歩の大きさ", GREEN_B),
+            (parts[5], "損失が増える上り方向", RED_B),
+        ]
+
+        intro_time = min(1.2, duration * 0.18)
+        focus_time = min(0.55, max(0.18, duration * 0.08))
+        self.play(FadeIn(title), Write(parts), run_time=intro_time)
+        active_box = None
+        active_label = None
+        used_time = intro_time
+        for part, label_text, color in focus_items:
+            box = SurroundingRectangle(part, color=color, buff=0.08)
+            label = Text(label_text, font_size=20, color=color)
+            label.next_to(part, DOWN, buff=0.24)
+            animations = [Create(box), FadeIn(label)]
+            if active_box is not None:
+                animations.append(FadeOut(active_box))
+            if active_label is not None:
+                animations.append(FadeOut(active_label))
+            self.play(*animations, run_time=focus_time)
+            active_box = box
+            active_label = label
+            used_time += focus_time
+
+        meaning_time = min(0.6, duration * 0.08)
+        meaning_animations = [FadeIn(meaning)]
+        if active_box is not None:
+            meaning_animations.append(FadeOut(active_box))
+        if active_label is not None:
+            meaning_animations.append(FadeOut(active_label))
+        self.play(*meaning_animations, run_time=meaning_time)
+        used_time += meaning_time
+        self.wait_remaining(duration, used_time)
+        self.play(FadeOut(VGroup(title, parts, meaning)), run_time=0.35)
+
     def play_descent_path_2d(
         self,
         axes: Axes,
@@ -383,7 +456,7 @@ class GradientDescent3DScene(ThreeDScene):
         left_points = self.descent_points_1d_from(float(INITIAL_X))
         right_points = self.descent_points_1d_from(float(COMPARISON_INITIAL_X))
 
-        title = Text("Gradient Descent: 1D Loss Curve", font_size=32)
+        title = Text("勾配降下法: 1変数の損失曲線", font_size=32)
         title.to_edge(UP, buff=TITLE_TOP_BUFF)
         formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=31)
         formula.next_to(title, DOWN, buff=0.14)
@@ -541,7 +614,7 @@ class GradientDescent3DScene(ThreeDScene):
         left_points = self.descent_points_from(float(INITIAL_X), float(INITIAL_Y))
         right_points = self.descent_points_from(float(COMPARISON_INITIAL_X), float(COMPARISON_INITIAL_Y))
 
-        title = Text("Gradient Descent: Two Valleys", font_size=32)
+        title = Text("勾配降下法: 2つの谷", font_size=32)
         title.to_edge(UP, buff=TITLE_TOP_BUFF)
         formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=31)
         formula.next_to(title, DOWN, buff=0.14)
@@ -687,6 +760,8 @@ class GradientDescent3DScene(ThreeDScene):
             self.construct_double_well_2d()
             return
 
+        self.construct_formula_parts_intro()
+
         points = self.descent_points()
         max_z = max([point[2] for point in points] + [6.0])
 
@@ -716,7 +791,7 @@ class GradientDescent3DScene(ThreeDScene):
         uses_downhill_arrow = has_component("downhill_arrow") or uses_uphill_arrow
         uses_formula_bridge = has_component("formula_bridge")
 
-        title = Text("Loss Surface as Terrain" if uses_terrain_metaphor else TITLE, font_size=30)
+        title = Text("損失曲面を地形として見る" if uses_terrain_metaphor else "勾配降下法", font_size=30)
         title.to_edge(UP, buff=TITLE_TOP_BUFF)
         try:
             formula = MathTex(FORMULA_LATEX, font_size=32)
@@ -724,9 +799,9 @@ class GradientDescent3DScene(ThreeDScene):
             formula = Text(FORMULA_FALLBACK_TEXT, font_size=28)
         formula.next_to(title, DOWN, buff=0.2)
         note_text = (
-            "height = loss; downhill means lower loss"
+            "高さ = 損失 / 下るほど損失が小さい"
             if uses_terrain_metaphor
-            else "negative gradient = downhill step"
+            else "負の勾配 = 損失が下がる一歩"
         )
         note = Text(note_text, font_size=22)
         note.next_to(formula, DOWN, buff=0.2)
@@ -752,7 +827,7 @@ class GradientDescent3DScene(ThreeDScene):
         point_animations = [FadeIn(dot)]
         hiker_note = None
         if uses_hiker_marker:
-            hiker_note = Text(component_label("hiker_marker", "current position"), font_size=20, color=ORANGE)
+            hiker_note = Text(component_label("hiker_marker", "現在地"), font_size=20, color=ORANGE)
             hiker_note.to_corner(UR, buff=0.55)
             self.add_fixed_in_frame_mobjects(hiker_note)
             point_animations.append(FadeIn(hiker_note))
@@ -767,12 +842,12 @@ class GradientDescent3DScene(ThreeDScene):
             uphill = self.arrow3d_from_direction(axes, points[0], first_gradient, RED, length=0.42)
             if uphill is not None:
                 first_arrows.add(uphill)
-                legend_items.append(Text(component_label("uphill_arrow", "gradient = uphill"), font_size=19, color=RED))
+                legend_items.append(Text(component_label("uphill_arrow", "勾配 = 上り方向"), font_size=19, color=RED))
         if uses_downhill_arrow or not uses_uphill_arrow:
             downhill = self.arrow3d_from_direction(axes, points[0], -first_gradient, YELLOW, length=0.5)
             if downhill is not None:
                 first_arrows.add(downhill)
-                legend_items.append(Text(component_label("downhill_arrow", "update = downhill"), font_size=19, color=YELLOW))
+                legend_items.append(Text(component_label("downhill_arrow", "更新 = 下り方向"), font_size=19, color=YELLOW))
         legend = VGroup(*legend_items).arrange(DOWN, aligned_edge=LEFT, buff=0.08) if legend_items else None
         if legend is not None:
             legend.to_corner(UL, buff=0.55)
@@ -834,7 +909,7 @@ class GradientDescent3DScene(ThreeDScene):
             self.wait_remaining(step_budget, arrow_in_time + move_time + arrow_out_time)
 
         summary = Text(
-            "Downhill steps become the update rule." if uses_formula_bridge else "Move a little opposite to the gradient.",
+            "下る一歩が更新式になる。" if uses_formula_bridge else "勾配の逆向きへ少し進む。",
             font_size=24,
         )
         summary.to_edge(DOWN, buff=CAPTION_BOTTOM_BUFF)

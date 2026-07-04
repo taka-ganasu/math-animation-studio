@@ -86,6 +86,35 @@ def test_voiceover_script_writer_segments_gradient_double_well() -> None:
     assert "SGD" in script
 
 
+def test_voiceover_script_writer_segments_gradient_surface_formula_parts() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        goal="2変数の勾配降下法を山を下る比喩で理解したい",
+        audience="high_school_math",
+        concept_hint="gradient_descent",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=30)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=30)
+
+    assert [segment.id for segment in segments] == [
+        "formula_parts",
+        "intro_surface",
+        "current_point",
+        "local_gradient",
+        "descent_path",
+        "summary_surface",
+    ]
+    assert segments[0].component_id == "formula_parts_focus"
+    assert segments[0].formula_focus == r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)"
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(30.0)
+    assert "更新式を分解" in script
+    assert "シータt" in script
+    assert "イータ" in script
+
+
 def test_voiceover_script_writer_segments_gradient_double_well_1d() -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
         formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",

@@ -9,6 +9,7 @@ from math_animation_studio.timing import (
     cross_entropy_timeline_segments,
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
+    gradient_surface_3d_timeline_segments,
 )
 
 
@@ -41,11 +42,7 @@ class VoiceoverScriptWriter:
                 "つまり、正解に高い確率を置くほど、損失は小さくなります。"
             )
         if concept == "gradient_descent":
-            if (
-                target_duration_seconds is not None
-                and target_duration_seconds >= 25
-                and _is_gradient_double_well_storyboard(storyboard)
-            ):
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
                 return "".join(
                     segment.text
                     for segment in self.write_segments(
@@ -79,6 +76,11 @@ class VoiceoverScriptWriter:
             else:
                 timeline = gradient_double_well_timeline_segments(target_duration_seconds)
                 text_by_id = _gradient_double_well_segment_text()
+            return _segments_from_timeline(timeline, text_by_id)
+
+        if concept == "gradient_descent":
+            timeline = gradient_surface_3d_timeline_segments(target_duration_seconds)
+            text_by_id = _gradient_surface_3d_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
@@ -351,6 +353,20 @@ def _gradient_double_well_1d_segment_text() -> dict[str, str]:
         "compare_minima_1d": "勾配降下法は左右の谷を見比べません。現在地の傾きだけで次の一歩を決めます。",
         "sgd_bridge_1d": "SGDでは軌跡が少し揺れます。ただし、いつも山を越えられるわけではありません。",
         "summary_1d": "まとめると、現在地の傾きだけを見て、一歩ずつ損失を下げる方法です。",
+    }
+
+
+def _gradient_surface_3d_segment_text() -> dict[str, str]:
+    return {
+        "formula_parts": (
+            "まず更新式を分解します。シータtは今いる場所、イータは一歩の大きさ、"
+            "ナブラLは損失が増える上り方向です。マイナスは、その逆へ進む意味です。"
+        ),
+        "intro_surface": "次に、曲面の高さを損失として見ます。低い場所ほどよい状態です。",
+        "current_point": "現在のパラメータは、この曲面上の一点として表せます。",
+        "local_gradient": "勾配は上り方向です。更新では、その逆の下り方向へ進みます。",
+        "descent_path": "一歩ずつ更新を繰り返すと、点は谷へ近づいていきます。",
+        "summary_surface": "まとめると、今いる場所から、負の勾配方向へ、学習率の分だけ進む式です。",
     }
 
 

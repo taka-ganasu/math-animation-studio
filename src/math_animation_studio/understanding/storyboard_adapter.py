@@ -394,8 +394,8 @@ def _with_gradient_metaphor_components(
             components,
             step=step,
             kind="terrain_metaphor",
-            label="height = loss",
-            params={"metaphor_label": "height = loss"},
+            label="高さ = 損失",
+            params={"metaphor_label": "高さ = 損失"},
         )
 
     if _contains_any(
@@ -406,8 +406,8 @@ def _with_gradient_metaphor_components(
             components,
             step=step,
             kind="hiker_marker",
-            label="current position",
-            params={"label": "current position"},
+            label="現在地",
+            params={"label": "現在地"},
         )
 
     if _contains_any(text, ("勾配", "gradient", "nabla", r"\nabla", "上り", "下り")):
@@ -415,15 +415,15 @@ def _with_gradient_metaphor_components(
             components,
             step=step,
             kind="uphill_arrow",
-            label="gradient = uphill",
-            params={"label": "gradient = uphill"},
+            label="勾配 = 上り方向",
+            params={"label": "勾配 = 上り方向"},
         )
         _append_component_if_missing(
             components,
             step=step,
             kind="downhill_arrow",
-            label="update = downhill",
-            params={"label": "update = downhill"},
+            label="更新 = 下り方向",
+            params={"label": "更新 = 下り方向"},
         )
 
     if _contains_any(
@@ -434,7 +434,7 @@ def _with_gradient_metaphor_components(
             components,
             step=step,
             kind="footstep_path",
-            label="one step at a time",
+            label="一歩ずつ進む",
             params={"footprint_every": 1},
         )
 
@@ -446,10 +446,10 @@ def _with_gradient_metaphor_components(
             components,
             step=step,
             kind="formula_bridge",
-            label="downhill step in formula",
+            label="式の中の下る一歩",
             params={
                 "formula_focus": r"-\eta\nabla L",
-                "caption": "downhill step in the formula",
+                "caption": "式の中の下る一歩",
             },
         )
 

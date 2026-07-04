@@ -315,7 +315,7 @@ components:
       - name: metaphor_label
         value_type: string
         description: 地形としての読み替えを示す短いラベル。
-        default: height = loss
+        default: 高さ = 損失
     example: "曲面を山として見せ、低い場所ほど損失が小さいと説明する。"
 
   - id: hiker_marker
@@ -335,7 +335,7 @@ components:
       - name: label
         value_type: string
         description: 現在地マーカーに添える短いラベル。
-        default: current position
+        default: 現在地
     example: "赤い点を現在地として置き、ここから下ると説明する。"
 
   - id: footstep_path
@@ -375,7 +375,7 @@ components:
       - name: label
         value_type: string
         description: 上り方向を示す短いラベル。
-        default: gradient = uphill
+        default: 勾配 = 上り方向
     example: "赤い矢印で上り方向を示し、勾配そのものは上りだと説明する。"
 
   - id: downhill_arrow
@@ -395,7 +395,7 @@ components:
       - name: label
         value_type: string
         description: 下り方向を示す短いラベル。
-        default: update = downhill
+        default: 更新 = 下り方向
     example: "黄色い矢印で下り方向を示し、-∇Lの意味へつなげる。"
 
   - id: formula_bridge
@@ -419,7 +419,7 @@ components:
       - name: caption
         value_type: string
         description: 比喩と数式をつなぐ短い説明。
-        default: downhill step in the formula
+        default: 式の中の下る一歩
     example: "足跡の一歩を、式の -η∇L に対応づけて強調する。"
 
   - id: descent_path

@@ -55,13 +55,19 @@ GRADIENT_DOUBLE_WELL_BASE_TIMELINE = (
 
 
 GRADIENT_SURFACE_3D_BASE_TIMELINE = (
+    TimelineSegment(
+        "formula_parts",
+        8.0,
+        "formula_parts_focus",
+        r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)",
+    ),
     TimelineSegment("intro_surface", 5.0, "surface_plot"),
     TimelineSegment("current_point", 3.0, "descent_path"),
-    TimelineSegment("local_gradient", 4.0, "gradient_arrow", r"-\nabla L"),
+    TimelineSegment("local_gradient", 5.0, "gradient_arrow", r"-\nabla L"),
     TimelineSegment("descent_path", 14.0, "descent_path"),
     TimelineSegment(
         "summary_surface",
-        4.0,
+        5.0,
         "summary",
         r"\theta_{t+1}=\theta_t-\eta\nabla L(\theta_t)",
     ),
