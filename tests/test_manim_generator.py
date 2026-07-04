@@ -5,7 +5,14 @@ from importlib.resources import files
 import pytest
 
 from math_animation_studio.generator import ManimGenerator
-from math_animation_studio.schema import Example, SceneSpec, Storyboard, SymbolDefinition, VisualObject
+from math_animation_studio.schema import (
+    AnimationComponent,
+    Example,
+    SceneSpec,
+    Storyboard,
+    SymbolDefinition,
+    VisualObject,
+)
 from math_animation_studio.understanding import FormulaUnderstandingPlanner
 from math_animation_studio.validation import validate_python_syntax
 
@@ -368,4 +375,96 @@ def test_gradient_descent_surface_3d_uses_target_duration_timeline(tmp_path) -> 
     assert params.segment_durations["descent_path"] == pytest.approx(28.0)
     assert 'segment_duration("summary_surface", 4.0)' in rendered
     assert 'segment_duration("descent_path", 14.0)' in rendered
+    validate_python_syntax(output_path)
+
+
+def test_gradient_descent_surface_3d_renders_metaphor_components(tmp_path) -> None:
+    storyboard = Storyboard(
+        concept="gradient_descent",
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        one_sentence_summary="山を下る比喩で勾配降下法を見る。",
+        audience="high_school_math",
+        symbol_ledger=[],
+        examples=[],
+        scenes=[
+            SceneSpec(
+                id="step1",
+                title="山を下る比喩",
+                learning_goal="損失を高さとして見る。",
+                narration="損失曲面を山として見ます。",
+                visual_objects=[
+                    VisualObject(
+                        type="surface",
+                        name="loss_surface",
+                        description="損失曲面",
+                        params={"function_preset": "quadratic_ripple"},
+                    ),
+                    VisualObject(
+                        type="point",
+                        name="current_position",
+                        description="現在地",
+                        params={"x": 2.0, "y": -2.0},
+                    ),
+                    VisualObject(
+                        type="vector",
+                        name="negative_gradient",
+                        description="負の勾配",
+                        params={"learning_rate": 0.05},
+                    ),
+                    VisualObject(
+                        type="curve",
+                        name="descent_path",
+                        description="軌跡",
+                        params={"steps": 8},
+                    ),
+                ],
+                components=[
+                    AnimationComponent(
+                        id="terrain",
+                        kind="terrain_metaphor",
+                        description="損失を地形として見る",
+                    ),
+                    AnimationComponent(
+                        id="hiker",
+                        kind="hiker_marker",
+                        description="現在地マーカー",
+                        label="current position",
+                    ),
+                    AnimationComponent(
+                        id="uphill",
+                        kind="uphill_arrow",
+                        description="勾配の上り方向",
+                        label="gradient = uphill",
+                    ),
+                    AnimationComponent(
+                        id="downhill",
+                        kind="downhill_arrow",
+                        description="更新の下り方向",
+                        label="update = downhill",
+                    ),
+                    AnimationComponent(
+                        id="footsteps",
+                        kind="footstep_path",
+                        description="一歩ずつ進む印",
+                    ),
+                    AnimationComponent(
+                        id="bridge",
+                        kind="formula_bridge",
+                        description="比喩から数式へ戻る",
+                    ),
+                ],
+            )
+        ],
+    )
+    output_path = tmp_path / "manim_scene.py"
+
+    ManimGenerator(target_duration_seconds=60).generate(storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert "Loss Surface as Terrain" in rendered
+    assert "height = loss; downhill means lower loss" in rendered
+    assert "gradient = uphill" in rendered
+    assert "update = downhill" in rendered
+    assert "Downhill steps become the update rule." in rendered
+    assert "has_component(\"terrain_metaphor\")" in rendered
     validate_python_syntax(output_path)

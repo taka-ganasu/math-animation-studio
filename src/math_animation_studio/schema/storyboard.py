@@ -48,7 +48,10 @@ class AnimationComponent(StrictModel):
         "contour_map",
         "descent_path",
         "formula_focus",
+        "footstep_path",
         "gradient_arrow",
+        "downhill_arrow",
+        "hiker_marker",
         "loss_curve",
         "model_pipeline",
         "negative_log_curve",
@@ -58,7 +61,10 @@ class AnimationComponent(StrictModel):
         "sgd_jitter",
         "summary",
         "surface_plot",
+        "terrain_metaphor",
         "text_caption",
+        "uphill_arrow",
+        "formula_bridge",
     ]
     description: str
     label: str | None = None

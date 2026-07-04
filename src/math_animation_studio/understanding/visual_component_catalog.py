@@ -35,7 +35,8 @@ def visual_component_prompt_summary() -> str:
         templates = ", ".join(component.template_support)
         lines.append(
             f"- {component.id}: {component.description} "
-            f"(visual_type={component.visual_type}, params={params_text}, templates={templates})"
+            f"(category={component.category}, visual_type={component.visual_type}, "
+            f"params={params_text}, templates={templates})"
         )
     return "\n".join(lines)
 

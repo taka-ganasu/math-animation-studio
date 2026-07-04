@@ -78,13 +78,17 @@ def test_formula_understanding_plan_prompt_contains_visual_component_catalog() -
         domain_hint="machine_learning",
         animation_pattern_ids=["penalty_curve"],
         target_duration_seconds=60,
-        visual_component_catalog="- formula_focus: 数式の一部を強調する",
+        visual_component_catalog=(
+            "- formula_focus: 数式の一部を強調する (category=formula)\n"
+            "- terrain_metaphor: 損失を地形として見せる (category=metaphor)"
+        ),
     )
 
     assert "利用可能な視覚部品カタログ" in prompt
     assert "planned_components" in prompt
     assert "formula_focus" in prompt
     assert "視覚部品カタログにあるidだけ" in prompt
+    assert "category=metaphor" in prompt
 
 
 def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:

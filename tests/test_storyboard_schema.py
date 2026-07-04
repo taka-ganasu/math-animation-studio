@@ -39,6 +39,17 @@ def test_storyboard_accepts_animation_components_and_narration_cues() -> None:
     assert cue.component_id == "formula_focus"
 
 
+def test_storyboard_accepts_metaphor_animation_components() -> None:
+    component = AnimationComponent(
+        id="terrain",
+        kind="terrain_metaphor",
+        description="損失を山として見せる",
+        label="height = loss",
+    )
+
+    assert component.kind == "terrain_metaphor"
+
+
 def test_missing_required_field_fails() -> None:
     payload = {
         "concept": "gradient_descent",

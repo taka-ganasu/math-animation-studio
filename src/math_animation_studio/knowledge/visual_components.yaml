@@ -270,6 +270,130 @@ components:
         description: 一歩の大きさ。
     example: "現在地から下る向きとして -∇L(θ_t) の矢印を表示する。"
 
+  - id: terrain_metaphor
+    name: Terrain Metaphor
+    category: metaphor
+    description: 損失関数を山や谷の地形として読み替え、高さが損失であることを見せる。
+    use_when:
+      - 勾配降下法を山を下る比喩で説明する
+      - 損失が高さとして読めることを導入する
+    avoid_when:
+      - 比喩を使わず純粋な数式操作だけを説明したい場面
+    visual_type: surface
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: metaphor_label
+        value_type: string
+        description: 地形としての読み替えを示す短いラベル。
+        default: height = loss
+    example: "曲面を山として見せ、低い場所ほど損失が小さいと説明する。"
+
+  - id: hiker_marker
+    name: Hiker Marker
+    category: metaphor
+    description: 現在のパラメータ位置を山道上の人や現在地マーカーとして見せる。
+    use_when:
+      - パラメータを抽象的な数値ではなく現在地として説明する
+      - 反復更新で現在地が動くことを見せる
+    avoid_when:
+      - 人や移動の比喩が不要な場面
+    visual_type: point
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: label
+        value_type: string
+        description: 現在地マーカーに添える短いラベル。
+        default: current position
+    example: "赤い点を現在地として置き、ここから下ると説明する。"
+
+  - id: footstep_path
+    name: Footstep Path
+    category: metaphor
+    description: 更新の軌跡を足跡や一歩ずつ進む印として残す。
+    use_when:
+      - 勾配降下法が一回で答えに飛ぶのではなく、一歩ずつ進むことを示す
+      - 学習率を一歩の大きさとして説明する
+    avoid_when:
+      - 軌跡を線だけで十分に見せたい場面
+    visual_type: curve
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: footprint_every
+        value_type: integer
+        description: 何ステップごとに足跡を置くか。
+        default: 1
+    example: "点が進むたびに小さな足跡を残し、一歩ずつ下ることを見せる。"
+
+  - id: uphill_arrow
+    name: Uphill Arrow
+    category: metaphor
+    description: 勾配そのものが損失の増える上り方向を指すことを示す。
+    use_when:
+      - 勾配は下り方向ではないという誤解を解消する
+      - gradientとnegative_gradientを対比する
+    avoid_when:
+      - 負の勾配方向だけを簡潔に見せたい場面
+    visual_type: vector
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: label
+        value_type: string
+        description: 上り方向を示す短いラベル。
+        default: gradient = uphill
+    example: "赤い矢印で上り方向を示し、勾配そのものは上りだと説明する。"
+
+  - id: downhill_arrow
+    name: Downhill Arrow
+    category: metaphor
+    description: 更新で実際に進む負の勾配方向を下り方向として示す。
+    use_when:
+      - 勾配の逆向きへ進むことを直感化する
+      - 式のマイナス記号と下り方向を対応づける
+    avoid_when:
+      - 上り方向との比較が主題ではない場面
+    visual_type: vector
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: label
+        value_type: string
+        description: 下り方向を示す短いラベル。
+        default: update = downhill
+    example: "黄色い矢印で下り方向を示し、-∇Lの意味へつなげる。"
+
+  - id: formula_bridge
+    name: Formula Bridge
+    category: metaphor
+    description: 比喩で見せた動きから、対応する数式パーツへ戻す。
+    use_when:
+      - 山を下る比喩を更新式の -η∇L に対応づける
+      - 直感説明のあとに数式を再確認する
+    avoid_when:
+      - まだ比喩導入前の場面
+    visual_type: formula
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: formula_focus
+        value_type: latex_string
+        description: 比喩から戻したいLaTeX部分。
+        default: "-\\eta\\nabla L"
+      - name: caption
+        value_type: string
+        description: 比喩と数式をつなぐ短い説明。
+        default: downhill step in the formula
+    example: "足跡の一歩を、式の -η∇L に対応づけて強調する。"
+
   - id: descent_path
     name: Descent Path
     category: optimization

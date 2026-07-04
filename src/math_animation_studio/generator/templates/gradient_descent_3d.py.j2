@@ -32,6 +32,17 @@ def segment_duration(segment_id: str, fallback_seconds: float) -> float:
     return max(0.05, float(SEGMENT_DURATIONS.get(segment_id, fallback_seconds)))
 
 
+def has_component(kind: str) -> bool:
+    return any(component.get("kind") == kind for component in TEMPLATE_COMPONENTS)
+
+
+def component_label(kind: str, fallback: str) -> str:
+    for component in TEMPLATE_COMPONENTS:
+        if component.get("kind") == kind:
+            return component.get("label") or fallback
+    return fallback
+
+
 class GradientDescent3DScene(ThreeDScene):
     def loss(self, x: float, y: float) -> float:
         if FUNCTION_PRESET == "double_well_1d":
@@ -176,6 +187,26 @@ class GradientDescent3DScene(ThreeDScene):
             buff=0.05,
             color=color,
             stroke_width=5,
+        )
+
+    def arrow3d_from_direction(
+        self,
+        axes: ThreeDAxes,
+        point: tuple[float, float, float],
+        direction: np.ndarray,
+        color: ManimColor,
+        *,
+        length: float = 0.5,
+    ) -> Arrow3D | None:
+        norm = float(np.linalg.norm(direction))
+        if norm <= 1.0e-8:
+            return None
+        arrow_xy = np.array([point[0], point[1]]) + length * direction / norm
+        arrow_z = self.loss(float(arrow_xy[0]), float(arrow_xy[1]))
+        return Arrow3D(
+            start=axes.c2p(*point),
+            end=axes.c2p(float(arrow_xy[0]), float(arrow_xy[1]), arrow_z),
+            color=color,
         )
 
     def final_loss_badge(
@@ -671,14 +702,26 @@ class GradientDescent3DScene(ThreeDScene):
         surface.set_style(fill_opacity=0.58, stroke_color=BLUE_E, stroke_width=0.35)
         surface.set_fill(BLUE_D, opacity=0.58)
 
-        title = Text(TITLE, font_size=30)
+        uses_terrain_metaphor = has_component("terrain_metaphor")
+        uses_hiker_marker = has_component("hiker_marker")
+        uses_footstep_path = has_component("footstep_path")
+        uses_uphill_arrow = has_component("uphill_arrow")
+        uses_downhill_arrow = has_component("downhill_arrow") or uses_uphill_arrow
+        uses_formula_bridge = has_component("formula_bridge")
+
+        title = Text("Loss Surface as Terrain" if uses_terrain_metaphor else TITLE, font_size=30)
         title.to_edge(UP)
         try:
             formula = MathTex(FORMULA_LATEX, font_size=32)
         except FileNotFoundError:
             formula = Text(FORMULA_FALLBACK_TEXT, font_size=28)
         formula.next_to(title, DOWN, buff=0.2)
-        note = Text("negative gradient = downhill step", font_size=22)
+        note_text = (
+            "height = loss; downhill means lower loss"
+            if uses_terrain_metaphor
+            else "negative gradient = downhill step"
+        )
+        note = Text(note_text, font_size=22)
         note.next_to(formula, DOWN, buff=0.2)
 
         self.set_camera_orientation(phi=63 * DEGREES, theta=-42 * DEGREES, zoom=0.82)
@@ -691,29 +734,49 @@ class GradientDescent3DScene(ThreeDScene):
         self.wait_remaining(intro_duration, title_time + surface_time)
 
         dot = Sphere(radius=0.09, resolution=(12, 12))
-        dot.set_color(RED)
+        dot.set_color(ORANGE if uses_hiker_marker else RED)
         dot.move_to(axes.c2p(*points[0]))
         point_duration = segment_duration("current_point", 3.0)
         point_time = min(0.8, point_duration * 0.28)
-        self.play(FadeIn(dot), run_time=point_time)
+        point_animations = [FadeIn(dot)]
+        hiker_note = None
+        if uses_hiker_marker:
+            hiker_note = Text(component_label("hiker_marker", "current position"), font_size=20, color=ORANGE)
+            hiker_note.to_corner(UR, buff=0.55)
+            self.add_fixed_in_frame_mobjects(hiker_note)
+            point_animations.append(FadeIn(hiker_note))
+        self.play(*point_animations, run_time=point_time)
         self.wait_remaining(point_duration, point_time)
 
         gradient_duration = segment_duration("local_gradient", 4.0)
-        first_direction = -self.gradient(points[0][0], points[0][1])
-        first_norm = float(np.linalg.norm(first_direction))
-        first_arrow = None
-        if first_norm > 1.0e-8:
-            first_arrow_xy = np.array([points[0][0], points[0][1]]) + 0.45 * first_direction / first_norm
-            first_arrow_z = self.loss(float(first_arrow_xy[0]), float(first_arrow_xy[1]))
-            first_arrow = Arrow3D(
-                start=axes.c2p(*points[0]),
-                end=axes.c2p(float(first_arrow_xy[0]), float(first_arrow_xy[1]), first_arrow_z),
-                color=YELLOW,
-            )
+        first_gradient = self.gradient(points[0][0], points[0][1])
+        first_arrows = VGroup()
+        legend_items = []
+        if uses_uphill_arrow:
+            uphill = self.arrow3d_from_direction(axes, points[0], first_gradient, RED, length=0.42)
+            if uphill is not None:
+                first_arrows.add(uphill)
+                legend_items.append(Text(component_label("uphill_arrow", "gradient = uphill"), font_size=19, color=RED))
+        if uses_downhill_arrow or not uses_uphill_arrow:
+            downhill = self.arrow3d_from_direction(axes, points[0], -first_gradient, YELLOW, length=0.5)
+            if downhill is not None:
+                first_arrows.add(downhill)
+                legend_items.append(Text(component_label("downhill_arrow", "update = downhill"), font_size=19, color=YELLOW))
+        legend = VGroup(*legend_items).arrange(DOWN, aligned_edge=LEFT, buff=0.08) if legend_items else None
+        if legend is not None:
+            legend.to_corner(UL, buff=0.55)
+            self.add_fixed_in_frame_mobjects(legend)
+        if len(first_arrows) > 0:
             arrow_time = min(0.9, gradient_duration * 0.32)
-            self.play(FadeIn(first_arrow), run_time=arrow_time)
+            animations = [FadeIn(first_arrows)]
+            if legend is not None:
+                animations.append(FadeIn(legend))
+            self.play(*animations, run_time=arrow_time)
             self.wait_remaining(gradient_duration, arrow_time)
-            self.play(FadeOut(first_arrow), run_time=0.2)
+            fade_animations = [FadeOut(first_arrows)]
+            if legend is not None:
+                fade_animations.append(FadeOut(legend))
+            self.play(*fade_animations, run_time=0.2)
         else:
             self.wait(gradient_duration)
 
@@ -746,6 +809,11 @@ class GradientDescent3DScene(ThreeDScene):
             path_segments.add(segment)
             move_time = max(0.12, min(step_budget * 0.6, step_budget - arrow_in_time))
             self.play(dot.animate.move_to(end_point), Create(segment), run_time=move_time)
+            if uses_footstep_path:
+                footprint = Sphere(radius=0.035, resolution=(8, 8))
+                footprint.set_color(ORANGE)
+                footprint.move_to(end_point)
+                self.add(footprint)
 
             if arrow is not None:
                 arrow_out_time = min(0.2, max(0.05, step_budget * 0.15))
@@ -755,12 +823,21 @@ class GradientDescent3DScene(ThreeDScene):
             self.wait_remaining(step_budget, arrow_in_time + move_time + arrow_out_time)
 
         summary = Text(
-            "Move a little opposite to the gradient.",
+            "Downhill steps become the update rule." if uses_formula_bridge else "Move a little opposite to the gradient.",
             font_size=24,
         )
         summary.to_edge(DOWN)
-        self.add_fixed_in_frame_mobjects(summary)
+        if uses_formula_bridge:
+            bridge_formula = self.make_math(r"-\eta\nabla L", "-eta grad L", font_size=34)
+            bridge_formula.next_to(summary, UP, buff=0.16)
+            self.add_fixed_in_frame_mobjects(summary, bridge_formula)
+        else:
+            bridge_formula = None
+            self.add_fixed_in_frame_mobjects(summary)
         summary_duration = segment_duration("summary_surface", 4.0)
         summary_time = min(1.0, summary_duration * 0.3)
-        self.play(FadeIn(summary), run_time=summary_time)
+        summary_animations = [FadeIn(summary)]
+        if bridge_formula is not None:
+            summary_animations.append(Write(bridge_formula))
+        self.play(*summary_animations, run_time=summary_time)
         self.wait_remaining(summary_duration, summary_time)

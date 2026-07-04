@@ -143,6 +143,7 @@ def build_formula_understanding_plan_prompt(
 - 操作ごとに「何をしているか」と「視覚化ヒント」を出す
 - explanation_steps[].planned_componentsには、視覚部品カタログにあるidだけをkindとして入れる
 - 1つのexplanation_stepにplanned_componentsを1〜3個入れ、ナレーションで見るべき対象と対応させる
+- 理解ゴールが直感・比喩・アナロジーを求めている場合は、category=metaphorの視覚部品を優先的に使う
 - formula_focusを説明する場面では、planned_componentsにformula_focusを入れ、params.formula_focusに強調したいLaTeX部分を入れる
 - 視覚部品カタログにない部品名、新しい描画処理、Python式、Manimコードはplanned_componentsに入れない
 - prerequisite_mapでは、理解に必要な前提知識と詰まりやすい点を出す

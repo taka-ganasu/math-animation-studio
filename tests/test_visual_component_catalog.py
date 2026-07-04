@@ -14,6 +14,8 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert "gradient_arrow" in catalog
     assert catalog["formula_focus"].params[0].name == "formula_focus"
     assert catalog["gradient_arrow"].visual_type == "vector"
+    assert catalog["terrain_metaphor"].category == "metaphor"
+    assert catalog["formula_bridge"].visual_type == "formula"
 
 
 def test_visual_component_prompt_summary_is_llm_readable() -> None:
@@ -21,6 +23,8 @@ def test_visual_component_prompt_summary_is_llm_readable() -> None:
 
     assert "- formula_focus:" in summary
     assert "visual_type=formula" in summary
+    assert "category=metaphor" in summary
+    assert "- terrain_metaphor:" in summary
     assert "templates=penalty_curve" in summary
     assert "gradient_descent_3d" in summary
     assert "function_preset=['quadratic_ripple', 'double_well_2d']" in summary
