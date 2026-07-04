@@ -144,6 +144,7 @@ def build_formula_understanding_plan_prompt(
 - explanation_steps[].planned_componentsには、視覚部品カタログにあるidだけをkindとして入れる
 - 1つのexplanation_stepにplanned_componentsを1〜3個入れ、ナレーションで見るべき対象と対応させる
 - 理解ゴールが直感・比喩・アナロジーを求めている場合は、category=metaphorの視覚部品を優先的に使う
+- 勾配降下法を幾何的・比喩的に説明する場合は、terrain_metaphor, hiker_marker, uphill_arrow, downhill_arrow, footstep_path, formula_bridgeを説明順に応じて使う
 - formula_focusを説明する場面では、planned_componentsにformula_focusを入れ、params.formula_focusに強調したいLaTeX部分を入れる
 - 視覚部品カタログにない部品名、新しい描画処理、Python式、Manimコードはplanned_componentsに入れない
 - prerequisite_mapでは、理解に必要な前提知識と詰まりやすい点を出す
@@ -213,6 +214,7 @@ def build_formula_plan_consistency_prompt(
 - selected_animation_pattern_idは、利用可能なアニメーションパターンIDから最も適切なものを選ぶ
 - explanation_steps[].planned_componentsが、視覚部品カタログ内のidだけを使っているか確認する
 - ナレーションで説明する数式パーツとplanned_componentsが対応しているか確認する
+- 勾配降下法を幾何的・比喩的に説明しているのに、地形、現在地、上り勾配、下り更新、足跡、式への橋渡しに対応する部品が不足していないか確認する
 - 修正が必要な場合は、revision_instructionsに「どの概念を主題にするか」「どの説明を削る/残すか」「どのパターンを使うか」を具体的に書く
 - Pythonコード、Manimコード、疑似コード、eval、exec前提の表現は出力しない
 

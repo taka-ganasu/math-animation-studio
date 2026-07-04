@@ -39,8 +39,14 @@ class StoryboardAdapter:
             if explanation_plan.recommended_examples
             else {}
         )
+        step_count = len(explanation_plan.explanation_steps)
         for index, step in enumerate(explanation_plan.explanation_steps, start=1):
-            components = _components_for_step(step)
+            components = _components_for_step(
+                explanation_plan,
+                step,
+                step_index=index,
+                step_count=step_count,
+            )
             visual_objects = [
                 VisualObject(
                     type="formula",
@@ -297,13 +303,25 @@ def _base_components_for_step(step: ExplanationStep) -> list[AnimationComponent]
     return [_text_caption_component(step)]
 
 
-def _components_for_step(step: ExplanationStep) -> list[AnimationComponent]:
+def _components_for_step(
+    explanation_plan: ExplanationPlan,
+    step: ExplanationStep,
+    *,
+    step_index: int,
+    step_count: int,
+) -> list[AnimationComponent]:
     components = _planned_components_for_step(step)
     if not components:
-        return _base_components_for_step(step)
+        components = _base_components_for_step(step)
     if step.formula_focus and not any(component.kind == "formula_focus" for component in components):
         components.append(_formula_focus_component(step))
-    return components
+    return _with_gradient_metaphor_components(
+        explanation_plan,
+        step,
+        components,
+        step_index=step_index,
+        step_count=step_count,
+    )
 
 
 def _planned_components_for_step(step: ExplanationStep) -> list[AnimationComponent]:
@@ -332,6 +350,143 @@ def _planned_components_for_step(step: ExplanationStep) -> list[AnimationCompone
             )
         )
     return components
+
+
+def _with_gradient_metaphor_components(
+    explanation_plan: ExplanationPlan,
+    step: ExplanationStep,
+    components: list[AnimationComponent],
+    *,
+    step_index: int,
+    step_count: int,
+) -> list[AnimationComponent]:
+    if not _uses_gradient_metaphor(explanation_plan):
+        return components
+
+    text = _step_intent_text(step)
+    is_first_step = step_index == 1
+    is_last_step = step_index == step_count
+
+    if is_first_step or _contains_any(
+        text,
+        ("地形", "山", "谷", "曲面", "損失関数", "loss landscape", "surface", "terrain"),
+    ):
+        _append_component_if_missing(
+            components,
+            step=step,
+            kind="terrain_metaphor",
+            label="height = loss",
+            params={"metaphor_label": "height = loss"},
+        )
+
+    if _contains_any(
+        text,
+        ("現在地", "今いる", "パラメータ", "theta_t", r"\theta_t", "current position"),
+    ):
+        _append_component_if_missing(
+            components,
+            step=step,
+            kind="hiker_marker",
+            label="current position",
+            params={"label": "current position"},
+        )
+
+    if _contains_any(text, ("勾配", "gradient", "nabla", r"\nabla", "上り", "下り")):
+        _append_component_if_missing(
+            components,
+            step=step,
+            kind="uphill_arrow",
+            label="gradient = uphill",
+            params={"label": "gradient = uphill"},
+        )
+        _append_component_if_missing(
+            components,
+            step=step,
+            kind="downhill_arrow",
+            label="update = downhill",
+            params={"label": "update = downhill"},
+        )
+
+    if _contains_any(
+        text,
+        ("学習率", "一歩", "更新", "繰り返", "軌跡", r"\eta", "learning rate", "step", "path"),
+    ):
+        _append_component_if_missing(
+            components,
+            step=step,
+            kind="footstep_path",
+            label="one step at a time",
+            params={"footprint_every": 1},
+        )
+
+    if is_last_step or _contains_any(
+        text,
+        ("式へ戻る", "式に戻る", "更新式", "formula", "対応づけ", "対応付け"),
+    ):
+        _append_component_if_missing(
+            components,
+            step=step,
+            kind="formula_bridge",
+            label="downhill step in formula",
+            params={
+                "formula_focus": r"-\eta\nabla L",
+                "caption": "downhill step in the formula",
+            },
+        )
+
+    return components
+
+
+def _uses_gradient_metaphor(explanation_plan: ExplanationPlan) -> bool:
+    if explanation_plan.selected_animation_pattern_id != "trajectory_on_surface":
+        return False
+    concept = explanation_plan.target_concept.lower()
+    return (
+        explanation_plan.teaching_strategy in {"geometric_intuition", "visual_first"}
+        or "gradient" in concept
+        or "勾配" in concept
+    )
+
+
+def _step_intent_text(step: ExplanationStep) -> str:
+    return " ".join(
+        part
+        for part in [
+            step.title,
+            step.learning_goal,
+            step.explanation,
+            step.visual_idea,
+            step.formula_focus or "",
+            step.common_misunderstanding_addressed or "",
+        ]
+        if part
+    ).lower()
+
+
+def _contains_any(text: str, needles: tuple[str, ...]) -> bool:
+    return any(needle.lower() in text for needle in needles)
+
+
+def _append_component_if_missing(
+    components: list[AnimationComponent],
+    *,
+    step: ExplanationStep,
+    kind: str,
+    label: str,
+    params: dict[str, object],
+) -> None:
+    if any(component.kind == kind for component in components):
+        return
+    definition = visual_component_definition(kind)
+    components.append(
+        AnimationComponent(
+            id=f"{step.id}_{kind}_auto",
+            kind=kind,
+            description=definition.description if definition is not None else kind,
+            label=label,
+            params=params,
+        )
+    )
 
 
 def _formula_focus_component(step: ExplanationStep) -> AnimationComponent:

@@ -99,3 +99,31 @@ def test_storyboard_adapter_normalizes_llm_surface_aliases_and_initial_position(
     assert first_scene.components[1].params["function_preset"] == "quadratic_ripple"
     assert second_scene.visual_objects[0].params["x"] == 2.0
     assert second_scene.visual_objects[0].params["y"] == -2.0
+
+
+def test_storyboard_adapter_enriches_gradient_metaphor_components() -> None:
+    formula = r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)"
+    formula_analysis = sample_formula_analysis(formula, "gradient_descent")
+    explanation_plan = sample_explanation_plan(
+        formula,
+        "gradient_descent",
+        "high_school_math",
+    )
+
+    storyboard = StoryboardAdapter().convert(
+        formula_analysis=formula_analysis,
+        explanation_plan=explanation_plan,
+    )
+
+    component_kinds = {
+        component.kind
+        for scene in storyboard.scenes
+        for component in scene.components
+    }
+
+    assert "terrain_metaphor" in component_kinds
+    assert "hiker_marker" in component_kinds
+    assert "uphill_arrow" in component_kinds
+    assert "downhill_arrow" in component_kinds
+    assert "footstep_path" in component_kinds
+    assert "formula_bridge" in component_kinds

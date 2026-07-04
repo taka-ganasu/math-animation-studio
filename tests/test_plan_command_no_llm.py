@@ -200,6 +200,15 @@ def test_plan_no_llm_gradient_double_well_outputs_storyboard(tmp_path) -> None:
     assert storyboard.examples[0].values["function_preset"] == "double_well_2d"
     assert storyboard.scenes[0].components[0].kind == "contour_map"
     assert storyboard.scenes[0].narration_cues[0].component_id == "loss_landscape"
+    component_kinds = {
+        component.kind
+        for scene in storyboard.scenes
+        for component in scene.components
+    }
+    assert "terrain_metaphor" in component_kinds
+    assert "uphill_arrow" in component_kinds
+    assert "downhill_arrow" in component_kinds
+    assert "formula_bridge" in component_kinds
     assert "局所最小" in brief
     assert "SGD" in brief
 

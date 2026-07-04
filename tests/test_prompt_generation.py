@@ -89,6 +89,7 @@ def test_formula_understanding_plan_prompt_contains_visual_component_catalog() -
     assert "formula_focus" in prompt
     assert "視覚部品カタログにあるidだけ" in prompt
     assert "category=metaphor" in prompt
+    assert "terrain_metaphor, hiker_marker, uphill_arrow" in prompt
 
 
 def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:
@@ -107,6 +108,7 @@ def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:
     assert "数式名だけに引っ張られず" in prompt
     assert "goalと優先概念を主題" in prompt
     assert "planned_components" in prompt
+    assert "地形、現在地、上り勾配、下り更新、足跡、式への橋渡し" in prompt
     assert "gradient_arrow" in prompt
     assert "FormulaPlanConsistencyReview" in prompt or "is_consistent" in prompt
 
