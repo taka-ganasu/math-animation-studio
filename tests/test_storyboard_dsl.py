@@ -56,3 +56,16 @@ def test_storyboard_dsl_prompt_summary_is_llm_readable() -> None:
     assert "formula_focus" in summary
     assert "surface_plot" in summary
     assert "negative_log_curve" in summary
+
+
+def test_formula_first_blueprint_supports_perceptron_components() -> None:
+    blueprint = default_formula_first_blueprint(
+        target_concept="perceptron",
+        animation_pattern_id="perceptron_decision_boundary",
+    )
+
+    by_role = {beat.role: beat for beat in blueprint.beats}
+
+    assert "weighted_sum" in by_role["formula_structure"].preferred_component_kinds
+    assert "perceptron_node" in by_role["concrete_example"].preferred_component_kinds
+    assert "decision_boundary" in by_role["visualization"].preferred_component_kinds

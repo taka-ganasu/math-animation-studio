@@ -50,6 +50,34 @@ def test_generator_writes_compilable_cross_entropy_scene(tmp_path) -> None:
     validate_python_syntax(output_path)
 
 
+def test_generator_writes_compilable_perceptron_scene(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+        goal="単純パーセプトロンの順伝播と決定境界を直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="perceptron",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    generator = ManimGenerator(target_duration_seconds=50)
+    params = generator.generate(artifacts.storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert output_path.exists()
+    assert generator.scene_name_for(artifacts.storyboard) == "PerceptronScene"
+    assert "class PerceptronScene" in rendered
+    assert "今回は単純パーセプトロンを見ていきます" in rendered
+    assert "construct_decision_boundary" in rendered
+    assert "w_1x_1+w_2x_2+b=0" in rendered
+    assert params.weights == pytest.approx((1.2, -0.8))
+    assert params.input_values == pytest.approx((1.0, 0.4))
+    assert params.bias == pytest.approx(-0.1)
+    assert sum(params.segment_durations.values()) == pytest.approx(50.0)
+    assert params.segment_durations["decision_boundary"] == pytest.approx(10.0)
+    validate_python_syntax(output_path)
+
+
 def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> None:
     storyboard = Storyboard(
         concept="cross_entropy",

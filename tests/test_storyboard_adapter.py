@@ -140,3 +140,34 @@ def test_storyboard_adapter_enriches_gradient_metaphor_components() -> None:
     assert "downhill_arrow" in component_kinds
     assert "footstep_path" in component_kinds
     assert "formula_bridge" in component_kinds
+
+
+def test_storyboard_adapter_converts_perceptron_plan() -> None:
+    formula = r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)"
+    formula_analysis = sample_formula_analysis(formula, "perceptron")
+    explanation_plan = sample_explanation_plan(
+        formula,
+        "perceptron",
+        "high_school_math",
+    )
+
+    storyboard = StoryboardAdapter().convert(
+        formula_analysis=formula_analysis,
+        explanation_plan=explanation_plan,
+    )
+
+    component_kinds = {
+        component.kind
+        for scene in storyboard.scenes
+        for component in scene.components
+    }
+
+    assert storyboard.concept == "perceptron"
+    assert storyboard.blueprint is not None
+    assert storyboard.blueprint.flow_name == "formula_first"
+    assert storyboard.scenes[0].scene_role == "formula_structure"
+    assert storyboard.scenes[3].scene_role == "visualization"
+    assert "perceptron_node" in component_kinds
+    assert "weighted_sum" in component_kinds
+    assert "activation_function" in component_kinds
+    assert "decision_boundary" in component_kinds

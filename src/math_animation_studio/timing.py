@@ -92,6 +92,22 @@ GRADIENT_DOUBLE_WELL_1D_BASE_TIMELINE = (
 )
 
 
+PERCEPTRON_BASE_TIMELINE = (
+    TimelineSegment("title_intro", 5.0, "intro_formula"),
+    TimelineSegment(
+        "formula_parts",
+        9.0,
+        "formula_parts_focus",
+        r"a=\mathrm{step}(w_1x_1+w_2x_2+b)",
+    ),
+    TimelineSegment("network_diagram", 8.0, "perceptron_node"),
+    TimelineSegment("weighted_sum", 7.0, "weighted_sum", r"z=w_1x_1+w_2x_2+b"),
+    TimelineSegment("activation", 6.0, "activation_function", r"a=\mathrm{step}(z)"),
+    TimelineSegment("decision_boundary", 10.0, "decision_boundary", r"w_1x_1+w_2x_2+b=0"),
+    TimelineSegment("summary", 5.0, "summary", r"a=\mathrm{step}(w_1x_1+w_2x_2+b)"),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -142,6 +158,14 @@ def gradient_double_well_1d_timeline_segments(
     if target_duration_seconds is None:
         return GRADIENT_DOUBLE_WELL_1D_BASE_TIMELINE
     return scale_timeline(GRADIENT_DOUBLE_WELL_1D_BASE_TIMELINE, float(target_duration_seconds))
+
+
+def perceptron_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return PERCEPTRON_BASE_TIMELINE
+    return scale_timeline(PERCEPTRON_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(

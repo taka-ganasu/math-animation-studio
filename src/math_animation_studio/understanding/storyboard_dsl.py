@@ -63,6 +63,12 @@ PATTERN_COMPONENTS: dict[str, dict[SceneRole, tuple[str, ...]]] = {
         ),
         "summary": ("formula_bridge", "summary"),
     },
+    "perceptron_decision_boundary": {
+        "formula_structure": ("formula_focus", "weighted_sum", "activation_function"),
+        "concrete_example": ("perceptron_node", "weighted_connection", "forward_pass"),
+        "visualization": ("decision_boundary", "activation_function", "forward_pass"),
+        "summary": ("summary", "formula_focus"),
+    },
 }
 
 

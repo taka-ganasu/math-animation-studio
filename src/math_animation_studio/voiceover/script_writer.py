@@ -10,6 +10,7 @@ from math_animation_studio.timing import (
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     gradient_surface_3d_timeline_segments,
+    perceptron_timeline_segments,
 )
 
 
@@ -56,6 +57,20 @@ class VoiceoverScriptWriter:
                 "学習率は一歩の大きさを決めます。"
                 "更新を繰り返すことで、損失の小さい場所へ近づいていきます。"
             )
+        if concept == "perceptron":
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
+                return "".join(
+                    segment.text
+                    for segment in self.write_segments(
+                        storyboard,
+                        target_duration_seconds=target_duration_seconds,
+                    )
+                )
+            return (
+                "単純パーセプトロンは、入力を重み付きで足し合わせ、"
+                "活性化関数でゼロか一の判断へ変えるモデルです。"
+                "2つの入力なら、決定境界は平面上の直線として見えます。"
+            )
 
         sentences = [storyboard.one_sentence_summary]
         for scene in storyboard.scenes[:3]:
@@ -81,6 +96,11 @@ class VoiceoverScriptWriter:
         if concept == "gradient_descent":
             timeline = gradient_surface_3d_timeline_segments(target_duration_seconds)
             text_by_id = _gradient_surface_3d_segment_text()
+            return _segments_from_timeline(timeline, text_by_id)
+
+        if concept == "perceptron":
+            timeline = perceptron_timeline_segments(target_duration_seconds)
+            text_by_id = _perceptron_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
@@ -370,6 +390,18 @@ def _gradient_surface_3d_segment_text() -> dict[str, str]:
         "local_gradient": "勾配は上り方向です。更新では、その逆の下り方向へ進みます。",
         "descent_path": "一歩ずつ更新を繰り返すと、点は谷へ近づいていきます。",
         "summary_surface": "まとめると、今いる場所から、負の勾配方向へ、学習率の分だけ進む式です。",
+    }
+
+
+def _perceptron_segment_text() -> dict[str, str]:
+    return {
+        "title_intro": "今回は、単純パーセプトロンを見ていきます。入力から0か1の判断が出る流れを追います。",
+        "formula_parts": "式を分解します。xは入力、wは重み、bはバイアス。合計したスコアをstep関数へ通します。",
+        "network_diagram": "図では、入力から重み付きの矢印が出て、sumに集まります。そのあと活性化を通って出力になります。",
+        "weighted_sum": "重み付き和zは、判断前のスコアです。まだ分類結果そのものではありません。",
+        "activation": "step関数は、zがゼロ以上なら一、ゼロ未満ならゼロに変えます。",
+        "decision_boundary": "2つの入力を平面に置くと、zがゼロになる場所が決定境界の直線になります。",
+        "summary": "まとめると、重み付き和でスコアを作り、活性化関数で判断へ変えるのが単純パーセプトロンです。",
     }
 
 

@@ -323,6 +323,8 @@ def _render_concept(explanation_plan: ExplanationPlan) -> str:
         return "cross_entropy"
     if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface":
         return "gradient_descent"
+    if explanation_plan.selected_animation_pattern_id == "perceptron_decision_boundary":
+        return "perceptron"
     return explanation_plan.target_concept
 
 

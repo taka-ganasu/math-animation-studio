@@ -6,6 +6,7 @@ from math_animation_studio.schema import (
     ExplanationStep,
     FormulaAnalysis,
     OperationAnalysis,
+    PlannedAnimationComponent,
     PrerequisiteItem,
     PrerequisiteMap,
     SymbolRole,
@@ -58,6 +59,25 @@ def detect_sample_key(formula: str) -> str:
             "concept_hint:勾配降下法",
         )
     )
+    wants_perceptron = any(
+        keyword in normalized
+        for keyword in (
+            "concept_hint:perceptron",
+            "concept_hint:simple_perceptron",
+            "concept_hint:neural_network",
+            "perceptron",
+            "パーセプトロン",
+            "単純パーセプトロン",
+            "w^tx",
+            "w_1x_1",
+            "w1x1",
+            "活性化",
+            "決定境界",
+            "decisionboundary",
+        )
+    )
+    if wants_perceptron:
+        return "perceptron"
     if wants_gradient_descent:
         if wants_1d_double_well:
             return "gradient_descent_double_well_1d"
@@ -142,6 +162,29 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["self-attentionかcross-attentionかは式だけでは断定できない。"],
             confidence=0.85,
         )
+    if key == "perceptron":
+        return FormulaAnalysis(
+            raw_formula=formula,
+            normalized_formula_latex=r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+            detected_name="perceptron",
+            short_description="単純パーセプトロンは、入力を重み付きで足し合わせ、活性化関数で2クラスの出力へ変換するモデルである。",
+            symbols=[
+                SymbolRole(symbol=r"x_1, x_2", normalized_symbol="inputs", role="input", meaning="入力特徴量", intuition="判断材料", confidence=0.9),
+                SymbolRole(symbol=r"w_1, w_2", normalized_symbol="weights", role="parameter", meaning="各入力の重要度", intuition="どの材料をどれくらい重く見るか", confidence=0.9),
+                SymbolRole(symbol="b", normalized_symbol="bias", role="parameter", meaning="判断基準をずらす値", intuition="境界線の位置調整", confidence=0.9),
+                SymbolRole(symbol="z", normalized_symbol="weighted_sum", role="intermediate", meaning="重み付き和", intuition="材料を足し合わせた判定スコア", confidence=0.9),
+                SymbolRole(symbol="a", normalized_symbol="activation_output", role="output", meaning="活性化後の出力", intuition="0か1の判断", confidence=0.9),
+            ],
+            operations=[
+                OperationAnalysis(operation=r"w_1x_1 + w_2x_2 + b", meaning="入力を重み付きで足し合わせる", intuition="判断材料に重みを付けて合計点を作る", visual_hint="入力ノードからsumノードへ矢印を流す"),
+                OperationAnalysis(operation=r"\mathrm{step}(z)", meaning="スコアを0/1の分類結果へ変換する", intuition="境界を超えたら1、超えなければ0", visual_hint="step関数と決定境界で見せる"),
+            ],
+            inputs=[r"x_1", r"x_2"],
+            outputs=["a"],
+            assumptions=["2値分類", "入力特徴量が2つ", "活性化関数はstep関数として扱う"],
+            ambiguity_notes=["学習方法ではなく、まず順伝播と決定境界に絞る。"],
+            confidence=0.9,
+        )
     return FormulaAnalysis(
         raw_formula=formula,
         normalized_formula_latex=formula,
@@ -161,6 +204,8 @@ def sample_classification(key: str) -> ConceptClassification:
         return ConceptClassification(primary_domain="optimization", primary_concept="gradient_descent", related_concepts=["gradient", "learning_rate", "loss_minimization"], difficulty_level="undergraduate_intro", recommended_animation_family="trajectory_on_surface", confidence=0.95)
     if key == "scaled_dot_product_attention":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="scaled_dot_product_attention", related_concepts=["matrix_multiplication", "softmax", "weighted_sum"], difficulty_level="undergraduate_advanced", recommended_animation_family="matrix_similarity_heatmap", confidence=0.85)
+    if key == "perceptron":
+        return ConceptClassification(primary_domain="machine_learning", primary_concept="perceptron", related_concepts=["linear_classifier", "activation_function", "decision_boundary", "neural_network"], difficulty_level="undergraduate_intro", recommended_animation_family="perceptron_decision_boundary", confidence=0.9)
     return ConceptClassification(primary_domain="unknown", primary_concept="unknown_formula", related_concepts=[], difficulty_level="undergraduate_intro", recommended_animation_family="generic_symbol_decomposition", confidence=0.35)
 
 
@@ -193,6 +238,16 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
                 PrerequisiteItem(concept="重み付き平均", why_needed="Valueを混ぜる最終操作を理解するため", priority="helpful", suggested_micro_explanation="重要なものを大きな重みで足し合わせる。"),
             ],
             likely_blockers=["Q/K/Vの役割が混ざること", "softmax後の重みがValueを混ぜることを見落とすこと"],
+        )
+    if key == "perceptron":
+        return PrerequisiteMap(
+            target_concept="perceptron",
+            prerequisites=[
+                PrerequisiteItem(concept="一次関数", why_needed="決定境界が直線として表れるため", priority="required", suggested_micro_explanation="2変数の一次式を0に等しいと置くと、平面上の直線になる。"),
+                PrerequisiteItem(concept="ベクトルと内積", why_needed="w^T x が重み付き和を表すため", priority="helpful", suggested_micro_explanation="各成分を掛けて足すと、入力と重みの相性スコアになる。"),
+                PrerequisiteItem(concept="2値分類", why_needed="出力が0か1の判断になるため", priority="required", suggested_micro_explanation="境界線のどちら側かでクラスを分ける。"),
+            ],
+            likely_blockers=["重みが接続の強さであること", "バイアスが境界線をずらすこと", "学習ではなく順伝播だけを見ていること"],
         )
     return PrerequisiteMap(target_concept="unknown_formula", prerequisites=[], likely_blockers=["式だけでは文脈が不足している可能性"])
 
@@ -338,6 +393,126 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             ],
             misconceptions=["勾配降下法が常に一番低い谷を見つけるわけではない", "1変数の勾配は曲線の傾きとして読める", "3次関数より下に有界な4次関数の方が損失曲線として自然である"],
             next_questions_to_study=["局所最小", "大域最小", "学習率", "確率的勾配降下法", "ランダム初期化"],
+        )
+    if key == "perceptron":
+        return ExplanationPlan(
+            formula=r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+            target_concept="perceptron",
+            one_sentence_summary="単純パーセプトロンは、入力を重み付きで足し合わせ、境界線のどちら側かで0/1を判断する。",
+            audience=audience,
+            teaching_strategy="visual_first",
+            recommended_examples=[
+                TeachingExample(
+                    title="2つの特徴量で合格/不合格を分ける例",
+                    description="x1を勉強時間、x2を復習回数として、重み付き和とstep関数で0/1を出す。",
+                    why_it_works="入力、重み、バイアス、決定境界を2D平面で同時に見せやすい。",
+                    concrete_values={
+                        "input_labels": ["x_1", "x_2"],
+                        "input_values": [1.0, 0.4],
+                        "weights": [1.2, -0.8],
+                        "bias": -0.1,
+                        "activation": "step",
+                        "class_labels": ["0", "1"],
+                    },
+                ),
+                TeachingExample(
+                    title="メールを迷惑メールか分類する例",
+                    description="単語の出現数など2つの特徴から、境界線のどちら側かで判定する。",
+                    why_it_works="分類という用途は身近だが、特徴量を2つに絞れば図示しやすい。",
+                    concrete_values={
+                        "input_labels": ["word_count", "link_count"],
+                        "input_values": [0.8, 1.1],
+                        "weights": [0.9, 1.1],
+                        "bias": -1.0,
+                        "activation": "step",
+                        "class_labels": ["通常", "迷惑"],
+                    },
+                ),
+            ],
+            selected_animation_pattern_id="perceptron_decision_boundary",
+            explanation_steps=[
+                ExplanationStep(
+                    id="step_01",
+                    scene_role="formula_structure",
+                    title="入力と重みを見る",
+                    learning_goal="xとwが何を表すかを理解する",
+                    explanation="まず、入力x1とx2を判断材料、重みw1とw2を材料の重要度として見ます。",
+                    visual_idea="入力ノードから重み付き矢印を出す。",
+                    formula_focus=r"w_1x_1 + w_2x_2",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="perceptron_node", description="入力と1つのニューロンを並べる"),
+                        PlannedAnimationComponent(kind="weighted_connection", description="入力からニューロンへの重み付き接続を示す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_02",
+                    scene_role="formula_structure",
+                    title="重み付き和を作る",
+                    learning_goal="zが判定スコアであることを理解する",
+                    explanation="次に、入力に重みを掛けて足し、バイアスbを加えます。これが判定前のスコアzです。",
+                    visual_idea="z = w1x1 + w2x2 + b を式として強調する。",
+                    formula_focus=r"z = w_1x_1 + w_2x_2 + b",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="weighted_sum", description="重み付き和の式と代入例を表示する"),
+                        PlannedAnimationComponent(kind="formula_focus", description="zの式を強調する", params={"formula_focus": r"z = w_1x_1 + w_2x_2 + b"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_03",
+                    scene_role="concrete_example",
+                    title="活性化関数で0/1にする",
+                    learning_goal="step関数の役割を理解する",
+                    explanation="スコアzをそのまま出すのではなく、step関数で0か1の判断に変えます。",
+                    visual_idea="zが0以上なら1、0未満なら0になる階段型の関数を表示する。",
+                    formula_focus=r"a = \mathrm{step}(z)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_function", description="step関数を表示する", params={"activation": "step"}),
+                        PlannedAnimationComponent(kind="forward_pass", description="zからaへ値が流れる様子を示す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_04",
+                    scene_role="visualization",
+                    title="決定境界を見る",
+                    learning_goal="2D平面で分類の境目を見る",
+                    explanation="2つの入力を平面に置くと、w1x1 + w2x2 + b = 0 が境界線になります。",
+                    visual_idea="2D平面に点と直線の決定境界を表示する。",
+                    formula_focus=r"w_1x_1 + w_2x_2 + b = 0",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="decision_boundary", description="決定境界を2D平面上の直線として表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_05",
+                    scene_role="visualization",
+                    title="順伝播として値を流す",
+                    learning_goal="推論時の計算順序を理解する",
+                    explanation="順伝播では、入力から重み付き和、活性化、出力の順に値が流れます。",
+                    visual_idea="xからz、a、出力へ順にハイライトする。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="forward_pass", description="入力から出力への流れをハイライトする"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_06",
+                    scene_role="summary",
+                    title="最後に式へ戻る",
+                    learning_goal="式と図を対応づける",
+                    explanation="まとめると、パーセプトロンは重み付き和でスコアを作り、活性化関数で0/1の判断へ変えるモデルです。",
+                    visual_idea="式の重み付き和、バイアス、step関数に意味ラベルを付ける。",
+                    formula_focus=r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="summary", description="式と直感をまとめる"),
+                        PlannedAnimationComponent(kind="formula_focus", description="式全体を強調する", params={"formula_focus": r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)"}),
+                    ],
+                ),
+            ],
+            misconceptions=[
+                "単純パーセプトロンは非線形な境界を直接作るわけではない",
+                "重みは入力の重要度、バイアスは境界線の位置調整として読める",
+                "ここでは学習ではなく、学習済み重みでの順伝播を見ている",
+            ],
+            next_questions_to_study=["多層パーセプトロン", "全結合層", "誤差逆伝播", "活性化関数"],
         )
     if key == "scaled_dot_product_attention":
         return ExplanationPlan(

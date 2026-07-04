@@ -26,3 +26,14 @@ concepts:
     likely_formulas:
       - "softmax(QK^T / sqrt(d_k))V"
     recommended_animation_family: matrix_similarity_heatmap
+
+  perceptron:
+    domain: machine_learning
+    aliases:
+      - simple perceptron
+      - 単純パーセプトロン
+      - パーセプトロン
+    likely_formulas:
+      - "a = step(w^T x + b)"
+      - "z = w_1 x_1 + w_2 x_2 + b"
+    recommended_animation_family: perceptron_decision_boundary

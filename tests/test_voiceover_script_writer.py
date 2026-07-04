@@ -146,3 +146,33 @@ def test_voiceover_script_writer_segments_gradient_double_well_1d() -> None:
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(50.0)
     assert "損失曲線" in script
     assert "山を越え" in script
+
+
+def test_voiceover_script_writer_segments_perceptron() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+        goal="単純パーセプトロンの順伝播と決定境界を直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="perceptron",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=50)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=50)
+
+    assert [segment.id for segment in segments] == [
+        "title_intro",
+        "formula_parts",
+        "network_diagram",
+        "weighted_sum",
+        "activation",
+        "decision_boundary",
+        "summary",
+    ]
+    assert segments[2].component_id == "perceptron_node"
+    assert segments[5].component_id == "decision_boundary"
+    assert segments[5].formula_focus == r"w_1x_1+w_2x_2+b=0"
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(50.0)
+    assert "単純パーセプトロン" in script
+    assert "決定境界" in script

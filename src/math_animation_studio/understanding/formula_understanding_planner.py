@@ -177,6 +177,18 @@ def _coerce_animation_family(
         return "penalty_curve"
     if "gradient_descent" in text or "勾配降下" in text or "\\nabla" in text or "∇" in text:
         return "trajectory_on_surface"
+    if (
+        "perceptron" in text
+        or "パーセプトロン" in text
+        or "単純パーセプトロン" in text
+        or "decision boundary" in text
+        or "決定境界" in text
+        or "activation" in text
+        or "活性化" in text
+        or "w^t" in text
+        or "w_1" in text
+    ):
+        return "perceptron_decision_boundary"
     if "attention" in text or ("q" in formula.lower() and "k" in formula.lower() and "v" in formula.lower()):
         return "matrix_similarity_heatmap"
     return requested

@@ -17,6 +17,7 @@ from math_animation_studio.timing import (
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     gradient_surface_3d_timeline_segments,
+    perceptron_timeline_segments,
     segment_duration_map,
     segment_metadata_map,
     TimelineSegment,
@@ -153,6 +154,24 @@ class PenaltyCurveParams(BaseModel):
         return self.target_duration_seconds / self.base_duration_seconds
 
 
+class PerceptronParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = "Simple Perceptron"
+    target_duration_seconds: int = Field(default=50, ge=5, le=180)
+    formula_latex: str = r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)"
+    input_labels: tuple[str, str] = (r"x_1", r"x_2")
+    class_labels: tuple[str, str] = ("0", "1")
+    weights: tuple[float, float] = (1.2, -0.8)
+    bias: float = -0.1
+    input_values: tuple[float, float] = (1.0, 0.4)
+    activation: Literal["step", "sigmoid"] = "step"
+    segment_durations: dict[str, float] = Field(default_factory=dict)
+    segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
+    narration_lines: list[str] = Field(default_factory=list)
+
+
 class ManimGenerator:
     def __init__(
         self,
@@ -167,14 +186,17 @@ class ManimGenerator:
         self,
         storyboard: Storyboard,
         output_path: Path,
-    ) -> GradientDescentParams | PenaltyCurveParams:
+    ) -> GradientDescentParams | PenaltyCurveParams | PerceptronParams:
         template_name = self._select_template(storyboard)
         if template_name == "gradient_descent_3d":
             params = self._gradient_descent_params_from_storyboard(storyboard)
             template = self._environment().get_template("gradient_descent_3d.py.j2")
-        else:
+        elif template_name == "penalty_curve":
             params = self._penalty_curve_params_from_storyboard(storyboard)
             template = self._environment().get_template("penalty_curve.py.j2")
+        else:
+            params = self._perceptron_params_from_storyboard(storyboard)
+            template = self._environment().get_template("perceptron.py.j2")
 
         rendered = template.render(params=params)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -185,14 +207,16 @@ class ManimGenerator:
         template_name = self._select_template(storyboard)
         if template_name == "gradient_descent_3d":
             return "GradientDescent3DScene"
+        if template_name == "perceptron":
+            return "PerceptronScene"
         return "CrossEntropyPenaltyScene"
 
     def _select_template(self, storyboard: Storyboard) -> str:
-        supported_templates = {"auto", "gradient_descent_3d", "penalty_curve"}
+        supported_templates = {"auto", "gradient_descent_3d", "penalty_curve", "perceptron"}
         if self.template not in supported_templates:
             raise GeneratorError(
                 f"Unsupported template '{self.template}'. "
-                "Use 'auto', 'gradient_descent_3d', or 'penalty_curve'."
+                "Use 'auto', 'gradient_descent_3d', 'penalty_curve', or 'perceptron'."
             )
 
         concept = _normalized_concept(storyboard.concept)
@@ -201,13 +225,17 @@ class ManimGenerator:
                 return "gradient_descent_3d"
             if concept == "cross_entropy":
                 return "penalty_curve"
+            if concept == "perceptron":
+                return "perceptron"
             raise GeneratorError(
-                "MVP render templates support concept=gradient_descent or concept=cross_entropy."
+                "MVP render templates support concept=gradient_descent, "
+                "concept=cross_entropy, or concept=perceptron."
             )
 
         expected_concept = {
             "gradient_descent_3d": "gradient_descent",
             "penalty_curve": "cross_entropy",
+            "perceptron": "perceptron",
         }[self.template]
         if concept != expected_concept:
             raise GeneratorError(
@@ -404,6 +432,33 @@ class ManimGenerator:
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
+    def _perceptron_params_from_storyboard(self, storyboard: Storyboard) -> PerceptronParams:
+        values = storyboard.examples[0].values if storyboard.examples else {}
+        weights = _float_sequence(values.get("weights"), (1.2, -0.8), expected_length=2)
+        input_values = _float_sequence(values.get("input_values"), (1.0, 0.4), expected_length=2)
+        input_labels = _string_sequence(values.get("input_labels"), (r"x_1", r"x_2"), expected_length=2)
+        class_labels = _string_sequence(values.get("class_labels"), ("0", "1"), expected_length=2)
+        activation = str(values.get("activation", "step")).strip().lower()
+        if activation not in {"step", "sigmoid"}:
+            activation = "step"
+        target_duration_seconds = self.target_duration_seconds or 50
+        timeline = perceptron_timeline_segments(target_duration_seconds)
+        return PerceptronParams(
+            target_duration_seconds=target_duration_seconds,
+            title=_title_from_storyboard(storyboard),
+            formula_latex=storyboard.formula or r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+            input_labels=tuple(input_labels),  # type: ignore[arg-type]
+            class_labels=tuple(class_labels),  # type: ignore[arg-type]
+            weights=tuple(weights),  # type: ignore[arg-type]
+            bias=_safe_float(values.get("bias"), -0.1),
+            input_values=tuple(input_values),  # type: ignore[arg-type]
+            activation=activation,  # type: ignore[arg-type]
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
+            narration_lines=[scene.narration for scene in storyboard.scenes],
+        )
+
 
 def _normalized_concept(concept: str) -> str:
     return concept.strip().lower().replace("-", "_")
@@ -444,6 +499,8 @@ def _title_from_storyboard(storyboard: Storyboard) -> str:
         return "Gradient Descent"
     if storyboard.concept == "cross_entropy":
         return "Cross Entropy Loss"
+    if storyboard.concept == "perceptron":
+        return "Simple Perceptron"
     return storyboard.concept.replace("_", " ").title()
 
 
@@ -459,6 +516,67 @@ def _range_tuple(value: object, fallback: tuple[float, float]) -> tuple[float, f
     if not isinstance(value, list | tuple) or len(value) != 2:
         return fallback
     return (float(value[0]), float(value[1]))
+
+
+def _safe_float(value: object, default: float) -> float:
+    number = _as_float(value)
+    if number is None or not math.isfinite(number):
+        return default
+    return number
+
+
+def _float_sequence(
+    value: object,
+    fallback: tuple[float, ...],
+    *,
+    expected_length: int,
+) -> tuple[float, ...]:
+    if isinstance(value, list | tuple):
+        items = value
+    elif isinstance(value, str):
+        text = value.strip()
+        if not text.startswith("["):
+            return fallback
+        try:
+            items = json.loads(text)
+        except json.JSONDecodeError:
+            return fallback
+    else:
+        return fallback
+
+    if not isinstance(items, list | tuple) or len(items) != expected_length:
+        return fallback
+    numbers: list[float] = []
+    for item in items:
+        number = _as_float(item)
+        if number is None or not math.isfinite(number):
+            return fallback
+        numbers.append(number)
+    return tuple(numbers)
+
+
+def _string_sequence(
+    value: object,
+    fallback: tuple[str, ...],
+    *,
+    expected_length: int,
+) -> tuple[str, ...]:
+    if isinstance(value, list | tuple):
+        items = value
+    elif isinstance(value, str):
+        text = value.strip()
+        if not text.startswith("["):
+            return fallback
+        try:
+            items = json.loads(text)
+        except json.JSONDecodeError:
+            return fallback
+    else:
+        return fallback
+
+    if not isinstance(items, list | tuple) or len(items) != expected_length:
+        return fallback
+    return tuple(str(item) for item in items)
 
 
 def _float_layout_param(

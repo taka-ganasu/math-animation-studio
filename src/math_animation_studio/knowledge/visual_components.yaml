@@ -485,3 +485,128 @@ components:
         value_type: string
         description: 持ち帰ってほしい一文。
     example: "勾配降下法は全体を見比べず、今いる場所の傾きだけで次の一歩を決める。"
+
+  - id: perceptron_node
+    name: Perceptron Node
+    category: neural_network
+    description: 入力、重み付き和、活性化、出力をノードとして並べ、単純パーセプトロンの構造を見せる。
+    use_when:
+      - 単純パーセプトロンの順伝播を説明する
+      - 入力、重み、バイアス、出力の関係を図にする
+    avoid_when:
+      - 層が多数ある全結合ニューラルネットワーク全体を主役にする場面
+    visual_type: text
+    template_support:
+      - perceptron
+      - storyboard_only
+    params:
+      - name: input_labels
+        value_type: string_list
+        description: 入力ノード名。
+      - name: output_label
+        value_type: string
+        description: 出力ノード名。
+    example: "x1, x2, biasを左に置き、sumとactivationを通ってyへ流す。"
+
+  - id: weighted_connection
+    name: Weighted Connection
+    category: neural_network
+    description: 入力からニューロンへ向かう矢印に重みを添え、各入力がどれだけ効くかを示す。
+    use_when:
+      - w_i x_i の意味を説明する
+      - 全結合の接続を後で説明するための下地を作る
+    avoid_when:
+      - 重みではなく確率や損失の形を主役にする場面
+    visual_type: vector
+    template_support:
+      - perceptron
+      - storyboard_only
+    params:
+      - name: weights
+        value_type: number_list
+        description: 入力ごとの重み。
+    example: "x1からw1、x2からw2のラベル付き矢印を出す。"
+
+  - id: weighted_sum
+    name: Weighted Sum
+    category: neural_network
+    description: z = w1x1 + w2x2 + b のように、入力を重み付きで足し合わせる計算を見せる。
+    use_when:
+      - ニューロンが最初に線形結合を作ることを説明する
+      - バイアスの役割を説明する
+    avoid_when:
+      - 非線形活性化だけを主役にする場面
+    visual_type: formula
+    template_support:
+      - perceptron
+      - storyboard_only
+    params:
+      - name: formula_focus
+        value_type: latex_string
+        description: 強調する重み付き和の式。
+        default: "z = w_1x_1 + w_2x_2 + b"
+    example: "入力値を代入してzの値が決まる様子を表示する。"
+
+  - id: activation_function
+    name: Activation Function
+    category: neural_network
+    description: 重み付き和zを、0/1や確率のような出力へ変換する関数として見せる。
+    use_when:
+      - step関数やsigmoidの役割を説明する
+      - 線形結合だけでは分類結果にならないことを示す
+    avoid_when:
+      - 活性化なしの線形回帰を説明する場面
+    visual_type: curve
+    template_support:
+      - perceptron
+      - storyboard_only
+    params:
+      - name: activation
+        value_type: enum
+        description: 表示する活性化関数。
+        default: step
+        allowed_values:
+          - step
+          - sigmoid
+    example: "zが0以上なら1、0未満なら0になるstep関数を表示する。"
+
+  - id: decision_boundary
+    name: Decision Boundary
+    category: neural_network
+    description: w1x1 + w2x2 + b = 0 を2D平面上の境界線として表示する。
+    use_when:
+      - 単純パーセプトロンが2クラスを直線で分けることを説明する
+      - 重みとバイアスが境界線の向きと位置を決めることを示す
+    avoid_when:
+      - 入力が高次元で2D平面に落とせない場面
+    visual_type: axis
+    template_support:
+      - perceptron
+      - storyboard_only
+    params:
+      - name: weights
+        value_type: number_list
+        description: 境界線を決める重み。
+      - name: bias
+        value_type: number
+        description: 境界線をずらすバイアス。
+    example: "平面上に点を置き、直線のどちら側かでクラスが変わることを示す。"
+
+  - id: forward_pass
+    name: Forward Pass
+    category: neural_network
+    description: 入力から重み付き和、活性化、出力へ値が流れる順伝播をハイライトする。
+    use_when:
+      - 学習ではなく推論時の計算の流れを説明する
+      - 全結合ニューラルネットワークへ拡張する前に1ニューロンの流れを固定する
+    avoid_when:
+      - 勾配計算や誤差逆伝播を主題にする場面
+    visual_type: text
+    template_support:
+      - perceptron
+      - storyboard_only
+    params:
+      - name: input_values
+        value_type: number_list
+        description: 例として流す入力値。
+    example: "x -> z -> a -> y の順に光らせる。"

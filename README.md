@@ -90,7 +90,7 @@ math-anim plan \
 - `storyboard.json`
 - `metadata.json`
 
-`--no-llm` の固定サンプルは、Cross Entropy、Gradient Descent、Attentionに対応しています。`storyboard.json` は既存のStoryboard schemaでparseできる形式です。
+`--no-llm` の固定サンプルは、Cross Entropy、Gradient Descent、Attention、Perceptronに対応しています。`storyboard.json` は既存のStoryboard schemaでparseできる形式です。
 
 Cross Entropy と Gradient Descent は、`--render` を付けるとManim動画まで生成できます。
 
@@ -192,6 +192,26 @@ math-anim plan \
 
 成功すると、`outputs/gradient_descent_1d_double_well/video_with_voice.mp4` が作成されます。谷・山・谷を持ち、下に有界な損失の例として、3次関数ではなく4次関数の曲線を使います。
 
+### 単純パーセプトロン: 順伝播と決定境界
+
+`--no-llm` でも、`--concept-hint perceptron` を指定すると、入力、重み付き和、活性化関数、2D決定境界を順に説明する動画を生成できます。
+
+```bash
+math-anim plan \
+  --formula "a = \\mathrm{step}(w_1x_1 + w_2x_2 + b)" \
+  --goal "単純パーセプトロンの順伝播と決定境界を直感的に理解したい" \
+  --concept-hint perceptron \
+  --audience high_school_math \
+  --domain-hint machine_learning \
+  --duration 50 \
+  --output-dir outputs/perceptron_phase1 \
+  --no-llm \
+  --render \
+  --voiceover
+```
+
+成功すると、`outputs/perceptron_phase1/video_with_voice.mp4` が作成されます。学習や誤差逆伝播ではなく、まずは学習済み重みでの順伝播に絞っています。
+
 ## LLMで動的に教材企画を生成
 
 OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。
@@ -245,8 +265,8 @@ python -m pytest
 ## 現在の制約
 
 - `generate --no-llm` は `concept=gradient_descent` の固定サンプルのみ対応
-- `plan --no-llm` は Cross Entropy、Gradient Descent、Attention の固定サンプルに対応
-- Manimテンプレートは Gradient Descent の3D曲面、2D等高線、1D損失曲線と Cross Entropy のPenalty Curve に対応
+- `plan --no-llm` は Cross Entropy、Gradient Descent、Attention、Perceptron の固定サンプルに対応
+- Manimテンプレートは Gradient Descent の3D曲面、2D等高線、1D損失曲線、Cross Entropy のPenalty Curve、Perceptron の順伝播・決定境界に対応
 - Attentionは企画とStoryboard生成まで対応しており、動画テンプレートは未実装
 - 音声合成はmacOSの `say` コマンドを使う簡易版で、シーン単位の厳密な同期は未実装
 - LLMモードでも動画生成は既存Manimテンプレートに合う数式・パターンのみ対応

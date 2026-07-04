@@ -87,6 +87,12 @@ class AnimationComponent(StrictModel):
         "text_caption",
         "uphill_arrow",
         "formula_bridge",
+        "activation_function",
+        "decision_boundary",
+        "forward_pass",
+        "perceptron_node",
+        "weighted_connection",
+        "weighted_sum",
     ]
     description: str
     label: str | None = None

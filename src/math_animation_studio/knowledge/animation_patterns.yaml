@@ -47,6 +47,24 @@ patterns:
       - weighted_sum
       - formula
 
+  - id: perceptron_decision_boundary
+    name: Perceptron Decision Boundary
+    suitable_for:
+      - perceptron
+      - simple_perceptron
+      - neural_network
+      - binary_classification
+      - decision_boundary
+    description: 単純パーセプトロンの重み付き和、活性化、2D決定境界を順に見せる。
+    visual_metaphor: 1つのニューロンが入力を足し合わせ、境界線のどちら側かで分類する。
+    manim_template: perceptron.py.j2
+    required_visual_objects:
+      - formula
+      - nodes
+      - weighted_connections
+      - activation_curve
+      - decision_boundary
+
   - id: row_column_matrix_product
     name: Row Column Matrix Product
     suitable_for:

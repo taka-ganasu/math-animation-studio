@@ -12,8 +12,12 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert "formula_focus" in catalog
     assert "probability_bars" in catalog
     assert "gradient_arrow" in catalog
+    assert "perceptron_node" in catalog
+    assert "decision_boundary" in catalog
     assert catalog["formula_focus"].params[0].name == "formula_focus"
     assert catalog["gradient_arrow"].visual_type == "vector"
+    assert catalog["perceptron_node"].category == "neural_network"
+    assert catalog["decision_boundary"].visual_type == "axis"
     assert catalog["terrain_metaphor"].category == "metaphor"
     assert catalog["formula_bridge"].visual_type == "formula"
     assert {param.name for param in catalog["surface_plot"].params} >= {
@@ -37,3 +41,5 @@ def test_visual_component_prompt_summary_is_llm_readable() -> None:
     assert "templates=penalty_curve" in summary
     assert "gradient_descent_3d" in summary
     assert "function_preset=['quadratic_ripple', 'double_well_2d']" in summary
+    assert "- perceptron_node:" in summary
+    assert "templates=perceptron" in summary

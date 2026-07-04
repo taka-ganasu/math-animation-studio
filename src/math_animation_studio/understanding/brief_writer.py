@@ -181,6 +181,12 @@ def _animation_policy_rows(
             "- 方針: 2変数の損失を等高線として描き、初期位置によって到達する谷が変わる様子を比較する。",
             "- 比喩: 地図上の現在地から、局所的な斜面だけを頼りに谷へ下る。",
         ]
+    if selected_pattern.id == "perceptron_decision_boundary":
+        return [
+            "- パターン: Perceptron Decision Boundary",
+            "- 方針: 1つのニューロンで入力、重み付き和、活性化、出力の順伝播を見せ、2D平面の決定境界へ接続する。",
+            "- 比喩: 判断材料を重み付きで足し合わせ、境界線のどちら側かで0/1を決める。",
+        ]
     return [
         f"- パターン: {selected_pattern.name}",
         f"- 方針: {selected_pattern.description}",
