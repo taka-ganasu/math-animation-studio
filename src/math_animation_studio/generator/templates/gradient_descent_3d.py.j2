@@ -26,6 +26,10 @@ COMPARISON_INITIAL_Y = {{ params.comparison_initial_y | py_repr }}
 SEGMENT_DURATIONS = {{ params.segment_durations | py_repr }}
 SEGMENT_METADATA = {{ params.segment_metadata | py_repr }}
 TEMPLATE_COMPONENTS = {{ params.template_components | py_repr }}
+SURFACE_Y_SHIFT = {{ params.surface_y_shift | py_repr }}
+SURFACE_CAMERA_ZOOM = {{ params.surface_camera_zoom | py_repr }}
+TITLE_TOP_BUFF = {{ params.title_top_buff | py_repr }}
+CAPTION_BOTTOM_BUFF = {{ params.caption_bottom_buff | py_repr }}
 
 
 def segment_duration(segment_id: str, fallback_seconds: float) -> float:
@@ -133,7 +137,7 @@ class GradientDescent3DScene(ThreeDScene):
         caption = Text(text, font_size=23)
         if caption.width > 12.1:
             caption.scale(12.1 / caption.width)
-        caption.to_edge(DOWN, buff=0.25)
+        caption.to_edge(DOWN, buff=CAPTION_BOTTOM_BUFF)
         return caption
 
     def wait_remaining(self, segment_seconds: float, used_seconds: float) -> None:
@@ -377,7 +381,7 @@ class GradientDescent3DScene(ThreeDScene):
         right_points = self.descent_points_1d_from(float(COMPARISON_INITIAL_X))
 
         title = Text("Gradient Descent: 1D Loss Curve", font_size=32)
-        title.to_edge(UP, buff=0.25)
+        title.to_edge(UP, buff=TITLE_TOP_BUFF)
         formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=31)
         formula.next_to(title, DOWN, buff=0.14)
         axes = self.double_well_1d_axes()
@@ -535,7 +539,7 @@ class GradientDescent3DScene(ThreeDScene):
         right_points = self.descent_points_from(float(COMPARISON_INITIAL_X), float(COMPARISON_INITIAL_Y))
 
         title = Text("Gradient Descent: Two Valleys", font_size=32)
-        title.to_edge(UP, buff=0.25)
+        title.to_edge(UP, buff=TITLE_TOP_BUFF)
         formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=31)
         formula.next_to(title, DOWN, buff=0.14)
         axes = self.double_well_axes()
@@ -691,7 +695,7 @@ class GradientDescent3DScene(ThreeDScene):
             y_length=6.4,
             z_length=3.6,
         )
-        axes.shift(DOWN * 0.75)
+        axes.shift(DOWN * SURFACE_Y_SHIFT)
 
         surface = Surface(
             lambda u, v: axes.c2p(u, v, self.loss(u, v)),
@@ -710,7 +714,7 @@ class GradientDescent3DScene(ThreeDScene):
         uses_formula_bridge = has_component("formula_bridge")
 
         title = Text("Loss Surface as Terrain" if uses_terrain_metaphor else TITLE, font_size=30)
-        title.to_edge(UP)
+        title.to_edge(UP, buff=TITLE_TOP_BUFF)
         try:
             formula = MathTex(FORMULA_LATEX, font_size=32)
         except FileNotFoundError:
@@ -724,7 +728,7 @@ class GradientDescent3DScene(ThreeDScene):
         note = Text(note_text, font_size=22)
         note.next_to(formula, DOWN, buff=0.2)
 
-        self.set_camera_orientation(phi=63 * DEGREES, theta=-42 * DEGREES, zoom=0.82)
+        self.set_camera_orientation(phi=63 * DEGREES, theta=-42 * DEGREES, zoom=SURFACE_CAMERA_ZOOM)
         self.add_fixed_in_frame_mobjects(title, formula, note)
         intro_duration = segment_duration("intro_surface", 5.0)
         title_time = min(1.4, intro_duration * 0.28)
@@ -826,7 +830,7 @@ class GradientDescent3DScene(ThreeDScene):
             "Downhill steps become the update rule." if uses_formula_bridge else "Move a little opposite to the gradient.",
             font_size=24,
         )
-        summary.to_edge(DOWN)
+        summary.to_edge(DOWN, buff=CAPTION_BOTTOM_BUFF)
         if uses_formula_bridge:
             bridge_formula = self.make_math(r"-\eta\nabla L", "-eta grad L", font_size=34)
             bridge_formula.next_to(summary, UP, buff=0.16)

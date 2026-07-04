@@ -16,6 +16,12 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert catalog["gradient_arrow"].visual_type == "vector"
     assert catalog["terrain_metaphor"].category == "metaphor"
     assert catalog["formula_bridge"].visual_type == "formula"
+    assert {param.name for param in catalog["surface_plot"].params} >= {
+        "surface_y_shift",
+        "surface_camera_zoom",
+        "title_top_buff",
+        "caption_bottom_buff",
+    }
 
 
 def test_visual_component_prompt_summary_is_llm_readable() -> None:

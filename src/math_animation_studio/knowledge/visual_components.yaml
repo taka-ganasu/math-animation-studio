@@ -195,6 +195,22 @@ components:
       - name: y_range
         value_type: number_list
         description: y軸の範囲。
+      - name: surface_y_shift
+        value_type: number
+        description: 3Dグラフ全体を下方向へずらす量。タイトルや式と重なる場合に大きくする。
+        default: 2.2
+      - name: surface_camera_zoom
+        value_type: number
+        description: 3Dカメラの引き具合。タイトルや字幕と重なる場合に小さくする。
+        default: 0.58
+      - name: title_top_buff
+        value_type: number
+        description: タイトルと画面上端の余白。
+        default: 0.18
+      - name: caption_bottom_buff
+        value_type: number
+        description: 字幕やまとめ文と画面下端の余白。
+        default: 0.32
     example: "損失地形を表示し、現在地から谷へ下る点を重ねる。"
 
   - id: contour_map

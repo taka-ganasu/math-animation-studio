@@ -71,6 +71,16 @@ class StoryboardAdapter:
                     "function": "0.35*x**2 + y**2 + 0.25*x*y + 0.8*sin(1.5*x)*cos(y)",
                     "x_range": [-3, 3],
                     "y_range": [-3, 3],
+                    "surface_y_shift": _safe_float(example_values.get("surface_y_shift"), 2.2),
+                    "surface_camera_zoom": _safe_float(
+                        example_values.get("surface_camera_zoom"),
+                        0.58,
+                    ),
+                    "title_top_buff": _safe_float(example_values.get("title_top_buff"), 0.18),
+                    "caption_bottom_buff": _safe_float(
+                        example_values.get("caption_bottom_buff"),
+                        0.32,
+                    ),
                 }
                 if function_preset == "double_well_2d":
                     surface_params.update(
@@ -553,6 +563,13 @@ def _number_pair(value: object) -> tuple[float, float] | None:
         return float(value[0]), float(value[1])
     except (TypeError, ValueError):
         return None
+
+
+def _safe_float(value: object, default: float) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _narration_cues_for_step(

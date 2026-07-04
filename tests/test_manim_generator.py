@@ -373,8 +373,83 @@ def test_gradient_descent_surface_3d_uses_target_duration_timeline(tmp_path) -> 
     assert sum(params.segment_durations.values()) == pytest.approx(60.0)
     assert params.segment_durations["intro_surface"] == pytest.approx(10.0)
     assert params.segment_durations["descent_path"] == pytest.approx(28.0)
+    assert params.surface_y_shift == pytest.approx(2.2)
+    assert params.surface_camera_zoom == pytest.approx(0.58)
+    assert params.title_top_buff == pytest.approx(0.18)
+    assert params.caption_bottom_buff == pytest.approx(0.32)
     assert 'segment_duration("summary_surface", 4.0)' in rendered
     assert 'segment_duration("descent_path", 14.0)' in rendered
+    assert "SURFACE_Y_SHIFT = 2.2" in rendered
+    assert "SURFACE_CAMERA_ZOOM = 0.58" in rendered
+    assert "axes.shift(DOWN * SURFACE_Y_SHIFT)" in rendered
+    assert "zoom=SURFACE_CAMERA_ZOOM" in rendered
+    assert "title.to_edge(UP, buff=TITLE_TOP_BUFF)" in rendered
+    assert "summary.to_edge(DOWN, buff=CAPTION_BOTTOM_BUFF)" in rendered
+    validate_python_syntax(output_path)
+
+
+def test_gradient_descent_surface_3d_accepts_layout_offsets(tmp_path) -> None:
+    storyboard = Storyboard(
+        concept="gradient_descent",
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        one_sentence_summary="点が損失曲面を下る。",
+        audience="high_school_math",
+        symbol_ledger=[],
+        examples=[],
+        scenes=[
+            SceneSpec(
+                id="step1",
+                title="損失曲面を見る",
+                learning_goal="曲面を見る。",
+                narration="曲面上の点を見ます。",
+                visual_objects=[
+                    VisualObject(
+                        type="surface",
+                        name="loss_surface",
+                        description="損失曲面",
+                        params={
+                            "function_preset": "quadratic_ripple",
+                            "surface_y_shift": 1.35,
+                            "surface_camera_zoom": 0.68,
+                            "title_top_buff": 0.12,
+                            "caption_bottom_buff": 0.42,
+                        },
+                    ),
+                    VisualObject(
+                        type="point",
+                        name="current_position",
+                        description="現在地",
+                        params={"x": 2.0, "y": -2.0},
+                    ),
+                    VisualObject(
+                        type="vector",
+                        name="negative_gradient",
+                        description="負の勾配",
+                        params={"learning_rate": 0.05},
+                    ),
+                    VisualObject(
+                        type="curve",
+                        name="descent_path",
+                        description="軌跡",
+                        params={"steps": 8},
+                    ),
+                ],
+            )
+        ],
+    )
+    output_path = tmp_path / "manim_scene.py"
+
+    params = ManimGenerator(target_duration_seconds=30).generate(storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert params.surface_y_shift == pytest.approx(1.35)
+    assert params.surface_camera_zoom == pytest.approx(0.68)
+    assert params.title_top_buff == pytest.approx(0.12)
+    assert params.caption_bottom_buff == pytest.approx(0.42)
+    assert "SURFACE_Y_SHIFT = 1.35" in rendered
+    assert "SURFACE_CAMERA_ZOOM = 0.68" in rendered
+    assert "TITLE_TOP_BUFF = 0.12" in rendered
+    assert "CAPTION_BOTTOM_BUFF = 0.42" in rendered
     validate_python_syntax(output_path)
 
 

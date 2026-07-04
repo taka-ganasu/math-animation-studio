@@ -90,6 +90,7 @@ def test_formula_understanding_plan_prompt_contains_visual_component_catalog() -
     assert "視覚部品カタログにあるidだけ" in prompt
     assert "category=metaphor" in prompt
     assert "terrain_metaphor, hiker_marker, uphill_arrow" in prompt
+    assert "surface_y_shift, surface_camera_zoom, title_top_buff, caption_bottom_buff" in prompt
 
 
 def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:

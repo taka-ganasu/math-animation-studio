@@ -56,6 +56,10 @@ class GradientDescentParams(BaseModel):
     segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
     template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
     narration_lines: list[str] = Field(default_factory=list)
+    surface_y_shift: float = 2.2
+    surface_camera_zoom: float = 0.58
+    title_top_buff: float = 0.18
+    caption_bottom_buff: float = 0.32
 
 
 class PenaltyCurveParams(BaseModel):
@@ -241,6 +245,38 @@ class ManimGenerator:
         values = storyboard.examples[0].values if storyboard.examples else {}
         x_range = _range_tuple(surface.params.get("x_range"), (-3.0, 3.0))
         y_range = _range_tuple(surface.params.get("y_range"), (-3.0, 3.0))
+        surface_y_shift = _float_layout_param(
+            "surface_y_shift",
+            visual=surface,
+            values=values,
+            default=2.2,
+            min_value=0.0,
+            max_value=3.2,
+        )
+        surface_camera_zoom = _float_layout_param(
+            "surface_camera_zoom",
+            visual=surface,
+            values=values,
+            default=0.58,
+            min_value=0.45,
+            max_value=1.2,
+        )
+        title_top_buff = _float_layout_param(
+            "title_top_buff",
+            visual=surface,
+            values=values,
+            default=0.18,
+            min_value=0.0,
+            max_value=1.0,
+        )
+        caption_bottom_buff = _float_layout_param(
+            "caption_bottom_buff",
+            visual=surface,
+            values=values,
+            default=0.32,
+            min_value=0.0,
+            max_value=1.0,
+        )
         timeline = _gradient_timeline_segments(
             visualization_style,
             self.target_duration_seconds,
@@ -281,6 +317,10 @@ class ManimGenerator:
             segment_metadata=segment_metadata_map(timeline),
             template_components=_template_components_from_storyboard(storyboard),
             narration_lines=[scene.narration for scene in storyboard.scenes],
+            surface_y_shift=surface_y_shift,
+            surface_camera_zoom=surface_camera_zoom,
+            title_top_buff=title_top_buff,
+            caption_bottom_buff=caption_bottom_buff,
         )
 
     def _penalty_curve_params_from_storyboard(self, storyboard: Storyboard) -> PenaltyCurveParams:
@@ -389,6 +429,25 @@ def _range_tuple(value: object, fallback: tuple[float, float]) -> tuple[float, f
     if not isinstance(value, list | tuple) or len(value) != 2:
         return fallback
     return (float(value[0]), float(value[1]))
+
+
+def _float_layout_param(
+    name: str,
+    *,
+    visual: VisualObject,
+    values: dict[str, ExampleValue],
+    default: float,
+    min_value: float,
+    max_value: float,
+) -> float:
+    raw_value = visual.params.get(name, values.get(name, default))
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        return default
+    if not math.isfinite(value):
+        return default
+    return min(max(value, min_value), max_value)
 
 
 def _penalty_curve_example_data(storyboard: Storyboard) -> dict[str, Any]:

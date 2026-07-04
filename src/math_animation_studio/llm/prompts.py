@@ -145,6 +145,7 @@ def build_formula_understanding_plan_prompt(
 - 1つのexplanation_stepにplanned_componentsを1〜3個入れ、ナレーションで見るべき対象と対応させる
 - 理解ゴールが直感・比喩・アナロジーを求めている場合は、category=metaphorの視覚部品を優先的に使う
 - 勾配降下法を幾何的・比喩的に説明する場合は、terrain_metaphor, hiker_marker, uphill_arrow, downhill_arrow, footstep_path, formula_bridgeを説明順に応じて使う
+- 3D曲面がタイトル、式、字幕と重なりそうな場合は、surface_plotのsurface_y_shift, surface_camera_zoom, title_top_buff, caption_bottom_buffで位置調整する
 - formula_focusを説明する場面では、planned_componentsにformula_focusを入れ、params.formula_focusに強調したいLaTeX部分を入れる
 - 視覚部品カタログにない部品名、新しい描画処理、Python式、Manimコードはplanned_componentsに入れない
 - prerequisite_mapでは、理解に必要な前提知識と詰まりやすい点を出す

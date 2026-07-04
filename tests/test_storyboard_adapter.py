@@ -96,6 +96,10 @@ def test_storyboard_adapter_normalizes_llm_surface_aliases_and_initial_position(
     second_scene = storyboard.scenes[1]
 
     assert first_scene.visual_objects[0].params["function_preset"] == "quadratic_ripple"
+    assert first_scene.visual_objects[0].params["surface_y_shift"] == 2.2
+    assert first_scene.visual_objects[0].params["surface_camera_zoom"] == 0.58
+    assert first_scene.visual_objects[0].params["title_top_buff"] == 0.18
+    assert first_scene.visual_objects[0].params["caption_bottom_buff"] == 0.32
     assert first_scene.components[1].params["function_preset"] == "quadratic_ripple"
     assert second_scene.visual_objects[0].params["x"] == 2.0
     assert second_scene.visual_objects[0].params["y"] == -2.0
