@@ -16,6 +16,7 @@ from math_animation_studio.timing import (
     cross_entropy_timeline_segments,
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
+    gradient_surface_3d_timeline_segments,
     segment_duration_map,
     segment_metadata_map,
     TimelineSegment,
@@ -346,7 +347,7 @@ def _gradient_timeline_segments(
         return gradient_double_well_timeline_segments(target_duration_seconds or 52)
     if visualization_style == "double_well_1d":
         return gradient_double_well_1d_timeline_segments(target_duration_seconds or 50)
-    return ()
+    return gradient_surface_3d_timeline_segments(target_duration_seconds or 30)
 
 
 def _template_components_from_storyboard(storyboard: Storyboard) -> tuple[dict[str, str], ...]:

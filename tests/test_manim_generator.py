@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from importlib.resources import files
 
+import pytest
+
 from math_animation_studio.generator import ManimGenerator
 from math_animation_studio.schema import Example, SceneSpec, Storyboard, SymbolDefinition, VisualObject
 from math_animation_studio.understanding import FormulaUnderstandingPlanner
@@ -303,9 +305,67 @@ def test_gradient_descent_generator_normalizes_llm_surface_alias(tmp_path) -> No
     )
     output_path = tmp_path / "manim_scene.py"
 
-    ManimGenerator(target_duration_seconds=30).generate(storyboard, output_path)
+    params = ManimGenerator(target_duration_seconds=30).generate(storyboard, output_path)
     rendered = output_path.read_text(encoding="utf-8")
 
     assert "FUNCTION_PRESET = 'quadratic_ripple'" in rendered
     assert "custom_function_that_must_not_run" not in rendered
+    assert sum(params.segment_durations.values()) == pytest.approx(30.0)
+    assert params.segment_durations["descent_path"] == pytest.approx(14.0)
+    validate_python_syntax(output_path)
+
+
+def test_gradient_descent_surface_3d_uses_target_duration_timeline(tmp_path) -> None:
+    storyboard = Storyboard(
+        concept="gradient_descent",
+        formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        one_sentence_summary="点が損失曲面を下る。",
+        audience="high_school_math",
+        symbol_ledger=[],
+        examples=[],
+        scenes=[
+            SceneSpec(
+                id="step1",
+                title="損失曲面を見る",
+                learning_goal="曲面を見る。",
+                narration="曲面上の点を見ます。",
+                visual_objects=[
+                    VisualObject(
+                        type="surface",
+                        name="loss_surface",
+                        description="損失曲面",
+                        params={"function_preset": "quadratic_ripple"},
+                    ),
+                    VisualObject(
+                        type="point",
+                        name="current_position",
+                        description="現在地",
+                        params={"x": 2.0, "y": -2.0},
+                    ),
+                    VisualObject(
+                        type="vector",
+                        name="negative_gradient",
+                        description="負の勾配",
+                        params={"learning_rate": 0.05},
+                    ),
+                    VisualObject(
+                        type="curve",
+                        name="descent_path",
+                        description="軌跡",
+                        params={"steps": 8},
+                    ),
+                ],
+            )
+        ],
+    )
+    output_path = tmp_path / "manim_scene.py"
+
+    params = ManimGenerator(target_duration_seconds=60).generate(storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert sum(params.segment_durations.values()) == pytest.approx(60.0)
+    assert params.segment_durations["intro_surface"] == pytest.approx(10.0)
+    assert params.segment_durations["descent_path"] == pytest.approx(28.0)
+    assert 'segment_duration("summary_surface", 4.0)' in rendered
+    assert 'segment_duration("descent_path", 14.0)' in rendered
     validate_python_syntax(output_path)

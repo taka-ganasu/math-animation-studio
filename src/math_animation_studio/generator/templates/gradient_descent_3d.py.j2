@@ -683,15 +683,43 @@ class GradientDescent3DScene(ThreeDScene):
 
         self.set_camera_orientation(phi=63 * DEGREES, theta=-42 * DEGREES, zoom=0.82)
         self.add_fixed_in_frame_mobjects(title, formula, note)
-        self.play(FadeIn(title), Write(formula), FadeIn(note), run_time=1.4)
-        self.play(Create(axes), FadeIn(surface), run_time=2.2)
+        intro_duration = segment_duration("intro_surface", 5.0)
+        title_time = min(1.4, intro_duration * 0.28)
+        surface_time = min(2.2, intro_duration * 0.44)
+        self.play(FadeIn(title), Write(formula), FadeIn(note), run_time=title_time)
+        self.play(Create(axes), FadeIn(surface), run_time=surface_time)
+        self.wait_remaining(intro_duration, title_time + surface_time)
 
         dot = Sphere(radius=0.09, resolution=(12, 12))
         dot.set_color(RED)
         dot.move_to(axes.c2p(*points[0]))
-        self.play(FadeIn(dot), run_time=0.5)
+        point_duration = segment_duration("current_point", 3.0)
+        point_time = min(0.8, point_duration * 0.28)
+        self.play(FadeIn(dot), run_time=point_time)
+        self.wait_remaining(point_duration, point_time)
+
+        gradient_duration = segment_duration("local_gradient", 4.0)
+        first_direction = -self.gradient(points[0][0], points[0][1])
+        first_norm = float(np.linalg.norm(first_direction))
+        first_arrow = None
+        if first_norm > 1.0e-8:
+            first_arrow_xy = np.array([points[0][0], points[0][1]]) + 0.45 * first_direction / first_norm
+            first_arrow_z = self.loss(float(first_arrow_xy[0]), float(first_arrow_xy[1]))
+            first_arrow = Arrow3D(
+                start=axes.c2p(*points[0]),
+                end=axes.c2p(float(first_arrow_xy[0]), float(first_arrow_xy[1]), first_arrow_z),
+                color=YELLOW,
+            )
+            arrow_time = min(0.9, gradient_duration * 0.32)
+            self.play(FadeIn(first_arrow), run_time=arrow_time)
+            self.wait_remaining(gradient_duration, arrow_time)
+            self.play(FadeOut(first_arrow), run_time=0.2)
+        else:
+            self.wait(gradient_duration)
 
         path_segments = VGroup()
+        descent_duration = segment_duration("descent_path", 14.0)
+        step_budget = descent_duration / max(1, len(points) - 1)
         for index, start in enumerate(points[:-1]):
             end = points[index + 1]
             start_point = axes.c2p(*start)
@@ -708,15 +736,23 @@ class GradientDescent3DScene(ThreeDScene):
                     end=axes.c2p(float(arrow_xy[0]), float(arrow_xy[1]), arrow_z),
                     color=YELLOW,
                 )
-                self.play(FadeIn(arrow), run_time=0.12)
+                arrow_in_time = min(0.35, step_budget * 0.22)
+                self.play(FadeIn(arrow), run_time=arrow_in_time)
+            else:
+                arrow_in_time = 0.0
 
             segment = Line(start_point, end_point, color=YELLOW)
             segment.set_stroke(width=5)
             path_segments.add(segment)
-            self.play(dot.animate.move_to(end_point), Create(segment), run_time=0.18)
+            move_time = max(0.12, min(step_budget * 0.6, step_budget - arrow_in_time))
+            self.play(dot.animate.move_to(end_point), Create(segment), run_time=move_time)
 
             if arrow is not None:
-                self.play(FadeOut(arrow), run_time=0.06)
+                arrow_out_time = min(0.2, max(0.05, step_budget * 0.15))
+                self.play(FadeOut(arrow), run_time=arrow_out_time)
+            else:
+                arrow_out_time = 0.0
+            self.wait_remaining(step_budget, arrow_in_time + move_time + arrow_out_time)
 
         summary = Text(
             "Move a little opposite to the gradient.",
@@ -724,5 +760,7 @@ class GradientDescent3DScene(ThreeDScene):
         )
         summary.to_edge(DOWN)
         self.add_fixed_in_frame_mobjects(summary)
-        self.play(FadeIn(summary), run_time=0.8)
-        self.wait(2.0)
+        summary_duration = segment_duration("summary_surface", 4.0)
+        summary_time = min(1.0, summary_duration * 0.3)
+        self.play(FadeIn(summary), run_time=summary_time)
+        self.wait_remaining(summary_duration, summary_time)
