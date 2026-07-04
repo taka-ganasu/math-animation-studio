@@ -18,7 +18,10 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert catalog["formula_bridge"].visual_type == "formula"
     assert {param.name for param in catalog["surface_plot"].params} >= {
         "surface_y_shift",
+        "surface_z_length",
         "surface_camera_zoom",
+        "surface_camera_phi",
+        "surface_camera_theta",
         "title_top_buff",
         "caption_bottom_buff",
     }

@@ -27,7 +27,10 @@ SEGMENT_DURATIONS = {{ params.segment_durations | py_repr }}
 SEGMENT_METADATA = {{ params.segment_metadata | py_repr }}
 TEMPLATE_COMPONENTS = {{ params.template_components | py_repr }}
 SURFACE_Y_SHIFT = {{ params.surface_y_shift | py_repr }}
+SURFACE_Z_LENGTH = {{ params.surface_z_length | py_repr }}
 SURFACE_CAMERA_ZOOM = {{ params.surface_camera_zoom | py_repr }}
+SURFACE_CAMERA_PHI = {{ params.surface_camera_phi | py_repr }}
+SURFACE_CAMERA_THETA = {{ params.surface_camera_theta | py_repr }}
 TITLE_TOP_BUFF = {{ params.title_top_buff | py_repr }}
 CAPTION_BOTTOM_BUFF = {{ params.caption_bottom_buff | py_repr }}
 
@@ -693,7 +696,7 @@ class GradientDescent3DScene(ThreeDScene):
             z_range=[0, max_z + 1.0, 1],
             x_length=6.4,
             y_length=6.4,
-            z_length=3.6,
+            z_length=SURFACE_Z_LENGTH,
         )
         axes.shift(DOWN * SURFACE_Y_SHIFT)
 
@@ -728,7 +731,11 @@ class GradientDescent3DScene(ThreeDScene):
         note = Text(note_text, font_size=22)
         note.next_to(formula, DOWN, buff=0.2)
 
-        self.set_camera_orientation(phi=63 * DEGREES, theta=-42 * DEGREES, zoom=SURFACE_CAMERA_ZOOM)
+        self.set_camera_orientation(
+            phi=SURFACE_CAMERA_PHI * DEGREES,
+            theta=SURFACE_CAMERA_THETA * DEGREES,
+            zoom=SURFACE_CAMERA_ZOOM,
+        )
         self.add_fixed_in_frame_mobjects(title, formula, note)
         intro_duration = segment_duration("intro_surface", 5.0)
         title_time = min(1.4, intro_duration * 0.28)

@@ -373,15 +373,23 @@ def test_gradient_descent_surface_3d_uses_target_duration_timeline(tmp_path) -> 
     assert sum(params.segment_durations.values()) == pytest.approx(60.0)
     assert params.segment_durations["intro_surface"] == pytest.approx(10.0)
     assert params.segment_durations["descent_path"] == pytest.approx(28.0)
-    assert params.surface_y_shift == pytest.approx(2.2)
-    assert params.surface_camera_zoom == pytest.approx(0.58)
+    assert params.surface_y_shift == pytest.approx(2.7)
+    assert params.surface_z_length == pytest.approx(2.4)
+    assert params.surface_camera_zoom == pytest.approx(0.52)
+    assert params.surface_camera_phi == pytest.approx(55.0)
+    assert params.surface_camera_theta == pytest.approx(-48.0)
     assert params.title_top_buff == pytest.approx(0.18)
     assert params.caption_bottom_buff == pytest.approx(0.32)
     assert 'segment_duration("summary_surface", 4.0)' in rendered
     assert 'segment_duration("descent_path", 14.0)' in rendered
-    assert "SURFACE_Y_SHIFT = 2.2" in rendered
-    assert "SURFACE_CAMERA_ZOOM = 0.58" in rendered
+    assert "SURFACE_Y_SHIFT = 2.7" in rendered
+    assert "SURFACE_Z_LENGTH = 2.4" in rendered
+    assert "SURFACE_CAMERA_ZOOM = 0.52" in rendered
+    assert "SURFACE_CAMERA_PHI = 55.0" in rendered
+    assert "SURFACE_CAMERA_THETA = -48.0" in rendered
     assert "axes.shift(DOWN * SURFACE_Y_SHIFT)" in rendered
+    assert "z_length=SURFACE_Z_LENGTH" in rendered
+    assert "phi=SURFACE_CAMERA_PHI * DEGREES" in rendered
     assert "zoom=SURFACE_CAMERA_ZOOM" in rendered
     assert "title.to_edge(UP, buff=TITLE_TOP_BUFF)" in rendered
     assert "summary.to_edge(DOWN, buff=CAPTION_BOTTOM_BUFF)" in rendered
@@ -410,7 +418,10 @@ def test_gradient_descent_surface_3d_accepts_layout_offsets(tmp_path) -> None:
                         params={
                             "function_preset": "quadratic_ripple",
                             "surface_y_shift": 1.35,
+                            "surface_z_length": 2.1,
                             "surface_camera_zoom": 0.68,
+                            "surface_camera_phi": 50,
+                            "surface_camera_theta": -55,
                             "title_top_buff": 0.12,
                             "caption_bottom_buff": 0.42,
                         },
@@ -443,11 +454,17 @@ def test_gradient_descent_surface_3d_accepts_layout_offsets(tmp_path) -> None:
     rendered = output_path.read_text(encoding="utf-8")
 
     assert params.surface_y_shift == pytest.approx(1.35)
+    assert params.surface_z_length == pytest.approx(2.1)
     assert params.surface_camera_zoom == pytest.approx(0.68)
+    assert params.surface_camera_phi == pytest.approx(50)
+    assert params.surface_camera_theta == pytest.approx(-55)
     assert params.title_top_buff == pytest.approx(0.12)
     assert params.caption_bottom_buff == pytest.approx(0.42)
     assert "SURFACE_Y_SHIFT = 1.35" in rendered
+    assert "SURFACE_Z_LENGTH = 2.1" in rendered
     assert "SURFACE_CAMERA_ZOOM = 0.68" in rendered
+    assert "SURFACE_CAMERA_PHI = 50.0" in rendered
+    assert "SURFACE_CAMERA_THETA = -55.0" in rendered
     assert "TITLE_TOP_BUFF = 0.12" in rendered
     assert "CAPTION_BOTTOM_BUFF = 0.42" in rendered
     validate_python_syntax(output_path)

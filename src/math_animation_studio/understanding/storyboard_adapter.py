@@ -71,10 +71,19 @@ class StoryboardAdapter:
                     "function": "0.35*x**2 + y**2 + 0.25*x*y + 0.8*sin(1.5*x)*cos(y)",
                     "x_range": [-3, 3],
                     "y_range": [-3, 3],
-                    "surface_y_shift": _safe_float(example_values.get("surface_y_shift"), 2.2),
+                    "surface_y_shift": _safe_float(example_values.get("surface_y_shift"), 2.7),
+                    "surface_z_length": _safe_float(example_values.get("surface_z_length"), 2.4),
                     "surface_camera_zoom": _safe_float(
                         example_values.get("surface_camera_zoom"),
-                        0.58,
+                        0.52,
+                    ),
+                    "surface_camera_phi": _safe_float(
+                        example_values.get("surface_camera_phi"),
+                        55.0,
+                    ),
+                    "surface_camera_theta": _safe_float(
+                        example_values.get("surface_camera_theta"),
+                        -48.0,
                     ),
                     "title_top_buff": _safe_float(example_values.get("title_top_buff"), 0.18),
                     "caption_bottom_buff": _safe_float(

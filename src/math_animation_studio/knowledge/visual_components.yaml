@@ -198,11 +198,23 @@ components:
       - name: surface_y_shift
         value_type: number
         description: 3Dグラフ全体を下方向へずらす量。タイトルや式と重なる場合に大きくする。
-        default: 2.2
+        default: 2.7
+      - name: surface_z_length
+        value_type: number
+        description: 3Dグラフの高さ方向のスケール。傾斜が急すぎる場合に小さくする。
+        default: 2.4
       - name: surface_camera_zoom
         value_type: number
         description: 3Dカメラの引き具合。タイトルや字幕と重なる場合に小さくする。
-        default: 0.58
+        default: 0.52
+      - name: surface_camera_phi
+        value_type: number
+        description: 3Dカメラの縦方向角度。俯瞰を強める場合に小さくする。
+        default: 55.0
+      - name: surface_camera_theta
+        value_type: number
+        description: 3Dカメラの横方向角度。曲面と軌跡が見やすい角度へ調整する。
+        default: -48.0
       - name: title_top_buff
         value_type: number
         description: タイトルと画面上端の余白。

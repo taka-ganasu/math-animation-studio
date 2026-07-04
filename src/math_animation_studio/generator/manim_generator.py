@@ -56,8 +56,11 @@ class GradientDescentParams(BaseModel):
     segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
     template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
     narration_lines: list[str] = Field(default_factory=list)
-    surface_y_shift: float = 2.2
-    surface_camera_zoom: float = 0.58
+    surface_y_shift: float = 2.7
+    surface_z_length: float = 2.4
+    surface_camera_zoom: float = 0.52
+    surface_camera_phi: float = 55.0
+    surface_camera_theta: float = -48.0
     title_top_buff: float = 0.18
     caption_bottom_buff: float = 0.32
 
@@ -249,17 +252,41 @@ class ManimGenerator:
             "surface_y_shift",
             visual=surface,
             values=values,
-            default=2.2,
+            default=2.7,
             min_value=0.0,
-            max_value=3.2,
+            max_value=3.6,
+        )
+        surface_z_length = _float_layout_param(
+            "surface_z_length",
+            visual=surface,
+            values=values,
+            default=2.4,
+            min_value=1.0,
+            max_value=4.2,
         )
         surface_camera_zoom = _float_layout_param(
             "surface_camera_zoom",
             visual=surface,
             values=values,
-            default=0.58,
+            default=0.52,
             min_value=0.45,
             max_value=1.2,
+        )
+        surface_camera_phi = _float_layout_param(
+            "surface_camera_phi",
+            visual=surface,
+            values=values,
+            default=55.0,
+            min_value=35.0,
+            max_value=80.0,
+        )
+        surface_camera_theta = _float_layout_param(
+            "surface_camera_theta",
+            visual=surface,
+            values=values,
+            default=-48.0,
+            min_value=-90.0,
+            max_value=-10.0,
         )
         title_top_buff = _float_layout_param(
             "title_top_buff",
@@ -318,7 +345,10 @@ class ManimGenerator:
             template_components=_template_components_from_storyboard(storyboard),
             narration_lines=[scene.narration for scene in storyboard.scenes],
             surface_y_shift=surface_y_shift,
+            surface_z_length=surface_z_length,
             surface_camera_zoom=surface_camera_zoom,
+            surface_camera_phi=surface_camera_phi,
+            surface_camera_theta=surface_camera_theta,
             title_top_buff=title_top_buff,
             caption_bottom_buff=caption_bottom_buff,
         )

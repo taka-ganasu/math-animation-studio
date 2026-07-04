@@ -91,6 +91,7 @@ def test_formula_understanding_plan_prompt_contains_visual_component_catalog() -
     assert "category=metaphor" in prompt
     assert "terrain_metaphor, hiker_marker, uphill_arrow" in prompt
     assert "surface_y_shift, surface_camera_zoom, title_top_buff, caption_bottom_buff" in prompt
+    assert "surface_z_length, surface_camera_phi, surface_camera_theta" in prompt
 
 
 def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:
