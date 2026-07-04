@@ -161,6 +161,54 @@ def test_cross_entropy_dice_example_uses_six_class_pipeline(tmp_path) -> None:
     validate_python_syntax(output_path)
 
 
+def test_cross_entropy_llm_style_y_i_arrays_drive_two_class_pipeline(tmp_path) -> None:
+    storyboard = Storyboard(
+        concept="cross_entropy",
+        formula=r"L = - \sum_i y_i \log(\hat{y}_i)",
+        one_sentence_summary="正解クラスに高い確率を置けるほど損失は小さくなります。",
+        audience="high_school_math",
+        symbol_ledger=[
+            SymbolDefinition(symbol="y_i", meaning="正解ラベル", intuition="正解スイッチ")
+        ],
+        examples=[
+            Example(
+                title="二クラス分類の具体例：猫か犬かの予測",
+                description="猫か犬かの画像分類で、正解ラベルとモデル予測の確率から損失を計算する例。",
+                values={
+                    "y_i": [1, 0],
+                    r"\hat{y}_i": [0.8, 0.2],
+                },
+            )
+        ],
+        scenes=[
+            SceneSpec(
+                id="step1",
+                title="予測確率を見る",
+                learning_goal="正解確率を見る。",
+                narration="正解ラベルと予測確率を比べます。",
+                visual_objects=[
+                    VisualObject(
+                        type="formula",
+                        name="loss",
+                        description="クロスエントロピー",
+                        params={"latex": r"L = - \sum_i y_i \log(\hat{y}_i)"},
+                    )
+                ],
+            )
+        ],
+    )
+    output_path = tmp_path / "manim_scene.py"
+
+    ManimGenerator(target_duration_seconds=30).generate(storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert "CLASS_LABELS = ('猫', '犬')" in rendered
+    assert "CORRECT_INDEX = 0" in rendered
+    assert "GOOD_DISTRIBUTION = (0.8, 0.2)" in rendered
+    assert "BAD_DISTRIBUTION = (0.1, 0.9)" in rendered
+    validate_python_syntax(output_path)
+
+
 def test_gradient_descent_double_well_uses_2d_landscape_template(tmp_path) -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
         formula=r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",

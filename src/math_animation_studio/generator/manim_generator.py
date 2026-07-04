@@ -405,7 +405,7 @@ def _penalty_curve_example_data(storyboard: Storyboard) -> dict[str, Any]:
         values = example.values
 
         one_hot = _indexed_values(values, kind="one_hot") or _json_vector_for_keys(
-            values, {"y", "label", "one_hot"}
+            values, {"y", "y_i", "label", "one_hot"}
         )
         if one_hot:
             class_count = max(class_count, len(one_hot))
@@ -436,7 +436,16 @@ def _penalty_curve_example_data(storyboard: Storyboard) -> dict[str, Any]:
         example_bad = _json_vector_for_role(values, "bad")
         prediction = _indexed_values(values, kind="prediction") or _json_vector_for_keys(
             values,
-            {"\\hat{y}", "hat_y", "y_hat", "prediction", "probabilities"},
+            {
+                "\\hat{y}",
+                "\\hat{y}_i",
+                "hat_y",
+                "hat_y_i",
+                "y_hat",
+                "y_hat_i",
+                "prediction",
+                "probabilities",
+            },
         )
 
         if example_good:
@@ -655,6 +664,12 @@ def _labels_from_example_title(title: str, expected_count: int) -> list[str] | N
         labels = [part.strip() for part in candidate.split("と") if part.strip()]
         if len(labels) == 2:
             return labels
+    if expected_count == 2:
+        match = re.search(r"(.+?)か(.+?)か", candidate)
+        if match:
+            labels = [match.group(1).strip(), match.group(2).strip()]
+            if all(labels):
+                return labels
     return None
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -36,6 +37,7 @@ class ManimRenderer:
             )
             log_path.write_text(message + "\n", encoding="utf-8")
             raise RenderError(message)
+        manim_bin = str(Path(manim_bin).resolve())
 
         media_dir = output_dir / ".manim_media"
         command = [
@@ -52,6 +54,7 @@ class ManimRenderer:
         process = subprocess.run(
             command,
             cwd=output_dir,
+            env=_render_environment(),
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -81,3 +84,21 @@ class ManimRenderer:
         if not candidates:
             raise RenderError(f"Manim finished but no video file was found under {media_dir}.")
         return candidates[0]
+
+
+def _render_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    path_items = env.get("PATH", "").split(os.pathsep) if env.get("PATH") else []
+    for tex_path in _candidate_tex_paths():
+        if tex_path.exists() and str(tex_path) not in path_items:
+            path_items.insert(0, str(tex_path))
+    env["PATH"] = os.pathsep.join(path_items)
+    return env
+
+
+def _candidate_tex_paths() -> tuple[Path, ...]:
+    return (
+        Path("/Library/TeX/texbin"),
+        Path("/usr/local/texlive/2026/bin/universal-darwin"),
+        Path("/usr/local/texlive/2025/bin/universal-darwin"),
+    )
