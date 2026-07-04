@@ -12,6 +12,8 @@ from math_animation_studio.schema import (
     FormulaUnderstandingLLMPlan,
 )
 
+from .visual_component_catalog import visual_component_prompt_summary
+
 
 class LLMFormulaUnderstandingPlanner:
     def __init__(self, *, client: LLMClient | None = None) -> None:
@@ -28,6 +30,7 @@ class LLMFormulaUnderstandingPlanner:
         target_duration_seconds: int,
         concept_hint: str | None = None,
     ) -> FormulaUnderstandingLLMPlan:
+        component_catalog = visual_component_prompt_summary()
         prompt = build_formula_understanding_plan_prompt(
             formula=formula,
             goal=goal,
@@ -36,6 +39,7 @@ class LLMFormulaUnderstandingPlanner:
             concept_hint=concept_hint,
             animation_pattern_ids=animation_pattern_ids,
             target_duration_seconds=target_duration_seconds,
+            visual_component_catalog=component_catalog,
         )
         plan = self.client.complete_model(
             prompt=prompt,
@@ -52,6 +56,7 @@ class LLMFormulaUnderstandingPlanner:
                 domain_hint=domain_hint,
                 concept_hint=concept_hint,
                 animation_pattern_ids=animation_pattern_ids,
+                visual_component_catalog=component_catalog,
                 plan_json=plan.model_dump_json(indent=2),
             ),
             response_model=FormulaPlanConsistencyReview,

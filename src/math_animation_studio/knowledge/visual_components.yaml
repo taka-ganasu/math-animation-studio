@@ -1,0 +1,335 @@
+components:
+  - id: formula_focus
+    name: Formula Focus
+    category: formula
+    description: 数式の一部分を強調し、ナレーションが今説明している記号や演算を視線誘導する。
+    use_when:
+      - 記号の意味を説明する
+      - 演算子の役割を説明する
+      - ナレーションと数式の対応を明確にする
+    avoid_when:
+      - 数式全体ではなく図形やグラフを主役にしたい場面
+    visual_type: formula
+    template_support:
+      - penalty_curve
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: formula_focus
+        value_type: latex_string
+        description: 強調したいLaTeX部分。
+        required: true
+      - name: emphasis
+        value_type: enum
+        description: 強調方法。
+        default: highlight
+        allowed_values:
+          - highlight
+          - zoom
+          - underline
+      - name: caption
+        value_type: string
+        description: 強調部分の短い説明。
+    example: "\\hat{y}_i を拡大し、モデルの予測確率として説明する。"
+
+  - id: text_caption
+    name: Text Caption
+    category: narration
+    description: 視覚的な操作に短い補足テキストを添える。
+    use_when:
+      - 図の意味を一言で補足する
+      - シーンの切り替わりを短く示す
+    avoid_when:
+      - ナレーションと同じ長文を画面に出す場面
+    visual_type: text
+    template_support:
+      - penalty_curve
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: caption
+        value_type: string
+        description: 画面に出す短い補足。
+    example: "低いほど良い、という損失の読み方を短く表示する。"
+
+  - id: model_pipeline
+    name: Model Pipeline
+    category: machine_learning
+    description: 入力、モデル、logits、softmax、確率分布などの流れを段階として見せる。
+    use_when:
+      - 分類モデルの出力が確率になる過程を説明する
+      - 損失関数がどの値を受け取るかを示す
+    avoid_when:
+      - モデル出力ではなく純粋な幾何だけを扱う場面
+    visual_type: text
+    template_support:
+      - penalty_curve
+      - storyboard_only
+    params:
+      - name: stages
+        value_type: string_list
+        description: 表示する段階名。
+      - name: caption
+        value_type: string
+        description: 流れの要点。
+    example: "画像 -> model -> logits -> softmax -> 確率分布 の順に表示する。"
+
+  - id: one_hot_vector
+    name: One Hot Vector
+    category: probability
+    description: 正解クラスだけが1になり、それ以外が0になるラベルをベクトルとして見せる。
+    use_when:
+      - y_i の意味を説明する
+      - 総和の中で正解クラスだけが残ることを示す
+    avoid_when:
+      - ラベルがone-hotではなく連続値や分布の場合
+    visual_type: axis
+    template_support:
+      - penalty_curve
+      - storyboard_only
+    params:
+      - name: correct_index
+        value_type: integer
+        description: 正解クラスのindex。
+      - name: labels
+        value_type: string_list
+        description: クラス名。
+    example: "サイコロの目3だけが1になる6次元ベクトルを表示する。"
+
+  - id: probability_bars
+    name: Probability Bars
+    category: probability
+    description: クラスごとの予測確率を棒グラフで比較する。
+    use_when:
+      - 良い予測と悪い予測を比較する
+      - 正解クラスの確率を視覚的に取り出す
+    avoid_when:
+      - 確率がクラスごとの離散分布ではない場面
+    visual_type: axis
+    template_support:
+      - penalty_curve
+      - storyboard_only
+    params:
+      - name: correct_index
+        value_type: integer
+        description: 正解クラスのindex。
+      - name: good_distribution
+        value_type: number_list
+        description: 良い予測の確率分布。
+      - name: bad_distribution
+        value_type: number_list
+        description: 悪い予測の確率分布。
+    example: "正解が猫のとき、猫に0.9を置く予測と0.1しか置かない予測を並べる。"
+
+  - id: probability_selector
+    name: Probability Selector
+    category: probability
+    description: one-hotラベルが予測分布から正解クラスの確率だけを選ぶ様子を見せる。
+    use_when:
+      - y_i と \hat{y}_i の積の意味を説明する
+      - sumの中でどの項が損失に効くかを示す
+    avoid_when:
+      - 全クラスの項を同時に分析したい場面
+    visual_type: point
+    template_support:
+      - penalty_curve
+      - storyboard_only
+    params:
+      - name: selected_probability
+        value_type: number
+        description: 選ばれた正解確率。
+      - name: correct_index
+        value_type: integer
+        description: 正解クラスのindex。
+    example: "正解クラスの棒だけを残し、他の棒を薄くする。"
+
+  - id: negative_log_curve
+    name: Negative Log Curve
+    category: function
+    description: pが小さいほど-log(p)が大きくなる罰の形を曲線で見せる。
+    use_when:
+      - logを使う理由を説明する
+      - 低い正解確率の罰が急に大きくなることを示す
+    avoid_when:
+      - 対数ではない損失や更新則を主題にする場面
+    visual_type: curve
+    template_support:
+      - penalty_curve
+      - storyboard_only
+    params:
+      - name: x_range
+        value_type: number_list
+        description: p軸の表示範囲。
+      - name: y_range
+        value_type: number_list
+        description: 損失軸の表示範囲。
+      - name: highlighted_points
+        value_type: number_list
+        description: 比較したいpの値。
+    example: "p=0.9とp=0.1を曲線上で比較する。"
+
+  - id: surface_plot
+    name: Surface Plot
+    category: geometry
+    description: 2変数の損失関数を3D曲面として表示する。
+    use_when:
+      - パラメータ2つと損失の関係を地形として見せる
+      - 勾配降下法の軌跡を3Dで説明する
+    avoid_when:
+      - 1変数の曲線で十分な場面
+    visual_type: surface
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: function_preset
+        value_type: enum
+        description: 安全に使える組み込み関数preset。
+        default: quadratic_ripple
+        allowed_values:
+          - quadratic_ripple
+          - double_well_2d
+      - name: x_range
+        value_type: number_list
+        description: x軸の範囲。
+      - name: y_range
+        value_type: number_list
+        description: y軸の範囲。
+    example: "損失地形を表示し、現在地から谷へ下る点を重ねる。"
+
+  - id: contour_map
+    name: Contour Map
+    category: geometry
+    description: 2変数の損失を上から見た等高線として表示する。
+    use_when:
+      - 谷が複数ある地形を比較する
+      - 2Dで初期位置と到達先を見せる
+    avoid_when:
+      - 高さそのものを3Dで見せたい場面
+    visual_type: contour
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: function_preset
+        value_type: enum
+        description: 安全に使える組み込み関数preset。
+        default: double_well_2d
+        allowed_values:
+          - double_well_2d
+      - name: caption
+        value_type: string
+        description: 谷の読み方。
+    example: "浅い谷と深い谷を等高線で表示する。"
+
+  - id: loss_curve
+    name: Loss Curve
+    category: geometry
+    description: 1変数の損失を横軸θ、縦軸L(θ)の曲線として表示する。
+    use_when:
+      - 谷、山、谷のような局所最小を1枚の曲線で説明する
+      - 1変数の勾配を傾きとして説明する
+    avoid_when:
+      - パラメータが2つあることを主題にする場面
+    visual_type: curve
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: function_preset
+        value_type: enum
+        description: 安全に使える組み込み関数preset。
+        default: double_well_1d
+        allowed_values:
+          - double_well_1d
+    example: "右の谷に止まる軌跡と左の深い谷へ向かう軌跡を比較する。"
+
+  - id: gradient_arrow
+    name: Gradient Arrow
+    category: optimization
+    description: 勾配または負の勾配方向を矢印で示す。
+    use_when:
+      - 勾配が上り方向であることを説明する
+      - 更新が負の勾配方向へ進むことを見せる
+    avoid_when:
+      - 方向の概念が出てこない場面
+    visual_type: vector
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: direction
+        value_type: enum
+        description: 表示する方向。
+        default: negative_gradient
+        allowed_values:
+          - gradient
+          - negative_gradient
+      - name: learning_rate
+        value_type: number
+        description: 一歩の大きさ。
+    example: "現在地から下る向きとして -∇L(θ_t) の矢印を表示する。"
+
+  - id: descent_path
+    name: Descent Path
+    category: optimization
+    description: 更新を繰り返した点の軌跡を表示する。
+    use_when:
+      - 勾配降下法の反復を見せる
+      - 初期位置の違いで到達先が変わることを示す
+    avoid_when:
+      - 1回の計算だけを説明する場面
+    visual_type: curve
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: steps
+        value_type: integer
+        description: 表示する更新回数。
+      - name: initial_x
+        value_type: number
+        description: 初期位置x。
+      - name: initial_y
+        value_type: number
+        description: 初期位置y。
+    example: "左から始めた軌跡と右から始めた軌跡を比較する。"
+
+  - id: sgd_jitter
+    name: SGD Jitter
+    category: optimization
+    description: 確率的勾配降下法のミニバッチ由来の揺れを点線や小さな横揺れで示す。
+    use_when:
+      - 通常の勾配降下法とSGDの違いを軽く説明する
+      - ノイズが探索に影響する直感を補足する
+    avoid_when:
+      - SGDを主題にしない短い動画
+    visual_type: curve
+    template_support:
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: jitter_strength
+        value_type: number
+        description: 揺れの強さ。
+    example: "滑らかな軌跡に、少し揺れた点線の軌跡を重ねる。"
+
+  - id: summary
+    name: Summary
+    category: narration
+    description: 最後に式、直感、誤解しやすい点を短く整理する。
+    use_when:
+      - 動画の最後に学びをまとめる
+      - 次に学ぶ概念へ橋渡しする
+    avoid_when:
+      - 途中の概念導入シーン
+    visual_type: text
+    template_support:
+      - penalty_curve
+      - gradient_descent_3d
+      - storyboard_only
+    params:
+      - name: takeaway
+        value_type: string
+        description: 持ち帰ってほしい一文。
+    example: "勾配降下法は全体を見比べず、今いる場所の傾きだけで次の一歩を決める。"

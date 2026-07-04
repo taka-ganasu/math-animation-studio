@@ -86,6 +86,7 @@ def build_formula_understanding_plan_prompt(
     animation_pattern_ids: list[str],
     target_duration_seconds: int,
     concept_hint: str | None = None,
+    visual_component_catalog: str | None = None,
 ) -> str:
     schema_json = json.dumps(
         FormulaUnderstandingLLMPlan.model_json_schema(),
@@ -118,6 +119,9 @@ def build_formula_understanding_plan_prompt(
 利用可能なアニメーションパターンID:
 {pattern_list}
 
+利用可能な視覚部品カタログ:
+{visual_component_catalog or ""}
+
 重要な制約:
 - 出力は必ずJSONのみ。Markdown fencesや説明文をJSONの外に書かない
 - JSON schemaに完全に従う
@@ -137,6 +141,10 @@ def build_formula_understanding_plan_prompt(
 - explanation_stepsは、1番目の候補に自然に合い、かつ他候補を選んでも大きく破綻しない表現にする
 - 具体例候補が複数ある場合でも、Pythonコードや新しい描画処理ではなく、既存テンプレートで表現できる値だけをconcrete_valuesへ入れる
 - 操作ごとに「何をしているか」と「視覚化ヒント」を出す
+- explanation_steps[].planned_componentsには、視覚部品カタログにあるidだけをkindとして入れる
+- 1つのexplanation_stepにplanned_componentsを1〜3個入れ、ナレーションで見るべき対象と対応させる
+- formula_focusを説明する場面では、planned_componentsにformula_focusを入れ、params.formula_focusに強調したいLaTeX部分を入れる
+- 視覚部品カタログにない部品名、新しい描画処理、Python式、Manimコードはplanned_componentsに入れない
 - prerequisite_mapでは、理解に必要な前提知識と詰まりやすい点を出す
 - explanation_planは5〜7 stepsにする
 - explanation_stepsのexplanationは、ナレーション素材として短く具体的にする
@@ -159,6 +167,7 @@ def build_formula_plan_consistency_prompt(
     concept_hint: str | None,
     animation_pattern_ids: list[str],
     plan_json: str,
+    visual_component_catalog: str | None = None,
 ) -> str:
     schema_json = json.dumps(
         FormulaPlanConsistencyReview.model_json_schema(),
@@ -189,6 +198,9 @@ def build_formula_plan_consistency_prompt(
 利用可能なアニメーションパターンID:
 {pattern_list}
 
+利用可能な視覚部品カタログ:
+{visual_component_catalog or ""}
+
 生成済み教材企画JSON:
 {plan_json}
 
@@ -198,6 +210,8 @@ def build_formula_plan_consistency_prompt(
 - is_consistentは、生成済み教材企画が理解ゴールと優先概念に合っている場合だけtrueにする
 - formulaとgoalが別概念を指す場合は、goalと優先概念を主題として扱う
 - selected_animation_pattern_idは、利用可能なアニメーションパターンIDから最も適切なものを選ぶ
+- explanation_steps[].planned_componentsが、視覚部品カタログ内のidだけを使っているか確認する
+- ナレーションで説明する数式パーツとplanned_componentsが対応しているか確認する
 - 修正が必要な場合は、revision_instructionsに「どの概念を主題にするか」「どの説明を削る/残すか」「どのパターンを使うか」を具体的に書く
 - Pythonコード、Manimコード、疑似コード、eval、exec前提の表現は出力しない
 

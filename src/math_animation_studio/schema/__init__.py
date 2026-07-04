@@ -3,6 +3,7 @@ from .concept_classification import ConceptClassification
 from .explanation_plan import (
     ExplanationPlan,
     ExplanationStep,
+    PlannedAnimationComponent,
     TeachingExample,
 )
 from .formula_analysis import FormulaAnalysis, OperationAnalysis, SymbolRole
@@ -25,6 +26,10 @@ from .storyboard import (
     save_storyboard,
 )
 from .voiceover import VoiceoverScript
+from .visual_component import (
+    VisualComponentDefinition,
+    VisualComponentParamDefinition,
+)
 
 __all__ = [
     "AnimationPattern",
@@ -40,6 +45,7 @@ __all__ = [
     "LLMGenerationBoundary",
     "NarrationCue",
     "OperationAnalysis",
+    "PlannedAnimationComponent",
     "PrerequisiteItem",
     "PrerequisiteMap",
     "SceneSpec",
@@ -49,6 +55,8 @@ __all__ = [
     "TeachingExample",
     "VisualObject",
     "VoiceoverScript",
+    "VisualComponentDefinition",
+    "VisualComponentParamDefinition",
     "load_storyboard",
     "save_storyboard",
 ]

@@ -14,6 +14,13 @@ class TeachingExample(StrictModel):
     concrete_values: dict[str, ExampleValue] = Field(default_factory=dict)
 
 
+class PlannedAnimationComponent(StrictModel):
+    kind: str
+    description: str
+    label: str | None = None
+    params: dict[str, ExampleValue] = Field(default_factory=dict)
+
+
 class ExplanationStep(StrictModel):
     id: str
     title: str
@@ -22,6 +29,7 @@ class ExplanationStep(StrictModel):
     visual_idea: str
     formula_focus: str | None = None
     common_misunderstanding_addressed: str | None = None
+    planned_components: list[PlannedAnimationComponent] = Field(default_factory=list)
 
 
 class ExplanationPlan(StrictModel):

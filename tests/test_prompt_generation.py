@@ -70,6 +70,23 @@ def test_formula_understanding_plan_prompt_contains_concept_hint() -> None:
     assert "損失地形を下る更新" in prompt
 
 
+def test_formula_understanding_plan_prompt_contains_visual_component_catalog() -> None:
+    prompt = build_formula_understanding_plan_prompt(
+        formula=r"L = - \sum_i y_i \log(\hat{y}_i)",
+        goal="数式パーツごとに意味を理解したい",
+        audience="high_school_math",
+        domain_hint="machine_learning",
+        animation_pattern_ids=["penalty_curve"],
+        target_duration_seconds=60,
+        visual_component_catalog="- formula_focus: 数式の一部を強調する",
+    )
+
+    assert "利用可能な視覚部品カタログ" in prompt
+    assert "planned_components" in prompt
+    assert "formula_focus" in prompt
+    assert "視覚部品カタログにあるidだけ" in prompt
+
+
 def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:
     prompt = build_formula_plan_consistency_prompt(
         formula=r"L = - \sum_i y_i \log(\hat{y}_i)",
@@ -79,11 +96,14 @@ def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:
         concept_hint="gradient_descent",
         animation_pattern_ids=["penalty_curve", "trajectory_on_surface"],
         plan_json='{"concept_classification":{"primary_concept":"cross_entropy"}}',
+        visual_component_catalog="- gradient_arrow: 勾配方向を矢印で示す",
     )
 
     assert "一貫しているか" in prompt
     assert "数式名だけに引っ張られず" in prompt
     assert "goalと優先概念を主題" in prompt
+    assert "planned_components" in prompt
+    assert "gradient_arrow" in prompt
     assert "FormulaPlanConsistencyReview" in prompt or "is_consistent" in prompt
 
 

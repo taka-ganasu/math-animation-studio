@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import get_args
+
 from math_animation_studio.schema import (
     AnimationComponent,
     Example,
@@ -12,6 +14,15 @@ from math_animation_studio.schema import (
     SymbolDefinition,
     VisualObject,
 )
+
+from .visual_component_catalog import (
+    visual_component_definition,
+    visual_component_ids,
+)
+
+
+SUPPORTED_COMPONENT_KINDS = set(get_args(AnimationComponent.model_fields["kind"].annotation))
+SUPPORTED_VISUAL_TYPES = set(get_args(VisualObject.model_fields["type"].annotation))
 
 
 class StoryboardAdapter:
@@ -28,7 +39,7 @@ class StoryboardAdapter:
             else {}
         )
         for index, step in enumerate(explanation_plan.explanation_steps, start=1):
-            components = _base_components_for_step(step)
+            components = _components_for_step(step)
             visual_objects = [
                 VisualObject(
                     type="formula",
@@ -43,6 +54,7 @@ class StoryboardAdapter:
                     params={"text": step.visual_idea},
                 ),
             ]
+            visual_objects.extend(_visual_objects_for_components(components))
             if explanation_plan.selected_animation_pattern_id == "trajectory_on_surface" and index == 1:
                 function_preset = str(example_values.get("function_preset", "quadratic_ripple"))
                 surface_params = {
@@ -267,24 +279,91 @@ def _render_concept(explanation_plan: ExplanationPlan) -> str:
 
 def _base_components_for_step(step: ExplanationStep) -> list[AnimationComponent]:
     if step.formula_focus:
-        return [
+        return [_formula_focus_component(step)]
+    return [_text_caption_component(step)]
+
+
+def _components_for_step(step: ExplanationStep) -> list[AnimationComponent]:
+    components = _planned_components_for_step(step)
+    if not components:
+        return _base_components_for_step(step)
+    if step.formula_focus and not any(component.kind == "formula_focus" for component in components):
+        components.append(_formula_focus_component(step))
+    return components
+
+
+def _planned_components_for_step(step: ExplanationStep) -> list[AnimationComponent]:
+    allowed_ids = visual_component_ids()
+    components: list[AnimationComponent] = []
+    for index, planned in enumerate(step.planned_components, start=1):
+        kind = planned.kind.strip()
+        if kind not in allowed_ids or kind not in SUPPORTED_COMPONENT_KINDS:
+            continue
+        definition = visual_component_definition(kind)
+        params = dict(planned.params)
+        if kind == "formula_focus" and step.formula_focus:
+            params.setdefault("formula_focus", step.formula_focus)
+        label = planned.label or str(params.get("formula_focus") or "")
+        if not label and definition is not None:
+            label = definition.name
+        components.append(
             AnimationComponent(
-                id=f"{step.id}_formula_focus",
-                kind="formula_focus",
-                description=f"数式パーツ {step.formula_focus} に注目する",
-                label=step.formula_focus,
-                params={"formula_focus": step.formula_focus},
+                id=f"{step.id}_{kind}_{index:02d}",
+                kind=kind,
+                description=planned.description
+                or (definition.description if definition is not None else kind),
+                label=label or kind,
+                params=params,
             )
-        ]
-    return [
-        AnimationComponent(
-            id=f"{step.id}_caption",
-            kind="text_caption",
-            description=step.visual_idea,
-            label=step.title,
-            params={},
         )
-    ]
+    return components
+
+
+def _formula_focus_component(step: ExplanationStep) -> AnimationComponent:
+    return AnimationComponent(
+        id=f"{step.id}_formula_focus",
+        kind="formula_focus",
+        description=f"数式パーツ {step.formula_focus} に注目する",
+        label=step.formula_focus,
+        params={"formula_focus": step.formula_focus},
+    )
+
+
+def _text_caption_component(step: ExplanationStep) -> AnimationComponent:
+    return AnimationComponent(
+        id=f"{step.id}_caption",
+        kind="text_caption",
+        description=step.visual_idea,
+        label=step.title,
+        params={},
+    )
+
+
+def _visual_objects_for_components(components: list[AnimationComponent]) -> list[VisualObject]:
+    visual_objects: list[VisualObject] = []
+    for component in components:
+        definition = visual_component_definition(component.kind)
+        visual_type = _safe_visual_type(definition.visual_type if definition else "text")
+        params = dict(component.params)
+        if visual_type == "formula":
+            params.setdefault("latex", params.get("formula_focus") or component.label or "")
+        if visual_type == "text":
+            params.setdefault("text", component.label or component.description)
+        visual_objects.append(
+            VisualObject(
+                type=visual_type,
+                name=f"{component.id}_visual",
+                description=component.description,
+                params=params,
+            )
+        )
+    return visual_objects
+
+
+def _safe_visual_type(visual_type: str) -> str:
+    if visual_type in SUPPORTED_VISUAL_TYPES:
+        return visual_type
+    return "text"
 
 
 def _narration_cues_for_step(
