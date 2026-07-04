@@ -93,6 +93,8 @@ math-anim plan \
 
 Cross Entropy と Gradient Descent は、`--render` を付けるとManim動画まで生成できます。
 
+入力数式と見たい概念がずれる場合は `--concept-hint` で主題のヒントを渡せます。LLMモードでは、初回プラン生成後にLLMが数式・ゴール・ヒントの一貫性をレビューし、必要ならプランを再生成します。たとえば数式は損失関数でも、「その損失地形を勾配降下法でどう下るか」を見たい場合は `--concept-hint gradient_descent` を付けます。
+
 ```bash
 math-anim plan \
   --formula "L = - \\sum_i y_i \\log(\\hat{y}_i)" \
@@ -104,6 +106,19 @@ math-anim plan \
 ```
 
 成功すると `outputs/cross_entropy_plan/video.mp4` が作成されます。
+
+```bash
+math-anim plan \
+  --formula "L = - \\sum_i y_i \\log(\\hat{y}_i)" \
+  --goal "2次元で谷が2箇所ある時に勾配降下法がどう判断するか知りたい" \
+  --concept-hint gradient_descent \
+  --audience high_school_math \
+  --domain-hint optimization \
+  --duration 52 \
+  --output-dir outputs/gradient_descent_from_loss \
+  --render \
+  --voiceover
+```
 
 具体例を自動提案させたあと、人間が確認してから進めたい場合は `--interactive-example` を付けます。候補が複数ある場合は番号で選び、Enterで採用します。`n` を入力するとタイトル、説明、採用理由を書き換えられます。LLMモードでは2〜3個の候補を出すように促します。`--no-llm` では固定候補で同じUIを試せます。
 

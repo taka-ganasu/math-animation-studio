@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from math_animation_studio.schema import (
+    FormulaPlanConsistencyReview,
     FormulaUnderstandingLLMPlan,
     Storyboard,
     VoiceoverScript,
@@ -84,6 +85,7 @@ def build_formula_understanding_plan_prompt(
     domain_hint: str | None,
     animation_pattern_ids: list[str],
     target_duration_seconds: int,
+    concept_hint: str | None = None,
 ) -> str:
     schema_json = json.dumps(
         FormulaUnderstandingLLMPlan.model_json_schema(),
@@ -104,6 +106,9 @@ def build_formula_understanding_plan_prompt(
 分野ヒント:
 {domain_hint or ""}
 
+優先したい概念:
+{concept_hint or ""}
+
 想定読者:
 {audience}
 
@@ -117,6 +122,9 @@ def build_formula_understanding_plan_prompt(
 - 出力は必ずJSONのみ。Markdown fencesや説明文をJSONの外に書かない
 - JSON schemaに完全に従う
 - 数式はLaTeXとして扱う
+- 優先したい概念が指定されている場合は、数式名よりも理解ゴールと優先概念を重視する
+- 数式と優先概念がずれる場合は、数式を関連する題材として扱い、優先概念の直感理解に必要な範囲だけ説明する
+- 例えば損失関数の式とgradient_descentが同時に与えられたら、損失式そのものではなく、損失地形を下る更新の理解を主題にする
 - 説明は日本語
 - LLMの役割は、教育設計、シーン分割、記号の意味づけ、宣言的な視覚意図の作成に限定する
 - レンダラーの役割は、既存の安全なJinja2/Manimテンプレートへ写像すること
@@ -139,6 +147,84 @@ def build_formula_understanding_plan_prompt(
 
 JSON schema:
 {schema_json}
+"""
+
+
+def build_formula_plan_consistency_prompt(
+    *,
+    formula: str,
+    goal: str | None,
+    audience: str,
+    domain_hint: str | None,
+    concept_hint: str | None,
+    animation_pattern_ids: list[str],
+    plan_json: str,
+) -> str:
+    schema_json = json.dumps(
+        FormulaPlanConsistencyReview.model_json_schema(),
+        ensure_ascii=False,
+        indent=2,
+    )
+    pattern_list = "\n".join(f"- {pattern_id}" for pattern_id in animation_pattern_ids)
+    return f"""あなたは数学アニメーション教材のレビュアーです。
+
+次の入力意図と、生成済みの教材企画JSONが一貫しているかを判定してください。
+特に、数式名だけに引っ張られず、理解ゴールと優先したい概念を主題にできているかを確認してください。
+
+対象数式:
+{formula}
+
+理解ゴール:
+{goal or ""}
+
+分野ヒント:
+{domain_hint or ""}
+
+優先したい概念:
+{concept_hint or ""}
+
+想定読者:
+{audience}
+
+利用可能なアニメーションパターンID:
+{pattern_list}
+
+生成済み教材企画JSON:
+{plan_json}
+
+判定ルール:
+- 出力は必ずJSONのみ
+- JSON schemaに完全に従う
+- is_consistentは、生成済み教材企画が理解ゴールと優先概念に合っている場合だけtrueにする
+- formulaとgoalが別概念を指す場合は、goalと優先概念を主題として扱う
+- selected_animation_pattern_idは、利用可能なアニメーションパターンIDから最も適切なものを選ぶ
+- 修正が必要な場合は、revision_instructionsに「どの概念を主題にするか」「どの説明を削る/残すか」「どのパターンを使うか」を具体的に書く
+- Pythonコード、Manimコード、疑似コード、eval、exec前提の表現は出力しない
+
+JSON schema:
+{schema_json}
+"""
+
+
+def build_formula_understanding_revision_prompt(
+    *,
+    original_prompt: str,
+    first_plan_json: str,
+    review_json: str,
+) -> str:
+    return f"""{original_prompt}
+
+上記の入力に対して、最初の教材企画は一貫性レビューで修正が必要と判定されました。
+
+最初の教材企画JSON:
+{first_plan_json}
+
+一貫性レビューJSON:
+{review_json}
+
+一貫性レビューの revision_instructions に従い、FormulaUnderstandingLLMPlan schemaに合うJSONオブジェクトだけを再出力してください。
+理解ゴールと優先したい概念を主題にし、selected_animation_pattern_idは利用可能なアニメーションパターンIDから選んでください。
+Markdown fences、説明文、Pythonコード、Manimコード、疑似コード、eval、execは出力しないでください。
 """
 
 

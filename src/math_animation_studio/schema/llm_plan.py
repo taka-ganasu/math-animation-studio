@@ -41,3 +41,11 @@ class FormulaUnderstandingLLMPlan(StrictModel):
     prerequisite_map: PrerequisiteMap
     explanation_plan: ExplanationPlan
     generation_boundary: LLMGenerationBoundary = Field(default_factory=LLMGenerationBoundary)
+
+
+class FormulaPlanConsistencyReview(StrictModel):
+    is_consistent: bool
+    target_concept: str
+    selected_animation_pattern_id: str
+    issues: list[str] = Field(default_factory=list)
+    revision_instructions: list[str] = Field(default_factory=list)

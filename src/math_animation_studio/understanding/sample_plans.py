@@ -48,6 +48,24 @@ def detect_sample_key(formula: str) -> str:
             "doublewell",
         )
     )
+    wants_gradient_descent = any(
+        keyword in normalized
+        for keyword in (
+            "concept_hint:gradient_descent",
+            "concept_hint:gradientdescent",
+            "concept_hint:optimization",
+            "concept_hint:最適化",
+            "concept_hint:勾配降下法",
+        )
+    )
+    if wants_gradient_descent:
+        if wants_1d_double_well:
+            return "gradient_descent_double_well_1d"
+        if wants_double_well:
+            return "gradient_descent_double_well"
+        return "gradient_descent"
+    if "concept_hint:cross_entropy" in normalized or "concept_hint:crossentropy" in normalized:
+        return "cross_entropy"
     if ("log" in normalized and "sum" in normalized) or "cross" in normalized:
         return "cross_entropy"
     if "nabla" in normalized or "grad" in normalized or "∇" in normalized:

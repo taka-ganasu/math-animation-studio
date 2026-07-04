@@ -56,11 +56,23 @@ class FormulaUnderstandingPlanner:
         goal: str | None,
         audience: str,
         domain_hint: str | None = None,
+        concept_hint: str | None = None,
         to_storyboard: bool = True,
         target_duration_seconds: int = 30,
     ) -> PlanArtifacts:
         if self.no_llm:
-            key = detect_sample_key(" ".join(part for part in [formula, goal or "", domain_hint or ""] if part))
+            key = detect_sample_key(
+                " ".join(
+                    part
+                    for part in [
+                        f"concept_hint:{concept_hint}" if concept_hint else "",
+                        formula,
+                        goal or "",
+                        domain_hint or "",
+                    ]
+                    if part
+                )
+            )
             formula_analysis = self.formula_analyzer.analyze(formula=formula, sample_key=key)
             classification = self.concept_classifier.classify(sample_key=key)
             prerequisite_map = self.prerequisite_mapper.map(sample_key=key)
@@ -76,6 +88,7 @@ class FormulaUnderstandingPlanner:
                 goal=goal,
                 audience=audience,
                 domain_hint=domain_hint,
+                concept_hint=concept_hint,
                 animation_pattern_ids=list(self.pattern_selector.patterns.keys()),
                 target_duration_seconds=target_duration_seconds,
             )
@@ -86,11 +99,16 @@ class FormulaUnderstandingPlanner:
             llm_used = True
 
         requested_animation_family = _coerce_animation_family(
-            requested=classification.recommended_animation_family,
+            requested=(
+                explanation_plan.selected_animation_pattern_id
+                if llm_used
+                else classification.recommended_animation_family
+            ),
             formula=formula,
             formula_analysis=formula_analysis,
             classification=classification,
             explanation_plan=explanation_plan,
+            apply_formula_heuristics=not llm_used and concept_hint is None,
         )
         selected_pattern = self.pattern_selector.select(
             requested_animation_family,
@@ -132,7 +150,11 @@ def _coerce_animation_family(
     formula_analysis: FormulaAnalysis,
     classification: ConceptClassification,
     explanation_plan: ExplanationPlan,
+    apply_formula_heuristics: bool = True,
 ) -> str:
+    if not apply_formula_heuristics:
+        return requested
+
     text = " ".join(
         [
             requested,

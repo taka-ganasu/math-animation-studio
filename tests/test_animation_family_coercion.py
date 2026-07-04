@@ -53,3 +53,28 @@ def test_unknown_pattern_is_not_coerced_without_known_signals() -> None:
     )
 
     assert result == "generic_symbol_decomposition"
+
+
+def test_llm_reviewed_pattern_can_skip_formula_heuristics() -> None:
+    formula = r"L = - \sum_i y_i \log(\hat{y}_i)"
+    formula_analysis = sample_formula_analysis(
+        r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        "gradient_descent",
+    )
+    classification = sample_classification("gradient_descent")
+    explanation_plan = sample_explanation_plan(
+        r"\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)",
+        "gradient_descent",
+        "high_school_math",
+    )
+
+    result = _coerce_animation_family(
+        requested="trajectory_on_surface",
+        formula=formula,
+        formula_analysis=formula_analysis,
+        classification=classification,
+        explanation_plan=explanation_plan,
+        apply_formula_heuristics=False,
+    )
+
+    assert result == "trajectory_on_surface"

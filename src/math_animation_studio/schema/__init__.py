@@ -6,7 +6,11 @@ from .explanation_plan import (
     TeachingExample,
 )
 from .formula_analysis import FormulaAnalysis, OperationAnalysis, SymbolRole
-from .llm_plan import FormulaUnderstandingLLMPlan, LLMGenerationBoundary
+from .llm_plan import (
+    FormulaPlanConsistencyReview,
+    FormulaUnderstandingLLMPlan,
+    LLMGenerationBoundary,
+)
 from .prerequisite_map import PrerequisiteItem, PrerequisiteMap
 from .storyboard import (
     AnimationComponent,
@@ -31,6 +35,7 @@ __all__ = [
     "ExplanationPlan",
     "ExplanationStep",
     "FormulaAnalysis",
+    "FormulaPlanConsistencyReview",
     "FormulaUnderstandingLLMPlan",
     "LLMGenerationBoundary",
     "NarrationCue",

@@ -161,6 +161,11 @@ def plan(
         "--domain-hint",
         help="Optional domain hint such as machine_learning or statistics.",
     ),
+    concept_hint: Optional[str] = typer.Option(
+        None,
+        "--concept-hint",
+        help="Optional learning concept hint such as gradient_descent or cross_entropy.",
+    ),
     output_dir: Path = typer.Option(
         ...,
         "--output-dir",
@@ -235,6 +240,7 @@ def plan(
             goal=goal,
             audience=audience,
             domain_hint=domain_hint,
+            concept_hint=concept_hint,
             to_storyboard=to_storyboard,
             target_duration_seconds=duration,
         )
@@ -344,6 +350,7 @@ def plan(
             formula=formula,
             goal=goal,
             audience=audience,
+            concept_hint=concept_hint,
             status="success",
             llm_used=artifacts.llm_used,
             video_path=rendered_video_path,
@@ -369,6 +376,7 @@ def plan(
             formula=formula,
             goal=goal,
             audience=audience,
+            concept_hint=concept_hint,
             status="failed",
             llm_used=False,
             error=str(exc),

@@ -17,6 +17,7 @@ def test_plan_help() -> None:
     assert result.exit_code == 0
     assert "--formula" in result.output
     assert "--duration" in result.output
+    assert "--concept-hint" in result.output
     assert "--voiceover" in result.output
 
 
@@ -201,6 +202,34 @@ def test_plan_no_llm_gradient_double_well_outputs_storyboard(tmp_path) -> None:
     assert storyboard.scenes[0].narration_cues[0].component_id == "loss_landscape"
     assert "局所最小" in brief
     assert "SGD" in brief
+
+
+def test_plan_no_llm_concept_hint_overrides_cross_entropy_formula(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"L = - \sum_i y_i \log(\hat{y}_i)",
+            "--goal",
+            "2次元で谷が2箇所ある時に勾配降下法がどう判断するか知りたい",
+            "--concept-hint",
+            "gradient_descent",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    metadata = json.loads((tmp_path / "metadata.json").read_text(encoding="utf-8"))
+
+    assert storyboard.concept == "gradient_descent"
+    assert storyboard.examples[0].values["function_preset"] == "double_well_2d"
+    assert metadata["concept_hint"] == "gradient_descent"
 
 
 def test_plan_no_llm_gradient_double_well_1d_outputs_storyboard(tmp_path) -> None:

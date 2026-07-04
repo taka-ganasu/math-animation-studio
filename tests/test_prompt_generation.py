@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from math_animation_studio.llm import (
     build_concept_planner_prompt,
+    build_formula_plan_consistency_prompt,
     build_formula_understanding_plan_prompt,
+    build_formula_understanding_revision_prompt,
     build_retry_prompt,
     build_voiceover_script_prompt,
 )
@@ -49,6 +51,52 @@ def test_formula_understanding_plan_prompt_contains_schema_and_patterns() -> Non
     assert "generation_boundary.code_generation_allowedは必ずfalse" in prompt
     assert "既存preset名" in prompt
     assert "recommended_examplesは2〜3個" in prompt
+
+
+def test_formula_understanding_plan_prompt_contains_concept_hint() -> None:
+    prompt = build_formula_understanding_plan_prompt(
+        formula=r"L = - \sum_i y_i \log(\hat{y}_i)",
+        goal="2変数を変更した場合の勾配降下法の動きを理解したい",
+        audience="high_school_math",
+        domain_hint="machine_learning",
+        animation_pattern_ids=["penalty_curve", "trajectory_on_surface"],
+        target_duration_seconds=60,
+        concept_hint="gradient_descent",
+    )
+
+    assert "優先したい概念" in prompt
+    assert "gradient_descent" in prompt
+    assert "数式名よりも理解ゴールと優先概念を重視する" in prompt
+    assert "損失地形を下る更新" in prompt
+
+
+def test_formula_plan_consistency_prompt_reviews_goal_alignment() -> None:
+    prompt = build_formula_plan_consistency_prompt(
+        formula=r"L = - \sum_i y_i \log(\hat{y}_i)",
+        goal="勾配降下法の動きを幾何的に理解したい",
+        audience="high_school_math",
+        domain_hint="machine_learning",
+        concept_hint="gradient_descent",
+        animation_pattern_ids=["penalty_curve", "trajectory_on_surface"],
+        plan_json='{"concept_classification":{"primary_concept":"cross_entropy"}}',
+    )
+
+    assert "一貫しているか" in prompt
+    assert "数式名だけに引っ張られず" in prompt
+    assert "goalと優先概念を主題" in prompt
+    assert "FormulaPlanConsistencyReview" in prompt or "is_consistent" in prompt
+
+
+def test_formula_understanding_revision_prompt_contains_review() -> None:
+    prompt = build_formula_understanding_revision_prompt(
+        original_prompt="original",
+        first_plan_json='{"target_concept":"cross_entropy"}',
+        review_json='{"revision_instructions":["gradient_descentを主題にする"]}',
+    )
+
+    assert "original" in prompt
+    assert "一貫性レビュー" in prompt
+    assert "gradient_descentを主題にする" in prompt
 
 
 def test_voiceover_script_prompt_contains_storyboard_and_constraints() -> None:
