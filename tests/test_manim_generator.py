@@ -73,7 +73,8 @@ def test_generator_writes_compilable_perceptron_scene(tmp_path) -> None:
     assert params.weights == pytest.approx((1.2, -0.8))
     assert params.input_values == pytest.approx((1.0, 0.4))
     assert params.bias == pytest.approx(-0.1)
-    assert sum(params.segment_durations.values()) == pytest.approx(50.0)
+    assert params.target_duration_seconds == 95
+    assert sum(params.segment_durations.values()) == pytest.approx(95.0)
     assert params.segment_durations["decision_boundary"] == pytest.approx(10.0)
     validate_python_syntax(output_path)
 

@@ -34,7 +34,7 @@ class MacOSSayVoiceover:
         output_video_path: Path,
         log_path: Path,
         voice: str | None = None,
-        rate: int = 220,
+        rate: int = 120,
     ) -> VoiceoverResult:
         say_bin = shutil.which("say")
         ffmpeg_bin = shutil.which("ffmpeg")
@@ -106,34 +106,12 @@ class MacOSSayVoiceover:
             raise VoiceoverError(f"Voice synthesis failed. See {log_path}.")
 
         audio_duration = self._probe_duration(ffprobe_bin, audio_path)
+        mux_duration = max(video_duration, audio_duration)
         if audio_duration > video_duration:
-            adjusted_rate = min(
-                360,
-                max(rate + 1, int(rate * audio_duration / (video_duration * 0.96))),
-            )
-            adjusted_command = self._say_command(
-                say_bin=say_bin,
-                rate=adjusted_rate,
-                audio_path=audio_path,
-                script=script,
-                voice=selected_voice,
-            )
-            adjusted_process = subprocess.run(
-                adjusted_command,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                check=False,
-            )
             say_output += (
-                "\n# Adjusted voice rate to fit video duration.\n$ "
-                + " ".join(adjusted_command)
-                + "\n"
-                + (adjusted_process.stdout or "")
+                "\n# Preserved requested voice rate; audio is longer than video."
+                f"\n# audio_duration={audio_duration:.3f}, video_duration={video_duration:.3f}\n"
             )
-            if adjusted_process.returncode != 0:
-                log_path.write_text(say_output, encoding="utf-8")
-                raise VoiceoverError(f"Voice synthesis failed. See {log_path}.")
 
         ffmpeg_command = [
             ffmpeg_bin,
@@ -143,7 +121,7 @@ class MacOSSayVoiceover:
             "-i",
             str(audio_path),
             "-filter_complex",
-            f"[1:a]volume=1.0,apad=pad_dur={video_duration:.3f}[a]",
+            f"[1:a]volume=1.0,apad=pad_dur={mux_duration:.3f}[a]",
             "-map",
             "0:v:0",
             "-map",
@@ -155,7 +133,7 @@ class MacOSSayVoiceover:
             "-b:a",
             "160k",
             "-t",
-            f"{video_duration:.3f}",
+            f"{mux_duration:.3f}",
             str(output_video_path),
         ]
         ffmpeg_process = subprocess.run(
@@ -194,7 +172,7 @@ class MacOSSayVoiceover:
         output_video_path: Path,
         log_path: Path,
         voice: str | None = None,
-        rate: int = 180,
+        rate: int = 120,
     ) -> VoiceoverResult:
         if not segments:
             raise VoiceoverError("Segmented voiceover requires at least one segment.")
@@ -226,6 +204,7 @@ class MacOSSayVoiceover:
         selected_voice = voice or self._detect_japanese_voice(say_bin)
         log_sections = ["# Segmented voiceover synthesis"]
         padded_paths: list[Path] = []
+        padded_durations: list[float] = []
 
         for index, segment in enumerate(segments):
             stem = f"{index:02d}_{self._safe_file_stem(segment.id)}"
@@ -280,34 +259,15 @@ class MacOSSayVoiceover:
                 raise VoiceoverError(f"Voice synthesis failed. See {log_path}.")
 
             audio_duration = self._probe_duration(ffprobe_bin, raw_path)
-            if audio_duration > segment.duration_seconds * 0.96:
-                adjusted_rate = min(
-                    360,
-                    max(rate + 1, int(rate * audio_duration / (segment.duration_seconds * 0.92))),
-                )
-                adjusted_command = self._say_command(
-                    say_bin=say_bin,
-                    rate=adjusted_rate,
-                    audio_path=raw_path,
-                    script=segment.text,
-                    voice=selected_voice,
-                )
-                adjusted_process = subprocess.run(
-                    adjusted_command,
-                    text=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    check=False,
-                )
+            padded_duration = max(segment.duration_seconds, audio_duration + 0.25)
+            if audio_duration > segment.duration_seconds:
                 log_sections.append(
-                    f"# Adjusted segment rate to {adjusted_rate} for {segment.id}.\n$ "
-                    + " ".join(adjusted_command)
-                    + "\n"
-                    + (adjusted_process.stdout or "")
+                    "# Preserved requested voice rate; segment audio is longer than "
+                    f"allocated duration for {segment.id}.\n"
+                    f"# audio_duration={audio_duration:.3f}, "
+                    f"segment_duration={segment.duration_seconds:.3f}, "
+                    f"padded_duration={padded_duration:.3f}"
                 )
-                if adjusted_process.returncode != 0:
-                    log_path.write_text("\n\n".join(log_sections), encoding="utf-8")
-                    raise VoiceoverError(f"Voice synthesis failed. See {log_path}.")
 
             pad_command = [
                 ffmpeg_bin,
@@ -316,8 +276,8 @@ class MacOSSayVoiceover:
                 str(raw_path),
                 "-filter:a",
                 (
-                    f"apad=pad_dur={segment.duration_seconds:.3f},"
-                    f"atrim=0:{segment.duration_seconds:.3f},"
+                    f"apad=pad_dur={padded_duration:.3f},"
+                    f"atrim=0:{padded_duration:.3f},"
                     "asetpts=N/SR/TB"
                 ),
                 "-ar",
@@ -340,6 +300,7 @@ class MacOSSayVoiceover:
                 log_path.write_text("\n\n".join(log_sections), encoding="utf-8")
                 raise VoiceoverError(f"Segment audio padding failed. See {log_path}.")
             padded_paths.append(padded_path)
+            padded_durations.append(padded_duration)
 
         concat_list_path = segment_dir / "concat.txt"
         concat_list_path.write_text(
@@ -373,6 +334,8 @@ class MacOSSayVoiceover:
             raise VoiceoverError(f"Segment audio concat failed. See {log_path}.")
 
         video_duration = self._probe_duration(ffprobe_bin, video_path)
+        audio_duration = sum(padded_durations)
+        mux_duration = max(video_duration, audio_duration)
         ffmpeg_command = [
             ffmpeg_bin,
             "-y",
@@ -381,7 +344,7 @@ class MacOSSayVoiceover:
             "-i",
             str(audio_path),
             "-filter_complex",
-            f"[1:a]volume=1.0,apad=pad_dur={video_duration:.3f}[a]",
+            f"[1:a]volume=1.0,apad=pad_dur={mux_duration:.3f}[a]",
             "-map",
             "0:v:0",
             "-map",
@@ -393,7 +356,7 @@ class MacOSSayVoiceover:
             "-b:a",
             "160k",
             "-t",
-            f"{video_duration:.3f}",
+            f"{mux_duration:.3f}",
             str(output_video_path),
         ]
         ffmpeg_process = subprocess.run(

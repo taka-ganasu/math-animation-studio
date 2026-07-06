@@ -256,7 +256,7 @@ def plan(
         help="Optional macOS say voice name. Auto-detects a Japanese voice when omitted.",
     ),
     voice_rate: int = typer.Option(
-        150,
+        120,
         "--voice-rate",
         min=80,
         max=360,

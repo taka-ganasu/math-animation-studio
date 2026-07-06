@@ -195,6 +195,7 @@ math-anim plan \
 ### 単純パーセプトロン: 順伝播と決定境界
 
 `--no-llm` でも、`--concept-hint perceptron` を指定すると、入力、重み付き和、活性化関数、2D決定境界を順に説明する動画を生成できます。
+ナレーションを聞き取りやすくするため、このテンプレートは短い `--duration` を指定しても最低 95 秒のシーン尺を確保します。
 
 ```bash
 math-anim plan \
@@ -203,11 +204,12 @@ math-anim plan \
   --concept-hint perceptron \
   --audience high_school_math \
   --domain-hint machine_learning \
-  --duration 50 \
+  --duration 95 \
   --output-dir outputs/perceptron_phase1 \
   --no-llm \
   --render \
-  --voiceover
+  --voiceover \
+  --voice-rate 120
 ```
 
 成功すると、`outputs/perceptron_phase1/video_with_voice.mp4` が作成されます。学習や誤差逆伝播ではなく、まずは学習済み重みでの順伝播に絞っています。

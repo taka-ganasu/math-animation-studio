@@ -178,6 +178,6 @@ def test_voiceover_script_writer_segments_perceptron() -> None:
     assert segments[5].component_id == "perceptron_node"
     assert segments[8].component_id == "decision_boundary"
     assert segments[8].formula_focus == r"w_1x_1+w_2x_2+b=0"
-    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(50.0)
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(95.0)
     assert "単純パーセプトロン" in script
     assert "決定境界" in script
