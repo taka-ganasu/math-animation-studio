@@ -80,7 +80,12 @@ class PerceptronScene(Scene):
         self.play(FadeOut(VGroup(title, formula, subtitle)), run_time=0.35)
 
     def construct_formula_parts(self) -> None:
-        duration = segment_duration("formula_parts", 9.0)
+        focus_durations = {
+            "formula_weighted_inputs": segment_duration("formula_weighted_inputs", 3.0),
+            "formula_bias": segment_duration("formula_bias", 2.0),
+            "formula_activation": segment_duration("formula_activation", 2.2),
+            "formula_output": segment_duration("formula_output", 1.8),
+        }
         title = self.make_label("まず式の構造を分解する", font_size=30)
         title.to_edge(UP, buff=0.35)
         parts = VGroup(
@@ -102,28 +107,30 @@ class PerceptronScene(Scene):
         meaning = self.make_label("材料を重み付きで合計し、しきい値で判断する", font_size=24, color=YELLOW)
         meaning.next_to(parts, DOWN, buff=0.72)
         focus_items = [
-            (VGroup(parts[4], parts[6]), "入力と重みのかけ算", BLUE_B),
-            (parts[8], "バイアス: 境界線をずらす", ORANGE),
-            (parts[2], "活性化: 0/1へ変換", GREEN_B),
-            (parts[0], "出力: 判断結果", YELLOW),
+            ("formula_weighted_inputs", VGroup(parts[4], parts[6]), "入力と重みのかけ算", BLUE_B),
+            ("formula_bias", parts[8], "バイアス: 境界線をずらす", ORANGE),
+            ("formula_activation", parts[2], "活性化: 0/1へ変換", GREEN_B),
+            ("formula_output", parts[0], "出力: 判断結果", YELLOW),
         ]
 
-        intro_time = min(1.1, duration * 0.18)
-        focus_time = min(1.45, max(0.65, duration * 0.13))
+        intro_time = min(0.55, focus_durations["formula_weighted_inputs"] * 0.25)
         self.play(FadeIn(title), Write(parts), run_time=intro_time)
-        used_time = intro_time
         active_box = None
         active_label = None
-        for target, label_text, color in focus_items:
+        for index, (segment_id, target, label_text, color) in enumerate(focus_items):
+            segment_time = focus_durations[segment_id]
+            used_time = intro_time if index == 0 else 0.0
             if active_box is not None and active_label is not None:
-                self.play(FadeOut(active_box), FadeOut(active_label), run_time=0.15)
-                used_time += 0.15
+                fade_time = min(0.14, segment_time * 0.15)
+                self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
+                used_time += fade_time
             box = SurroundingRectangle(target, color=color, buff=0.08)
             label = self.make_label(label_text, font_size=20, color=color)
             label.next_to(target, DOWN, buff=0.25)
-            self.play(Create(box), FadeIn(label), run_time=0.3)
-            self.wait(max(0.0, focus_time - 0.3))
-            used_time += focus_time
+            entry_time = min(0.28, max(0.05, segment_time - used_time))
+            self.play(Create(box), FadeIn(label), run_time=entry_time)
+            used_time += entry_time
+            self.wait_remaining(segment_time, used_time)
             active_box = box
             active_label = label
 
@@ -133,8 +140,6 @@ class PerceptronScene(Scene):
         if active_label is not None:
             animations.append(FadeOut(active_label))
         self.play(*animations, run_time=0.45)
-        used_time += 0.45
-        self.wait_remaining(duration, used_time)
         self.play(FadeOut(VGroup(title, parts, meaning)), run_time=0.35)
 
     def node(self, label: Mobject | str, center: np.ndarray, color: ManimColor) -> VGroup:

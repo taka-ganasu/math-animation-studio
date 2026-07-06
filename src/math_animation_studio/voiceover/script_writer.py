@@ -396,7 +396,10 @@ def _gradient_surface_3d_segment_text() -> dict[str, str]:
 def _perceptron_segment_text() -> dict[str, str]:
     return {
         "title_intro": "今回は、単純パーセプトロンを見ていきます。入力から0か1の判断が出る流れを追います。",
-        "formula_parts": "式を分解します。xは入力、wは重み、bはバイアス。合計したスコアをstep関数へ通します。",
+        "formula_weighted_inputs": "まず、xは入力、wは重みです。wとxを掛けて、判断材料の効き方を表します。",
+        "formula_bias": "bはバイアスです。判断の境界線を、左右や上下へずらす役割を持ちます。",
+        "formula_activation": "step関数は、合計したスコアを、ゼロか一の判断へ変換します。",
+        "formula_output": "左側のaが、最後に出てくる分類結果です。",
         "network_diagram": "図では、入力から重み付きの矢印が出て、sumに集まります。そのあと活性化を通って出力になります。",
         "weighted_sum": "重み付き和zは、判断前のスコアです。まだ分類結果そのものではありません。",
         "activation": "step関数は、zがゼロ以上なら一、ゼロ未満ならゼロに変えます。",
