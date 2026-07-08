@@ -104,15 +104,15 @@ def test_generator_shortens_perceptron_timeline_for_faster_voice(tmp_path) -> No
 
 def test_generator_writes_compilable_fully_connected_scene(tmp_path) -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
-        formula=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
-        goal="全結合ニューラルネットワークの順伝播を直感的に理解したい",
+        formula=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2),\quad L=-\sum_i y_i\log(\hat{y}_i)",
+        goal="全結合ニューラルネットワークの順伝播からクロスエントロピー損失までを直感的に理解したい",
         audience="high_school_math",
         concept_hint="fully_connected_network",
     )
     assert artifacts.storyboard is not None
 
     output_path = tmp_path / "manim_scene.py"
-    generator = ManimGenerator(target_duration_seconds=88)
+    generator = ManimGenerator(target_duration_seconds=114)
     params = generator.generate(artifacts.storyboard, output_path)
     rendered = output_path.read_text(encoding="utf-8")
 
@@ -121,8 +121,10 @@ def test_generator_writes_compilable_fully_connected_scene(tmp_path) -> None:
     assert "class FullyConnectedNetworkScene" in rendered
     assert "全結合ニューラルネットワーク" in rendered
     assert "full_connections" in params.segment_durations
-    assert sum(params.segment_durations.values()) == pytest.approx(88.0)
+    assert "cross_entropy_loss" in params.segment_durations
+    assert sum(params.segment_durations.values()) == pytest.approx(114.0)
     assert params.layer_sizes == (3, 4, 2)
+    assert params.cross_entropy_loss == pytest.approx(0.3285, abs=0.001)
     validate_python_syntax(output_path)
 
 

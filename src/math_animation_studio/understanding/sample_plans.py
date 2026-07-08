@@ -456,9 +456,9 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
         )
     if key == "fully_connected_network":
         return ExplanationPlan(
-            formula=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+            formula=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2),\quad L=-\sum_i y_i\log(\hat{y}_i)",
             target_concept="fully_connected_network",
-            one_sentence_summary="全結合ニューラルネットワークは、1つのニューロンを層として並べ、すべての前層ノードから次層ノードへ値を渡す。",
+            one_sentence_summary="全結合ニューラルネットワークはsoftmaxで確率を出し、正解ラベルとクロスエントロピーで予測の悪さを損失にする。",
             audience=audience,
             teaching_strategy="visual_first",
             recommended_examples=[
@@ -473,6 +473,8 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                         "class_labels": ["猫", "犬"],
                         "input_values": [0.8, 0.3, 0.6],
                         "activation": "relu",
+                        "output_probabilities": [0.72, 0.28],
+                        "correct_index": 0,
                     },
                 )
             ],
@@ -553,15 +555,51 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                 ),
                 ExplanationStep(
                     id="step_07",
+                    scene_role="visualization",
+                    title="正解ラベルを見る",
+                    learning_goal="one-hotラベルが損失で見る場所を決めることを理解する",
+                    explanation="正解ラベルはone-hotで表します。正解クラスだけが1なので、損失ではそのクラスの予測確率だけを見ます。",
+                    visual_idea="猫が正解のone-hotベクトルを表示し、正解クラスだけを強調する。",
+                    formula_focus=r"y_i",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="one_hot_vector", description="正解クラスだけ1のラベルを表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_08",
+                    scene_role="visualization",
+                    title="正解確率を取り出す",
+                    learning_goal="softmax出力とクロスエントロピーの接続を理解する",
+                    explanation="softmaxの確率分布から、正解クラスに置いた確率だけを取り出します。",
+                    visual_idea="softmax確率バーのうち正解クラスのバーだけを囲む。",
+                    formula_focus=r"\hat{y}_{\mathrm{correct}}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="probability_selector", description="正解クラスの予測確率を選ぶ"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_09",
+                    scene_role="visualization",
+                    title="-logで損失にする",
+                    learning_goal="正解確率が低いほど損失が大きくなることを理解する",
+                    explanation="正解確率をマイナスlogへ通すと損失になります。正解確率が高いほど、損失は小さくなります。",
+                    visual_idea="-log(p)曲線上で正解確率を点として表示する。",
+                    formula_focus=r"-\log(\hat{y}_{\mathrm{correct}})",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="negative_log_curve", description="正解確率を損失へ変換する曲線を表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_10",
                     scene_role="summary",
                     title="最後に式へ戻る",
                     learning_goal="式と層の図を対応づける",
-                    explanation="まとめると、全結合ネットワークは、行列Wで層どうしをすべてつなぎ、活性化を通して次の層へ渡すモデルです。",
-                    visual_idea="式のW、sigma、softmaxをネットワーク図の場所に対応づける。",
-                    formula_focus=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+                    explanation="まとめると、ネットワークが確率を出し、正解ラベルが見る場所を決め、マイナスlogが損失に変えます。",
+                    visual_idea="softmax出力、one-hot、-log損失を一列につなげて表示する。",
+                    formula_focus=r"L=-\sum_i y_i\log(\hat{y}_i)",
                     planned_components=[
                         PlannedAnimationComponent(kind="summary", description="式と層構造をまとめる"),
-                        PlannedAnimationComponent(kind="formula_focus", description="式全体を強調する", params={"formula_focus": r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)"}),
+                        PlannedAnimationComponent(kind="formula_focus", description="損失式を強調する", params={"formula_focus": r"L=-\sum_i y_i\log(\hat{y}_i)"}),
                     ],
                 ),
             ],

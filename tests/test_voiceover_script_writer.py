@@ -207,16 +207,16 @@ def test_voiceover_script_writer_shortens_perceptron_timeline_for_faster_voice()
 
 def test_voiceover_script_writer_segments_fully_connected_network() -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
-        formula=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
-        goal="全結合ニューラルネットワークの順伝播を直感的に理解したい",
+        formula=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2),\quad L=-\sum_i y_i\log(\hat{y}_i)",
+        goal="全結合ニューラルネットワークの順伝播からクロスエントロピー損失までを直感的に理解したい",
         audience="high_school_math",
         concept_hint="fully_connected_network",
     )
     assert artifacts.storyboard is not None
 
     writer = VoiceoverScriptWriter()
-    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=88)
-    script = writer.write(artifacts.storyboard, target_duration_seconds=88)
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=114)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=114)
 
     assert [segment.id for segment in segments] == [
         "title_intro",
@@ -227,11 +227,18 @@ def test_voiceover_script_writer_segments_fully_connected_network() -> None:
         "full_connections",
         "forward_pass",
         "softmax_output",
+        "one_hot_label",
+        "correct_probability",
+        "cross_entropy_loss",
         "summary",
     ]
     assert segments[4].component_id == "dense_layer"
     assert segments[5].component_id == "fully_connected_edges"
     assert segments[7].component_id == "softmax_output"
-    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(88.0)
+    assert segments[8].component_id == "one_hot_vector"
+    assert segments[9].component_id == "probability_selector"
+    assert segments[10].component_id == "negative_log_curve"
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(114.0)
     assert "全結合ニューラルネットワーク" in script
     assert "softmax" in script
+    assert "マイナスlog" in script

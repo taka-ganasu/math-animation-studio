@@ -177,8 +177,11 @@ class FullyConnectedParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = "Fully Connected Neural Network"
-    target_duration_seconds: float = Field(default=88.0, ge=5, le=180)
-    formula_latex: str = r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)"
+    target_duration_seconds: float = Field(default=114.0, ge=5, le=180)
+    formula_latex: str = (
+        r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2),"
+        r"\quad L=-\sum_i y_i\log(\hat{y}_i)"
+    )
     layer_sizes: tuple[int, int, int] = (3, 4, 2)
     input_labels: tuple[str, str, str] = (r"x_1", r"x_2", r"x_3")
     hidden_labels: tuple[str, str, str, str] = (r"h_1", r"h_2", r"h_3", r"h_4")
@@ -186,6 +189,8 @@ class FullyConnectedParams(BaseModel):
     input_values: tuple[float, float, float] = (0.8, 0.3, 0.6)
     activation: Literal["relu", "sigmoid", "tanh"] = "relu"
     output_probabilities: tuple[float, float] = (0.72, 0.28)
+    correct_index: int = Field(default=0, ge=0)
+    cross_entropy_loss: float = Field(default=0.329, ge=0)
     segment_durations: dict[str, float] = Field(default_factory=dict)
     segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
     template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
@@ -528,7 +533,7 @@ class ManimGenerator:
         activation = str(values.get("activation", "relu")).strip().lower()
         if activation not in {"relu", "sigmoid", "tanh"}:
             activation = "relu"
-        target_duration_seconds = self.target_duration_seconds or 88
+        target_duration_seconds = self.target_duration_seconds or 114
         timeline = fully_connected_timeline_segments(target_duration_seconds)
         probabilities = _float_sequence(
             values.get("output_probabilities"),
@@ -536,11 +541,19 @@ class ManimGenerator:
             expected_length=output_count,
         )
         normalized_probabilities = _normalize_probabilities(probabilities)
+        correct_index = min(
+            max(0, int(round(_safe_float(values.get("correct_index"), 0.0)))),
+            output_count - 1,
+        )
+        correct_probability = max(1e-6, normalized_probabilities[correct_index])
         return FullyConnectedParams(
             target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),
             title=_title_from_storyboard(storyboard),
             formula_latex=storyboard.formula
-            or r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+            or (
+                r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2),"
+                r"\quad L=-\sum_i y_i\log(\hat{y}_i)"
+            ),
             layer_sizes=layer_sizes,  # type: ignore[arg-type]
             input_labels=tuple(input_labels),  # type: ignore[arg-type]
             hidden_labels=tuple(hidden_labels),  # type: ignore[arg-type]
@@ -548,6 +561,8 @@ class ManimGenerator:
             input_values=tuple(input_values),  # type: ignore[arg-type]
             activation=activation,  # type: ignore[arg-type]
             output_probabilities=tuple(normalized_probabilities),  # type: ignore[arg-type]
+            correct_index=correct_index,
+            cross_entropy_loss=-math.log(correct_probability),
             segment_durations=segment_duration_map(timeline),
             segment_metadata=segment_metadata_map(timeline),
             template_components=_template_components_from_storyboard(storyboard),

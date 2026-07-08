@@ -216,16 +216,16 @@ math-anim plan \
 
 ### 全結合ニューラルネットワーク: 層と順伝播
 
-`--concept-hint fully_connected_network` を指定すると、入力層、隠れ層、出力層、全結合の接続、softmax出力を順に説明する動画を生成できます。学習や誤差逆伝播ではなく、まずは推論時の順伝播に絞っています。
+`--concept-hint fully_connected_network` を指定すると、入力層、隠れ層、出力層、全結合の接続、softmax出力、one-hot正解ラベル、クロスエントロピー損失までを順に説明する動画を生成できます。学習や誤差逆伝播ではなく、まずは推論時の順伝播と損失への接続に絞っています。
 
 ```bash
 math-anim plan \
-  --formula "\\hat{y}=\\mathrm{softmax}(W_2\\sigma(W_1x+b_1)+b_2)" \
-  --goal "全結合ニューラルネットワークの順伝播を直感的に理解したい" \
+  --formula "\\hat{y}=\\mathrm{softmax}(W_2\\sigma(W_1x+b_1)+b_2),\\quad L=-\\sum_i y_i\\log(\\hat{y}_i)" \
+  --goal "全結合ニューラルネットワークの順伝播からクロスエントロピー損失までを直感的に理解したい" \
   --concept-hint fully_connected_network \
   --audience high_school_math \
   --domain-hint deep_learning \
-  --duration 88 \
+  --duration 114 \
   --output-dir outputs/fully_connected_phase1 \
   --no-llm \
   --render \

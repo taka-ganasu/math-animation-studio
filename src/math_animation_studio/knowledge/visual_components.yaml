@@ -64,6 +64,7 @@ components:
     visual_type: text
     template_support:
       - penalty_curve
+      - fully_connected_network
       - storyboard_only
     params:
       - name: stages
@@ -86,6 +87,7 @@ components:
     visual_type: axis
     template_support:
       - penalty_curve
+      - fully_connected_network
       - storyboard_only
     params:
       - name: correct_index
@@ -108,6 +110,7 @@ components:
     visual_type: axis
     template_support:
       - penalty_curve
+      - fully_connected_network
       - storyboard_only
     params:
       - name: correct_index
@@ -133,6 +136,7 @@ components:
     visual_type: point
     template_support:
       - penalty_curve
+      - fully_connected_network
       - storyboard_only
     params:
       - name: selected_probability
@@ -155,6 +159,7 @@ components:
     visual_type: curve
     template_support:
       - penalty_curve
+      - fully_connected_network
       - storyboard_only
     params:
       - name: x_range
@@ -479,6 +484,7 @@ components:
     template_support:
       - penalty_curve
       - gradient_descent_3d
+      - fully_connected_network
       - storyboard_only
     params:
       - name: takeaway

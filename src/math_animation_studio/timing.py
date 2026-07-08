@@ -126,7 +126,10 @@ FULLY_CONNECTED_BASE_TIMELINE = (
     TimelineSegment("full_connections", 10.0, "fully_connected_edges"),
     TimelineSegment("forward_pass", 10.5, "forward_pass"),
     TimelineSegment("softmax_output", 8.0, "softmax_output"),
-    TimelineSegment("summary", 11.0, "summary", r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)"),
+    TimelineSegment("one_hot_label", 8.0, "one_hot_vector", r"y_i"),
+    TimelineSegment("correct_probability", 8.0, "probability_selector", r"\hat{y}_{\mathrm{correct}}"),
+    TimelineSegment("cross_entropy_loss", 10.0, "negative_log_curve", r"-\log(\hat{y}_{\mathrm{correct}})"),
+    TimelineSegment("summary", 11.0, "summary", r"L=-\sum_i y_i\log(\hat{y}_i)"),
 )
 
 
