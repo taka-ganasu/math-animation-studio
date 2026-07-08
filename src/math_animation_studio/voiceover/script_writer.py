@@ -24,7 +24,13 @@ class VoiceoverSegment:
 
 
 class VoiceoverScriptWriter:
-    def write(self, storyboard: Storyboard, *, target_duration_seconds: int | None = None) -> str:
+    def write(
+        self,
+        storyboard: Storyboard,
+        *,
+        target_duration_seconds: int | float | None = None,
+        voice_rate: int | float | None = None,
+    ) -> str:
         concept = storyboard.concept.strip().lower().replace("-", "_")
         if concept == "cross_entropy":
             if target_duration_seconds is not None and target_duration_seconds >= 25:
@@ -33,6 +39,7 @@ class VoiceoverScriptWriter:
                     for segment in self.write_segments(
                         storyboard,
                         target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
                     )
                 )
             return (
@@ -49,6 +56,7 @@ class VoiceoverScriptWriter:
                     for segment in self.write_segments(
                         storyboard,
                         target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
                     )
                 )
             return (
@@ -64,6 +72,7 @@ class VoiceoverScriptWriter:
                     for segment in self.write_segments(
                         storyboard,
                         target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
                     )
                 )
             return (
@@ -81,7 +90,8 @@ class VoiceoverScriptWriter:
         self,
         storyboard: Storyboard,
         *,
-        target_duration_seconds: int | None = None,
+        target_duration_seconds: int | float | None = None,
+        voice_rate: int | float | None = None,
     ) -> list[VoiceoverSegment]:
         concept = storyboard.concept.strip().lower().replace("-", "_")
         if concept == "gradient_descent" and _is_gradient_double_well_storyboard(storyboard):
@@ -99,7 +109,10 @@ class VoiceoverScriptWriter:
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept == "perceptron":
-            timeline = perceptron_timeline_segments(target_duration_seconds)
+            timeline = perceptron_timeline_segments(
+                target_duration_seconds,
+                voice_rate=voice_rate,
+            )
             text_by_id = _perceptron_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
@@ -121,7 +134,8 @@ class VoiceoverScriptWriter:
         self,
         storyboard: Storyboard,
         *,
-        target_duration_seconds: int | None = None,
+        target_duration_seconds: int | float | None = None,
+        voice_rate: int | float | None = None,
         script: str | None = None,
         segments: Sequence[VoiceoverSegment] | None = None,
     ) -> str:
@@ -131,6 +145,7 @@ class VoiceoverScriptWriter:
             script = script or self.write(
                 storyboard,
                 target_duration_seconds=target_duration_seconds,
+                voice_rate=voice_rate,
             )
         rows = [
             "# Narration",

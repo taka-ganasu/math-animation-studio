@@ -79,6 +79,29 @@ def test_generator_writes_compilable_perceptron_scene(tmp_path) -> None:
     validate_python_syntax(output_path)
 
 
+def test_generator_shortens_perceptron_timeline_for_faster_voice(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+        goal="単純パーセプトロンの順伝播と決定境界を直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="perceptron",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    params = ManimGenerator(target_duration_seconds=95, voice_rate=130).generate(
+        artifacts.storyboard,
+        output_path,
+    )
+
+    assert params.target_duration_seconds == pytest.approx(95.0 * 120.0 / 130.0, abs=0.001)
+    assert sum(params.segment_durations.values()) == pytest.approx(
+        95.0 * 120.0 / 130.0,
+        abs=0.001,
+    )
+    validate_python_syntax(output_path)
+
+
 def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> None:
     storyboard = Storyboard(
         concept="cross_entropy",

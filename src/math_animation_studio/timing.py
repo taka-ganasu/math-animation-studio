@@ -113,6 +113,8 @@ PERCEPTRON_BASE_TIMELINE = (
 PERCEPTRON_MIN_NARRATION_SECONDS = sum(
     segment.duration_seconds for segment in PERCEPTRON_BASE_TIMELINE
 )
+PERCEPTRON_REFERENCE_VOICE_RATE = 120.0
+PERCEPTRON_MIN_TIMELINE_SECONDS = 65.0
 
 
 def cross_entropy_timeline_segments(
@@ -169,11 +171,38 @@ def gradient_double_well_1d_timeline_segments(
 
 def perceptron_timeline_segments(
     target_duration_seconds: int | float | None = None,
+    *,
+    voice_rate: int | float | None = None,
 ) -> tuple[TimelineSegment, ...]:
-    if target_duration_seconds is None:
-        return PERCEPTRON_BASE_TIMELINE
-    target = max(float(target_duration_seconds), PERCEPTRON_MIN_NARRATION_SECONDS)
+    target = perceptron_target_duration_seconds(
+        target_duration_seconds,
+        voice_rate=voice_rate,
+    )
     return scale_timeline(PERCEPTRON_BASE_TIMELINE, target)
+
+
+def perceptron_target_duration_seconds(
+    target_duration_seconds: int | float | None = None,
+    *,
+    voice_rate: int | float | None = None,
+) -> float:
+    voice_floor = perceptron_voice_adjusted_min_seconds(voice_rate)
+    if target_duration_seconds is None:
+        return voice_floor
+
+    requested = float(target_duration_seconds)
+    if voice_rate is not None and requested <= PERCEPTRON_MIN_NARRATION_SECONDS:
+        return voice_floor
+    return max(requested, voice_floor)
+
+
+def perceptron_voice_adjusted_min_seconds(voice_rate: int | float | None = None) -> float:
+    if voice_rate is None:
+        return float(PERCEPTRON_MIN_NARRATION_SECONDS)
+
+    rate = max(1.0, float(voice_rate))
+    adjusted = PERCEPTRON_MIN_NARRATION_SECONDS * PERCEPTRON_REFERENCE_VOICE_RATE / rate
+    return max(PERCEPTRON_MIN_TIMELINE_SECONDS, adjusted)
 
 
 def scale_timeline(

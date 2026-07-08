@@ -158,7 +158,7 @@ class PerceptronParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = "Simple Perceptron"
-    target_duration_seconds: int = Field(default=95, ge=5, le=180)
+    target_duration_seconds: float = Field(default=95.0, ge=5, le=180)
     formula_latex: str = r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)"
     input_labels: tuple[str, str] = (r"x_1", r"x_2")
     class_labels: tuple[str, str] = ("0", "1")
@@ -177,10 +177,12 @@ class ManimGenerator:
         self,
         *,
         template: str = "auto",
-        target_duration_seconds: int | None = None,
+        target_duration_seconds: int | float | None = None,
+        voice_rate: int | float | None = None,
     ) -> None:
         self.template = template
         self.target_duration_seconds = target_duration_seconds
+        self.voice_rate = voice_rate
 
     def generate(
         self,
@@ -442,8 +444,11 @@ class ManimGenerator:
         if activation not in {"step", "sigmoid"}:
             activation = "step"
         target_duration_seconds = self.target_duration_seconds or 95
-        timeline = perceptron_timeline_segments(target_duration_seconds)
-        effective_duration_seconds = int(round(sum(segment.duration_seconds for segment in timeline)))
+        timeline = perceptron_timeline_segments(
+            target_duration_seconds,
+            voice_rate=self.voice_rate,
+        )
+        effective_duration_seconds = round(sum(segment.duration_seconds for segment in timeline), 3)
         return PerceptronParams(
             target_duration_seconds=effective_duration_seconds,
             title=_title_from_storyboard(storyboard),

@@ -181,3 +181,25 @@ def test_voiceover_script_writer_segments_perceptron() -> None:
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(95.0)
     assert "単純パーセプトロン" in script
     assert "決定境界" in script
+
+
+def test_voiceover_script_writer_shortens_perceptron_timeline_for_faster_voice() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"a = \mathrm{step}(w_1x_1 + w_2x_2 + b)",
+        goal="単純パーセプトロンの順伝播と決定境界を直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="perceptron",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(
+        artifacts.storyboard,
+        target_duration_seconds=95,
+        voice_rate=130,
+    )
+
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(
+        95.0 * 120.0 / 130.0,
+        abs=0.001,
+    )

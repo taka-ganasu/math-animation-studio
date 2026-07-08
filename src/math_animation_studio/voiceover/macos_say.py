@@ -34,7 +34,7 @@ class MacOSSayVoiceover:
         output_video_path: Path,
         log_path: Path,
         voice: str | None = None,
-        rate: int = 120,
+        rate: int = 130,
     ) -> VoiceoverResult:
         say_bin = shutil.which("say")
         ffmpeg_bin = shutil.which("ffmpeg")
@@ -172,7 +172,7 @@ class MacOSSayVoiceover:
         output_video_path: Path,
         log_path: Path,
         voice: str | None = None,
-        rate: int = 120,
+        rate: int = 130,
     ) -> VoiceoverResult:
         if not segments:
             raise VoiceoverError("Segmented voiceover requires at least one segment.")

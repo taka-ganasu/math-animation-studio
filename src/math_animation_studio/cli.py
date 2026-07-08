@@ -27,6 +27,7 @@ from math_animation_studio.understanding.visual_component_catalog import (
     visual_component_prompt_summary,
 )
 from math_animation_studio.schema import TeachingExample
+from math_animation_studio.timing import perceptron_target_duration_seconds
 from math_animation_studio.validation import ValidationError, validate_python_syntax
 from math_animation_studio.voiceover import (
     LLMVoiceoverScriptWriter,
@@ -46,6 +47,22 @@ def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"math-animation-studio {__version__}")
         raise typer.Exit()
+
+
+def _effective_render_duration_seconds(
+    concept: str,
+    requested_duration_seconds: int | float,
+    *,
+    voiceover: bool,
+    voice_rate: int | float,
+) -> float:
+    normalized_concept = concept.strip().lower().replace("-", "_")
+    if voiceover and normalized_concept == "perceptron":
+        return perceptron_target_duration_seconds(
+            requested_duration_seconds,
+            voice_rate=voice_rate,
+        )
+    return float(requested_duration_seconds)
 
 
 @app.callback()
@@ -256,7 +273,7 @@ def plan(
         help="Optional macOS say voice name. Auto-detects a Japanese voice when omitted.",
     ),
     voice_rate: int = typer.Option(
-        120,
+        130,
         "--voice-rate",
         min=80,
         max=360,
@@ -321,8 +338,17 @@ def plan(
                 raise FormulaUnderstandingPlannerError(
                     "--render requires storyboard generation. Remove --no-storyboard."
                 )
+            render_duration = _effective_render_duration_seconds(
+                artifacts.storyboard.concept,
+                duration,
+                voiceover=voiceover,
+                voice_rate=voice_rate,
+            )
             artifact_manager = ArtifactManager(output_dir)
-            generator = ManimGenerator(target_duration_seconds=duration)
+            generator = ManimGenerator(
+                target_duration_seconds=render_duration,
+                voice_rate=voice_rate if voiceover else None,
+            )
             generator.generate(artifacts.storyboard, artifact_manager.manim_scene_path)
             validate_python_syntax(artifact_manager.manim_scene_path)
             renderer = ManimRenderer(scene_name=generator.scene_name_for(artifacts.storyboard))
@@ -337,7 +363,8 @@ def plan(
                 script_writer = VoiceoverScriptWriter()
                 segments = script_writer.write_segments(
                     artifacts.storyboard,
-                    target_duration_seconds=duration,
+                    target_duration_seconds=render_duration,
+                    voice_rate=voice_rate,
                 )
                 if segments:
                     voiceover_result = MacOSSayVoiceover().create_segmented(
@@ -353,7 +380,8 @@ def plan(
                     manager.write_narration(
                         script_writer.write_markdown(
                             artifacts.storyboard,
-                            target_duration_seconds=duration,
+                            target_duration_seconds=render_duration,
+                            voice_rate=voice_rate,
                             segments=segments,
                         )
                     )
@@ -362,19 +390,21 @@ def plan(
                         try:
                             script = LLMVoiceoverScriptWriter().write(
                                 storyboard=artifacts.storyboard,
-                                target_duration_seconds=duration,
+                                target_duration_seconds=int(round(render_duration)),
                                 audience=audience,
                                 goal=goal,
                             )
                         except LLMUnavailableError:
                             script = script_writer.write(
                                 artifacts.storyboard,
-                                target_duration_seconds=duration,
+                                target_duration_seconds=render_duration,
+                                voice_rate=voice_rate,
                             )
                     else:
                         script = script_writer.write(
                             artifacts.storyboard,
-                            target_duration_seconds=duration,
+                            target_duration_seconds=render_duration,
+                            voice_rate=voice_rate,
                         )
                     voiceover_result = MacOSSayVoiceover().create(
                         video_path=render_result.video_path,
@@ -389,7 +419,8 @@ def plan(
                     manager.write_narration(
                         script_writer.write_markdown(
                             artifacts.storyboard,
-                            target_duration_seconds=duration,
+                            target_duration_seconds=render_duration,
+                            voice_rate=voice_rate,
                             script=script,
                         )
                     )
@@ -406,7 +437,7 @@ def plan(
             video_path=rendered_video_path,
             video_with_voice_path=voiceover_video_path,
             voiceover_audio_path=voiceover_audio_path,
-            duration_seconds_target=duration if render else None,
+            duration_seconds_target=round(render_duration, 3) if render else None,
         )
 
         typer.echo(f"Generated planning artifacts in {output_dir}")

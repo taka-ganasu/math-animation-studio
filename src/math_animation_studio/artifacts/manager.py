@@ -73,7 +73,7 @@ class ArtifactManager:
         *,
         storyboard: Storyboard,
         status: str,
-        duration_seconds_target: int,
+        duration_seconds_target: int | float,
         renderer: str = "manim",
         video_path: Path | None = None,
         error: str | None = None,
@@ -192,7 +192,7 @@ class PlanArtifactManager:
         video_path: Path | None = None,
         video_with_voice_path: Path | None = None,
         voiceover_audio_path: Path | None = None,
-        duration_seconds_target: int | None = None,
+        duration_seconds_target: int | float | None = None,
         error: str | None = None,
     ) -> None:
         payload: dict[str, Any] = {
