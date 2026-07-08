@@ -171,3 +171,32 @@ def test_storyboard_adapter_converts_perceptron_plan() -> None:
     assert "weighted_sum" in component_kinds
     assert "activation_function" in component_kinds
     assert "decision_boundary" in component_kinds
+
+
+def test_storyboard_adapter_converts_fully_connected_plan() -> None:
+    formula = r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)"
+    formula_analysis = sample_formula_analysis(formula, "fully_connected_network")
+    explanation_plan = sample_explanation_plan(
+        formula,
+        "fully_connected_network",
+        "high_school_math",
+    )
+
+    storyboard = StoryboardAdapter().convert(
+        formula_analysis=formula_analysis,
+        explanation_plan=explanation_plan,
+    )
+
+    component_kinds = {
+        component.kind
+        for scene in storyboard.scenes
+        for component in scene.components
+    }
+
+    assert storyboard.concept == "fully_connected_network"
+    assert storyboard.blueprint is not None
+    assert storyboard.blueprint.flow_name == "formula_first"
+    assert "dense_layer" in component_kinds
+    assert "fully_connected_edges" in component_kinds
+    assert "layer_activation" in component_kinds
+    assert "softmax_output" in component_kinds

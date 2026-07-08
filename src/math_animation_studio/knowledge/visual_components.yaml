@@ -610,3 +610,85 @@ components:
         value_type: number_list
         description: 例として流す入力値。
     example: "x -> z -> a -> y の順に光らせる。"
+
+  - id: dense_layer
+    name: Dense Layer
+    category: neural_network
+    description: 複数のニューロンを縦に並べ、1つの層として表示する。
+    use_when:
+      - 全結合ニューラルネットワークの入力層、隠れ層、出力層を説明する
+      - 単純パーセプトロンが複数並ぶことを見せる
+    avoid_when:
+      - 1つのニューロンだけを主役にする場面
+    visual_type: text
+    template_support:
+      - fully_connected_network
+      - storyboard_only
+    params:
+      - name: layer_sizes
+        value_type: number_list
+        description: 各層のノード数。
+    example: "入力3個、隠れ4個、出力2個の層を左から右へ並べる。"
+
+  - id: fully_connected_edges
+    name: Fully Connected Edges
+    category: neural_network
+    description: 前の層の全ノードから次の層の全ノードへ線を引き、全結合を表す。
+    use_when:
+      - 全結合という言葉の意味を視覚化する
+      - W行列が多数の重みをまとめたものだと説明する
+    avoid_when:
+      - 疎結合や畳み込みのように接続が限定される構造を説明する場面
+    visual_type: vector
+    template_support:
+      - fully_connected_network
+      - storyboard_only
+    params:
+      - name: connection_opacity
+        value_type: number
+        description: 接続線の透明度。
+        default: 0.45
+    example: "入力層の各ノードから隠れ層の各ノードへ薄い線を引く。"
+
+  - id: layer_activation
+    name: Layer Activation
+    category: neural_network
+    description: 各ニューロンの線形和を活性化関数へ通し、次の層へ渡す値に変換する。
+    use_when:
+      - h = sigma(Wx + b) のsigmaの役割を説明する
+      - 線形変換だけでなく非線形変換が入ることを見せる
+    avoid_when:
+      - 活性化関数を使わない線形モデルを説明する場面
+    visual_type: formula
+    template_support:
+      - fully_connected_network
+      - storyboard_only
+    params:
+      - name: activation
+        value_type: enum
+        description: 表示する活性化関数。
+        default: relu
+        allowed_values:
+          - relu
+          - sigmoid
+          - tanh
+    example: "Wx+bのあとにReLUを通してhを作る。"
+
+  - id: softmax_output
+    name: Softmax Output
+    category: neural_network
+    description: 出力層のlogitsをクラスごとの確率分布へ変換する。
+    use_when:
+      - 分類タスクの出力を確率として読む
+      - クロスエントロピーへ接続する前段を説明する
+    avoid_when:
+      - 回帰タスクや2値の単純なstep出力を説明する場面
+    visual_type: axis
+    template_support:
+      - fully_connected_network
+      - storyboard_only
+    params:
+      - name: class_labels
+        value_type: string_list
+        description: 出力クラス名。
+    example: "猫と犬のlogitsをsoftmaxで確率バーに変える。"

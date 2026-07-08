@@ -14,6 +14,7 @@ from math_animation_studio.schema import ExampleValue, Storyboard, VisualObject
 from math_animation_studio.safe_presets import normalize_loss_surface_preset
 from math_animation_studio.timing import (
     cross_entropy_timeline_segments,
+    fully_connected_timeline_segments,
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     gradient_surface_3d_timeline_segments,
@@ -172,6 +173,25 @@ class PerceptronParams(BaseModel):
     narration_lines: list[str] = Field(default_factory=list)
 
 
+class FullyConnectedParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = "Fully Connected Neural Network"
+    target_duration_seconds: float = Field(default=88.0, ge=5, le=180)
+    formula_latex: str = r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)"
+    layer_sizes: tuple[int, int, int] = (3, 4, 2)
+    input_labels: tuple[str, str, str] = (r"x_1", r"x_2", r"x_3")
+    hidden_labels: tuple[str, str, str, str] = (r"h_1", r"h_2", r"h_3", r"h_4")
+    class_labels: tuple[str, str] = ("猫", "犬")
+    input_values: tuple[float, float, float] = (0.8, 0.3, 0.6)
+    activation: Literal["relu", "sigmoid", "tanh"] = "relu"
+    output_probabilities: tuple[float, float] = (0.72, 0.28)
+    segment_durations: dict[str, float] = Field(default_factory=dict)
+    segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
+    narration_lines: list[str] = Field(default_factory=list)
+
+
 class ManimGenerator:
     def __init__(
         self,
@@ -188,7 +208,7 @@ class ManimGenerator:
         self,
         storyboard: Storyboard,
         output_path: Path,
-    ) -> GradientDescentParams | PenaltyCurveParams | PerceptronParams:
+    ) -> GradientDescentParams | PenaltyCurveParams | PerceptronParams | FullyConnectedParams:
         template_name = self._select_template(storyboard)
         if template_name == "gradient_descent_3d":
             params = self._gradient_descent_params_from_storyboard(storyboard)
@@ -196,6 +216,9 @@ class ManimGenerator:
         elif template_name == "penalty_curve":
             params = self._penalty_curve_params_from_storyboard(storyboard)
             template = self._environment().get_template("penalty_curve.py.j2")
+        elif template_name == "fully_connected_network":
+            params = self._fully_connected_params_from_storyboard(storyboard)
+            template = self._environment().get_template("fully_connected_network.py.j2")
         else:
             params = self._perceptron_params_from_storyboard(storyboard)
             template = self._environment().get_template("perceptron.py.j2")
@@ -211,14 +234,23 @@ class ManimGenerator:
             return "GradientDescent3DScene"
         if template_name == "perceptron":
             return "PerceptronScene"
+        if template_name == "fully_connected_network":
+            return "FullyConnectedNetworkScene"
         return "CrossEntropyPenaltyScene"
 
     def _select_template(self, storyboard: Storyboard) -> str:
-        supported_templates = {"auto", "gradient_descent_3d", "penalty_curve", "perceptron"}
+        supported_templates = {
+            "auto",
+            "gradient_descent_3d",
+            "penalty_curve",
+            "perceptron",
+            "fully_connected_network",
+        }
         if self.template not in supported_templates:
             raise GeneratorError(
                 f"Unsupported template '{self.template}'. "
-                "Use 'auto', 'gradient_descent_3d', 'penalty_curve', or 'perceptron'."
+                "Use 'auto', 'gradient_descent_3d', 'penalty_curve', "
+                "'perceptron', or 'fully_connected_network'."
             )
 
         concept = _normalized_concept(storyboard.concept)
@@ -229,15 +261,19 @@ class ManimGenerator:
                 return "penalty_curve"
             if concept == "perceptron":
                 return "perceptron"
+            if concept in {"fully_connected_network", "neural_network"}:
+                return "fully_connected_network"
             raise GeneratorError(
                 "MVP render templates support concept=gradient_descent, "
-                "concept=cross_entropy, or concept=perceptron."
+                "concept=cross_entropy, concept=perceptron, "
+                "or concept=fully_connected_network."
             )
 
         expected_concept = {
             "gradient_descent_3d": "gradient_descent",
             "penalty_curve": "cross_entropy",
             "perceptron": "perceptron",
+            "fully_connected_network": "fully_connected_network",
         }[self.template]
         if concept != expected_concept:
             raise GeneratorError(
@@ -465,6 +501,59 @@ class ManimGenerator:
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
+    def _fully_connected_params_from_storyboard(self, storyboard: Storyboard) -> FullyConnectedParams:
+        values = storyboard.examples[0].values if storyboard.examples else {}
+        layer_sizes = _int_sequence(values.get("layer_sizes"), (3, 4, 2), expected_length=3)
+        input_count, hidden_count, output_count = layer_sizes
+        input_labels = _string_sequence(
+            values.get("input_labels"),
+            tuple(f"x_{index}" for index in range(1, input_count + 1)),
+            expected_length=input_count,
+        )
+        hidden_labels = _string_sequence(
+            values.get("hidden_labels"),
+            tuple(f"h_{index}" for index in range(1, hidden_count + 1)),
+            expected_length=hidden_count,
+        )
+        class_labels = _string_sequence(
+            values.get("class_labels"),
+            tuple(f"class {index}" for index in range(1, output_count + 1)),
+            expected_length=output_count,
+        )
+        input_values = _float_sequence(
+            values.get("input_values"),
+            tuple(round(0.25 + 0.18 * index, 2) for index in range(input_count)),
+            expected_length=input_count,
+        )
+        activation = str(values.get("activation", "relu")).strip().lower()
+        if activation not in {"relu", "sigmoid", "tanh"}:
+            activation = "relu"
+        target_duration_seconds = self.target_duration_seconds or 88
+        timeline = fully_connected_timeline_segments(target_duration_seconds)
+        probabilities = _float_sequence(
+            values.get("output_probabilities"),
+            (0.72, 0.28) if output_count == 2 else tuple(1.0 / output_count for _ in range(output_count)),
+            expected_length=output_count,
+        )
+        normalized_probabilities = _normalize_probabilities(probabilities)
+        return FullyConnectedParams(
+            target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),
+            title=_title_from_storyboard(storyboard),
+            formula_latex=storyboard.formula
+            or r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+            layer_sizes=layer_sizes,  # type: ignore[arg-type]
+            input_labels=tuple(input_labels),  # type: ignore[arg-type]
+            hidden_labels=tuple(hidden_labels),  # type: ignore[arg-type]
+            class_labels=tuple(class_labels),  # type: ignore[arg-type]
+            input_values=tuple(input_values),  # type: ignore[arg-type]
+            activation=activation,  # type: ignore[arg-type]
+            output_probabilities=tuple(normalized_probabilities),  # type: ignore[arg-type]
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
+            narration_lines=[scene.narration for scene in storyboard.scenes],
+        )
+
 
 def _normalized_concept(concept: str) -> str:
     return concept.strip().lower().replace("-", "_")
@@ -507,6 +596,8 @@ def _title_from_storyboard(storyboard: Storyboard) -> str:
         return "Cross Entropy Loss"
     if storyboard.concept == "perceptron":
         return "Simple Perceptron"
+    if storyboard.concept == "fully_connected_network":
+        return "Fully Connected Neural Network"
     return storyboard.concept.replace("_", " ").title()
 
 
@@ -561,6 +652,21 @@ def _float_sequence(
     return tuple(numbers)
 
 
+def _int_sequence(
+    value: object,
+    fallback: tuple[int, ...],
+    *,
+    expected_length: int,
+) -> tuple[int, ...]:
+    numbers = _float_sequence(
+        value,
+        tuple(float(item) for item in fallback),
+        expected_length=expected_length,
+    )
+    ints = tuple(max(1, int(round(item))) for item in numbers)
+    return ints
+
+
 def _string_sequence(
     value: object,
     fallback: tuple[str, ...],
@@ -583,6 +689,17 @@ def _string_sequence(
     if not isinstance(items, list | tuple) or len(items) != expected_length:
         return fallback
     return tuple(str(item) for item in items)
+
+
+def _normalize_probabilities(values: tuple[float, ...]) -> tuple[float, ...]:
+    clipped = [max(0.0, float(value)) for value in values]
+    total = sum(clipped)
+    if total <= 0:
+        return tuple(1.0 / len(clipped) for _ in clipped)
+    normalized = [value / total for value in clipped]
+    correction = 1.0 - sum(normalized)
+    normalized[-1] += correction
+    return tuple(normalized)
 
 
 def _float_layout_param(

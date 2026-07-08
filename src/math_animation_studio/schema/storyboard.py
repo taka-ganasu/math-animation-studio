@@ -89,8 +89,12 @@ class AnimationComponent(StrictModel):
         "formula_bridge",
         "activation_function",
         "decision_boundary",
+        "dense_layer",
         "forward_pass",
+        "fully_connected_edges",
+        "layer_activation",
         "perceptron_node",
+        "softmax_output",
         "weighted_connection",
         "weighted_sum",
     ]

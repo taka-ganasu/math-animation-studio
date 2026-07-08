@@ -325,6 +325,8 @@ def _render_concept(explanation_plan: ExplanationPlan) -> str:
         return "gradient_descent"
     if explanation_plan.selected_animation_pattern_id == "perceptron_decision_boundary":
         return "perceptron"
+    if explanation_plan.selected_animation_pattern_id == "fully_connected_forward_pass":
+        return "fully_connected_network"
     return explanation_plan.target_concept
 
 

@@ -13,10 +13,14 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert "probability_bars" in catalog
     assert "gradient_arrow" in catalog
     assert "perceptron_node" in catalog
+    assert "dense_layer" in catalog
+    assert "fully_connected_edges" in catalog
+    assert "softmax_output" in catalog
     assert "decision_boundary" in catalog
     assert catalog["formula_focus"].params[0].name == "formula_focus"
     assert catalog["gradient_arrow"].visual_type == "vector"
     assert catalog["perceptron_node"].category == "neural_network"
+    assert catalog["dense_layer"].category == "neural_network"
     assert catalog["decision_boundary"].visual_type == "axis"
     assert catalog["terrain_metaphor"].category == "metaphor"
     assert catalog["formula_bridge"].visual_type == "formula"
@@ -43,3 +47,5 @@ def test_visual_component_prompt_summary_is_llm_readable() -> None:
     assert "function_preset=['quadratic_ripple', 'double_well_2d']" in summary
     assert "- perceptron_node:" in summary
     assert "templates=perceptron" in summary
+    assert "- dense_layer:" in summary
+    assert "templates=fully_connected_network" in summary

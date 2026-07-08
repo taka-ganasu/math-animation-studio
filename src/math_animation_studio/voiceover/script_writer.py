@@ -7,6 +7,7 @@ from math_animation_studio.schema import Storyboard
 from math_animation_studio.timing import (
     TimelineSegment,
     cross_entropy_timeline_segments,
+    fully_connected_timeline_segments,
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     gradient_surface_3d_timeline_segments,
@@ -80,6 +81,20 @@ class VoiceoverScriptWriter:
                 "活性化関数でゼロか一の判断へ変えるモデルです。"
                 "2つの入力なら、決定境界は平面上の直線として見えます。"
             )
+        if concept == "fully_connected_network":
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
+                return "".join(
+                    segment.text
+                    for segment in self.write_segments(
+                        storyboard,
+                        target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
+                    )
+                )
+            return (
+                "全結合ニューラルネットワークは、複数のニューロンを層として並べ、"
+                "前の層のすべてのノードから次の層のすべてのノードへ値を渡すモデルです。"
+            )
 
         sentences = [storyboard.one_sentence_summary]
         for scene in storyboard.scenes[:3]:
@@ -114,6 +129,11 @@ class VoiceoverScriptWriter:
                 voice_rate=voice_rate,
             )
             text_by_id = _perceptron_segment_text()
+            return _segments_from_timeline(timeline, text_by_id)
+
+        if concept == "fully_connected_network":
+            timeline = fully_connected_timeline_segments(target_duration_seconds)
+            text_by_id = _fully_connected_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
@@ -420,6 +440,20 @@ def _perceptron_segment_text() -> dict[str, str]:
         "activation": "step関数は、zがゼロ以上なら一、ゼロ未満ならゼロに変えます。",
         "decision_boundary": "2つの入力を平面に置くと、zがゼロになる場所が決定境界の直線になります。",
         "summary": "まとめると、重み付き和でスコアを作り、活性化関数で判断へ変えるのが単純パーセプトロンです。",
+    }
+
+
+def _fully_connected_segment_text() -> dict[str, str]:
+    return {
+        "title_intro": "今回は、全結合ニューラルネットワークを見ていきます。単純パーセプトロンを層として並べたものです。",
+        "formula_affine": "まずW1xプラスb1です。これは、入力を隠れ層の各ニューロンへ重み付きで集める計算です。",
+        "formula_activation": "次にシグマです。線形和をそのまま渡さず、活性化関数で隠れ表現hに変えます。",
+        "formula_output": "W2hプラスb2で、隠れ層の情報を出力層のスコアへ変換します。",
+        "layer_stack": "図では、入力層、隠れ層、出力層を左から右へ並べます。",
+        "full_connections": "全結合とは、前の層のすべてのノードが、次の層のすべてのノードにつながるという意味です。",
+        "forward_pass": "順伝播では、値が左から右へ一方向に流れます。入力、隠れ層、出力層の順です。",
+        "softmax_output": "最後にsoftmaxを通すと、出力スコアがクラスごとの確率になります。",
+        "summary": "まとめると、全結合ネットワークは、重み行列で層をつなぎ、活性化を通して表現を作るモデルです。",
     }
 
 

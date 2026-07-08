@@ -69,3 +69,17 @@ def test_formula_first_blueprint_supports_perceptron_components() -> None:
     assert "weighted_sum" in by_role["formula_structure"].preferred_component_kinds
     assert "perceptron_node" in by_role["concrete_example"].preferred_component_kinds
     assert "decision_boundary" in by_role["visualization"].preferred_component_kinds
+
+
+def test_formula_first_blueprint_supports_fully_connected_components() -> None:
+    blueprint = default_formula_first_blueprint(
+        target_concept="fully_connected_network",
+        animation_pattern_id="fully_connected_forward_pass",
+    )
+
+    by_role = {beat.role: beat for beat in blueprint.beats}
+
+    assert "layer_activation" in by_role["formula_structure"].preferred_component_kinds
+    assert "dense_layer" in by_role["concrete_example"].preferred_component_kinds
+    assert "fully_connected_edges" in by_role["visualization"].preferred_component_kinds
+    assert "softmax_output" in by_role["visualization"].preferred_component_kinds

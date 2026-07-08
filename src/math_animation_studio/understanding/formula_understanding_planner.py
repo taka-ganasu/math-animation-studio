@@ -178,6 +178,19 @@ def _coerce_animation_family(
     if "gradient_descent" in text or "勾配降下" in text or "\\nabla" in text or "∇" in text:
         return "trajectory_on_surface"
     if (
+        "fully_connected" in text
+        or "fully connected" in text
+        or "dense" in text
+        or "multilayer" in text
+        or "neural_network" in text
+        or "neural network" in text
+        or "全結合" in text
+        or "ニューラルネットワーク" in text
+        or "多層" in text
+        or "softmax" in text and "\\sigma" in text
+    ):
+        return "fully_connected_forward_pass"
+    if (
         "perceptron" in text
         or "パーセプトロン" in text
         or "単純パーセプトロン" in text

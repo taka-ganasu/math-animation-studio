@@ -284,6 +284,66 @@ $w_1x_1 + w_2x_2 + b = 0$ を2D平面上の境界線として表示します。
 主なparams:
 - `input_values`
 
+### dense_layer
+
+用途:
+複数のニューロンを縦に並べ、入力層、隠れ層、出力層として表示します。
+
+使う場面:
+- 全結合ニューラルネットワークの層構造を説明する
+- 単純パーセプトロンが層として複数並ぶことを見せる
+
+主なparams:
+- `layer_sizes`
+
+対応テンプレート:
+`fully_connected_network`, `storyboard_only`
+
+### fully_connected_edges
+
+用途:
+前の層のすべてのノードから、次の層のすべてのノードへ接続線を引きます。
+
+使う場面:
+- 「全結合」が全ノード間の接続であることを説明する
+- $W$ が多数の接続重みをまとめた行列であることを見せる
+
+主なparams:
+- `connection_opacity`
+
+対応テンプレート:
+`fully_connected_network`, `storyboard_only`
+
+### layer_activation
+
+用途:
+$h = \sigma(Wx + b)$ のように、線形和を活性化関数へ通して次の層へ渡す値に変換することを見せます。
+
+使う場面:
+- 隠れ層の出力がどのように作られるかを説明する
+- 線形変換だけではなく非線形変換が入ることを見せる
+
+主なparams:
+- `activation`: `relu`, `sigmoid`, `tanh`
+
+対応テンプレート:
+`fully_connected_network`, `storyboard_only`
+
+### softmax_output
+
+用途:
+出力層のスコアをクラスごとの確率分布へ変換して表示します。
+
+使う場面:
+- 分類タスクの出力を確率として読む
+- クロスエントロピーへ接続する前段を説明する
+
+主なparams:
+- `class_labels`
+
+対応テンプレート:
+`fully_connected_network`, `storyboard_only`
+
 ## メタファー
 
 ### terrain_metaphor

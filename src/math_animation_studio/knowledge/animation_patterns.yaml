@@ -65,6 +65,24 @@ patterns:
       - activation_curve
       - decision_boundary
 
+  - id: fully_connected_forward_pass
+    name: Fully Connected Forward Pass
+    suitable_for:
+      - fully_connected_network
+      - neural_network
+      - multilayer_perceptron
+      - dense_layer
+      - forward_pass
+    description: 入力層、隠れ層、出力層をノードとして並べ、全結合の接続と順伝播を見せる。
+    visual_metaphor: 1つのパーセプトロンを横に並べ、層として次の層へすべて接続する。
+    manim_template: fully_connected_network.py.j2
+    required_visual_objects:
+      - formula
+      - layers
+      - weighted_connections
+      - activation
+      - output_distribution
+
   - id: row_column_matrix_product
     name: Row Column Matrix Product
     suitable_for:

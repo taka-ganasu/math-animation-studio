@@ -59,12 +59,33 @@ def detect_sample_key(formula: str) -> str:
             "concept_hint:勾配降下法",
         )
     )
+    wants_fully_connected = any(
+        keyword in normalized
+        for keyword in (
+            "concept_hint:fully_connected_network",
+            "concept_hint:fullyconnectednetwork",
+            "concept_hint:fully_connected",
+            "concept_hint:neural_network",
+            "concept_hint:dense_network",
+            "concept_hint:multilayer_perceptron",
+            "concept_hint:mlp",
+            "全結合",
+            "ニューラルネットワーク",
+            "多層パーセプトロン",
+            "fullyconnected",
+            "denselayer",
+            "dense_network",
+            "multilayerperceptron",
+            "softmax(w_2",
+            "w_2\\sigma",
+            "w2sigma",
+        )
+    )
     wants_perceptron = any(
         keyword in normalized
         for keyword in (
             "concept_hint:perceptron",
             "concept_hint:simple_perceptron",
-            "concept_hint:neural_network",
             "perceptron",
             "パーセプトロン",
             "単純パーセプトロン",
@@ -76,6 +97,8 @@ def detect_sample_key(formula: str) -> str:
             "decisionboundary",
         )
     )
+    if wants_fully_connected:
+        return "fully_connected_network"
     if wants_perceptron:
         return "perceptron"
     if wants_gradient_descent:
@@ -162,6 +185,30 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["self-attentionかcross-attentionかは式だけでは断定できない。"],
             confidence=0.85,
         )
+    if key == "fully_connected_network":
+        return FormulaAnalysis(
+            raw_formula=formula,
+            normalized_formula_latex=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+            detected_name="fully_connected_network",
+            short_description="全結合ニューラルネットワークは、各層のすべての入力を重み付きで受け取り、活性化を通して次の層へ渡すモデルである。",
+            symbols=[
+                SymbolRole(symbol="x", normalized_symbol="input_vector", role="input", meaning="入力特徴量ベクトル", intuition="モデルに渡す材料のまとまり", confidence=0.9),
+                SymbolRole(symbol=r"W_1, W_2", normalized_symbol="weight_matrices", role="parameter", meaning="層どうしの接続重みをまとめた行列", intuition="どの入力をどのニューロンへどれくらい効かせるか", confidence=0.9),
+                SymbolRole(symbol=r"b_1, b_2", normalized_symbol="bias_vectors", role="parameter", meaning="各層の判定基準をずらすバイアス", intuition="各ニューロンの基準点調整", confidence=0.85),
+                SymbolRole(symbol="h", normalized_symbol="hidden_activation", role="intermediate", meaning="隠れ層の出力", intuition="入力を一度変換した中間表現", confidence=0.9),
+                SymbolRole(symbol=r"\hat{y}", normalized_symbol="predicted_distribution", role="output", meaning="クラスごとの予測確率", intuition="モデルの最終的な答えの配分", confidence=0.9),
+            ],
+            operations=[
+                OperationAnalysis(operation=r"W_1x+b_1", meaning="入力を隠れ層の各ニューロンへ全結合で集める", intuition="すべての入力が各ニューロンに線でつながる", visual_hint="入力層から隠れ層への全接続を見せる"),
+                OperationAnalysis(operation=r"\sigma(\cdot)", meaning="線形和を非線形な値へ変換する", intuition="ただの足し算に曲がりを加える", visual_hint="隠れ層ノードを光らせて活性化を示す"),
+                OperationAnalysis(operation=r"\mathrm{softmax}", meaning="出力スコアを確率分布へ変換する", intuition="どのクラスらしいかを合計1の確率にする", visual_hint="出力バーを確率として表示する"),
+            ],
+            inputs=["x"],
+            outputs=[r"\hat{y}"],
+            assumptions=["分類問題", "入力層、隠れ層、出力層の小さなネットワークとして扱う", "学習ではなく順伝播を扱う"],
+            ambiguity_notes=["層数や活性化関数は文脈によって変わるため、MVPでは3-4-2の小さな例に固定する。"],
+            confidence=0.9,
+        )
     if key == "perceptron":
         return FormulaAnalysis(
             raw_formula=formula,
@@ -204,6 +251,8 @@ def sample_classification(key: str) -> ConceptClassification:
         return ConceptClassification(primary_domain="optimization", primary_concept="gradient_descent", related_concepts=["gradient", "learning_rate", "loss_minimization"], difficulty_level="undergraduate_intro", recommended_animation_family="trajectory_on_surface", confidence=0.95)
     if key == "scaled_dot_product_attention":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="scaled_dot_product_attention", related_concepts=["matrix_multiplication", "softmax", "weighted_sum"], difficulty_level="undergraduate_advanced", recommended_animation_family="matrix_similarity_heatmap", confidence=0.85)
+    if key == "fully_connected_network":
+        return ConceptClassification(primary_domain="deep_learning", primary_concept="fully_connected_network", related_concepts=["dense_layer", "multilayer_perceptron", "activation_function", "softmax", "forward_pass"], difficulty_level="undergraduate_intro", recommended_animation_family="fully_connected_forward_pass", confidence=0.9)
     if key == "perceptron":
         return ConceptClassification(primary_domain="machine_learning", primary_concept="perceptron", related_concepts=["linear_classifier", "activation_function", "decision_boundary", "neural_network"], difficulty_level="undergraduate_intro", recommended_animation_family="perceptron_decision_boundary", confidence=0.9)
     return ConceptClassification(primary_domain="unknown", primary_concept="unknown_formula", related_concepts=[], difficulty_level="undergraduate_intro", recommended_animation_family="generic_symbol_decomposition", confidence=0.35)
@@ -238,6 +287,17 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
                 PrerequisiteItem(concept="重み付き平均", why_needed="Valueを混ぜる最終操作を理解するため", priority="helpful", suggested_micro_explanation="重要なものを大きな重みで足し合わせる。"),
             ],
             likely_blockers=["Q/K/Vの役割が混ざること", "softmax後の重みがValueを混ぜることを見落とすこと"],
+        )
+    if key == "fully_connected_network":
+        return PrerequisiteMap(
+            target_concept="fully_connected_network",
+            prerequisites=[
+                PrerequisiteItem(concept="単純パーセプトロン", why_needed="1つのニューロンの計算を層へ拡張するため", priority="required", suggested_micro_explanation="入力を重み付きで足し、活性化関数へ通す部品がニューロンである。"),
+                PrerequisiteItem(concept="行列とベクトル", why_needed="W x が多数の重み付き和を一度に表すため", priority="required", suggested_micro_explanation="行列の各行が、1つのニューロンに入る重みのまとまりになる。"),
+                PrerequisiteItem(concept="活性化関数", why_needed="層の間で非線形な変換を入れるため", priority="helpful", suggested_micro_explanation="ReLUやsigmoidは、線形和を次の層へ渡す値に変える。"),
+                PrerequisiteItem(concept="softmax", why_needed="分類の出力を確率として読むため", priority="helpful", suggested_micro_explanation="複数クラスのスコアを合計1の確率分布へ変換する。"),
+            ],
+            likely_blockers=["全結合がすべてのノード間の接続を意味すること", "Wが1つの重みではなく重みの表であること", "ここでは学習ではなく順伝播だけを扱うこと"],
         )
     if key == "perceptron":
         return PrerequisiteMap(
@@ -393,6 +453,124 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             ],
             misconceptions=["勾配降下法が常に一番低い谷を見つけるわけではない", "1変数の勾配は曲線の傾きとして読める", "3次関数より下に有界な4次関数の方が損失曲線として自然である"],
             next_questions_to_study=["局所最小", "大域最小", "学習率", "確率的勾配降下法", "ランダム初期化"],
+        )
+    if key == "fully_connected_network":
+        return ExplanationPlan(
+            formula=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+            target_concept="fully_connected_network",
+            one_sentence_summary="全結合ニューラルネットワークは、1つのニューロンを層として並べ、すべての前層ノードから次層ノードへ値を渡す。",
+            audience=audience,
+            teaching_strategy="visual_first",
+            recommended_examples=[
+                TeachingExample(
+                    title="3つの入力から猫/犬を分類する小さなネットワーク",
+                    description="入力3個、隠れ層4ニューロン、出力2クラスの小さな全結合ネットワークで順伝播を見る。",
+                    why_it_works="ノード数を小さく固定すると、全結合の線、行列W、活性化、softmaxの流れを1画面で追いやすい。",
+                    concrete_values={
+                        "layer_sizes": [3, 4, 2],
+                        "input_labels": ["耳", "鼻", "輪郭"],
+                        "hidden_labels": ["h_1", "h_2", "h_3", "h_4"],
+                        "class_labels": ["猫", "犬"],
+                        "input_values": [0.8, 0.3, 0.6],
+                        "activation": "relu",
+                    },
+                )
+            ],
+            selected_animation_pattern_id="fully_connected_forward_pass",
+            explanation_steps=[
+                ExplanationStep(
+                    id="step_01",
+                    scene_role="title_intro",
+                    title="全結合ネットワークを見る",
+                    learning_goal="単純パーセプトロンから層への拡張をつかむ",
+                    explanation="今回は、単純パーセプトロンを複数並べた全結合ニューラルネットワークを見ます。",
+                    visual_idea="入力層、隠れ層、出力層を横並びで表示する。",
+                    formula_focus=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="dense_layer", description="入力層、隠れ層、出力層を並べる"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_02",
+                    scene_role="formula_structure",
+                    title="まず全結合の線形変換を見る",
+                    learning_goal="W_1x+b_1が複数ニューロン分の重み付き和であることを理解する",
+                    explanation="W1x+b1は、隠れ層の各ニューロンが入力を重み付きで全部受け取る計算です。",
+                    visual_idea="入力層から隠れ層へのすべての接続を表示し、W1x+b1を強調する。",
+                    formula_focus=r"W_1x+b_1",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="fully_connected_edges", description="入力層から隠れ層への全結合を見せる"),
+                        PlannedAnimationComponent(kind="formula_focus", description="W1x+b1を強調する", params={"formula_focus": r"W_1x+b_1"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_03",
+                    scene_role="formula_structure",
+                    title="活性化で隠れ表現にする",
+                    learning_goal="sigmaが層の出力hを作る役割を理解する",
+                    explanation="線形和をそのまま渡すのではなく、活性化関数sigmaを通して隠れ表現hにします。",
+                    visual_idea="隠れ層ノードを光らせ、h = sigma(W1x+b1) と表示する。",
+                    formula_focus=r"h=\sigma(W_1x+b_1)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="layer_activation", description="隠れ層の活性化を表示する", params={"activation": "relu"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_04",
+                    scene_role="concrete_example",
+                    title="次の層へもう一度つなぐ",
+                    learning_goal="層を重ねるとは、同じ計算を次の層へ渡すことだと理解する",
+                    explanation="隠れ層の出力hは、次の出力層へまた全結合で渡されます。",
+                    visual_idea="隠れ層から出力層への全接続を順番にハイライトする。",
+                    formula_focus=r"W_2h+b_2",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="dense_layer", description="隠れ層と出力層を表示する"),
+                        PlannedAnimationComponent(kind="fully_connected_edges", description="隠れ層から出力層への全結合を見せる"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_05",
+                    scene_role="visualization",
+                    title="順伝播として値を流す",
+                    learning_goal="入力から出力までの計算順序を理解する",
+                    explanation="順伝播では、入力から隠れ層、出力層、softmaxへ一方向に値が流れます。",
+                    visual_idea="左から右へノードと接続を光らせる。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="forward_pass", description="入力から出力への値の流れをハイライトする"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_06",
+                    scene_role="visualization",
+                    title="softmaxで確率にする",
+                    learning_goal="出力スコアをクラス確率として読む",
+                    explanation="最後にsoftmaxを通すと、猫と犬のようなクラスごとの確率になります。",
+                    visual_idea="出力logitsから確率バーへ変換する。",
+                    formula_focus=r"\hat{y}=\mathrm{softmax}(o)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="softmax_output", description="出力をクラス確率バーとして表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_07",
+                    scene_role="summary",
+                    title="最後に式へ戻る",
+                    learning_goal="式と層の図を対応づける",
+                    explanation="まとめると、全結合ネットワークは、行列Wで層どうしをすべてつなぎ、活性化を通して次の層へ渡すモデルです。",
+                    visual_idea="式のW、sigma、softmaxをネットワーク図の場所に対応づける。",
+                    formula_focus=r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="summary", description="式と層構造をまとめる"),
+                        PlannedAnimationComponent(kind="formula_focus", description="式全体を強調する", params={"formula_focus": r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)"}),
+                    ],
+                ),
+            ],
+            misconceptions=[
+                "全結合は、隣り合う層のすべてのノード同士が接続されるという意味である",
+                "Wは1つの重みではなく、たくさんの接続重みをまとめた行列である",
+                "ここでは学習ではなく、学習済み重みでの順伝播だけを見ている",
+            ],
+            next_questions_to_study=["多層パーセプトロン", "誤差逆伝播", "ReLU", "softmaxとクロスエントロピー"],
         )
     if key == "perceptron":
         return ExplanationPlan(

@@ -37,3 +37,17 @@ concepts:
       - "a = step(w^T x + b)"
       - "z = w_1 x_1 + w_2 x_2 + b"
     recommended_animation_family: perceptron_decision_boundary
+
+  fully_connected_network:
+    domain: deep_learning
+    aliases:
+      - fully connected neural network
+      - dense neural network
+      - multilayer perceptron
+      - 全結合ニューラルネットワーク
+      - 全結合層
+      - 多層パーセプトロン
+    likely_formulas:
+      - "\\hat{y} = \\mathrm{softmax}(W_2 \\sigma(W_1 x + b_1) + b_2)"
+      - "h = \\sigma(Wx + b)"
+    recommended_animation_family: fully_connected_forward_pass

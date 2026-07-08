@@ -117,6 +117,19 @@ PERCEPTRON_REFERENCE_VOICE_RATE = 120.0
 PERCEPTRON_MIN_TIMELINE_SECONDS = 65.0
 
 
+FULLY_CONNECTED_BASE_TIMELINE = (
+    TimelineSegment("title_intro", 10.0, "intro_formula"),
+    TimelineSegment("formula_affine", 11.0, "formula_parts_focus", r"W_1x+b_1"),
+    TimelineSegment("formula_activation", 9.5, "formula_parts_focus", r"\sigma"),
+    TimelineSegment("formula_output", 8.0, "formula_parts_focus", r"W_2h+b_2"),
+    TimelineSegment("layer_stack", 10.0, "dense_layer"),
+    TimelineSegment("full_connections", 10.0, "fully_connected_edges"),
+    TimelineSegment("forward_pass", 10.5, "forward_pass"),
+    TimelineSegment("softmax_output", 8.0, "softmax_output"),
+    TimelineSegment("summary", 11.0, "summary", r"\hat{y}=\mathrm{softmax}(W_2\sigma(W_1x+b_1)+b_2)"),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -203,6 +216,14 @@ def perceptron_voice_adjusted_min_seconds(voice_rate: int | float | None = None)
     rate = max(1.0, float(voice_rate))
     adjusted = PERCEPTRON_MIN_NARRATION_SECONDS * PERCEPTRON_REFERENCE_VOICE_RATE / rate
     return max(PERCEPTRON_MIN_TIMELINE_SECONDS, adjusted)
+
+
+def fully_connected_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return FULLY_CONNECTED_BASE_TIMELINE
+    return scale_timeline(FULLY_CONNECTED_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(

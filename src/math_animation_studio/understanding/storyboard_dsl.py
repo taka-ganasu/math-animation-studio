@@ -69,6 +69,12 @@ PATTERN_COMPONENTS: dict[str, dict[SceneRole, tuple[str, ...]]] = {
         "visualization": ("decision_boundary", "activation_function", "forward_pass"),
         "summary": ("summary", "formula_focus"),
     },
+    "fully_connected_forward_pass": {
+        "formula_structure": ("formula_focus", "weighted_sum", "layer_activation"),
+        "concrete_example": ("dense_layer", "fully_connected_edges", "forward_pass"),
+        "visualization": ("dense_layer", "fully_connected_edges", "layer_activation", "softmax_output"),
+        "summary": ("summary", "formula_focus"),
+    },
 }
 
 

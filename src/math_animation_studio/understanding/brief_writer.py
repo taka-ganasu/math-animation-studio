@@ -187,6 +187,12 @@ def _animation_policy_rows(
             "- 方針: 1つのニューロンで入力、重み付き和、活性化、出力の順伝播を見せ、2D平面の決定境界へ接続する。",
             "- 比喩: 判断材料を重み付きで足し合わせ、境界線のどちら側かで0/1を決める。",
         ]
+    if selected_pattern.id == "fully_connected_forward_pass":
+        return [
+            "- パターン: Fully Connected Forward Pass",
+            "- 方針: 入力層、隠れ層、出力層を並べ、全結合の線と順伝播を左から右へ見せる。",
+            "- 比喩: 1つのパーセプトロンを横に複数並べ、層として次の層へすべてつなぐ。",
+        ]
     return [
         f"- パターン: {selected_pattern.name}",
         f"- 方針: {selected_pattern.description}",

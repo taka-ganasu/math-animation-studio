@@ -214,6 +214,27 @@ math-anim plan \
 
 成功すると、`outputs/perceptron_phase1/video_with_voice.mp4` が作成されます。学習や誤差逆伝播ではなく、まずは学習済み重みでの順伝播に絞っています。
 
+### 全結合ニューラルネットワーク: 層と順伝播
+
+`--concept-hint fully_connected_network` を指定すると、入力層、隠れ層、出力層、全結合の接続、softmax出力を順に説明する動画を生成できます。学習や誤差逆伝播ではなく、まずは推論時の順伝播に絞っています。
+
+```bash
+math-anim plan \
+  --formula "\\hat{y}=\\mathrm{softmax}(W_2\\sigma(W_1x+b_1)+b_2)" \
+  --goal "全結合ニューラルネットワークの順伝播を直感的に理解したい" \
+  --concept-hint fully_connected_network \
+  --audience high_school_math \
+  --domain-hint deep_learning \
+  --duration 88 \
+  --output-dir outputs/fully_connected_phase1 \
+  --no-llm \
+  --render \
+  --voiceover \
+  --voice-rate 130
+```
+
+成功すると、`outputs/fully_connected_phase1/video_with_voice.mp4` が作成されます。
+
 ## LLMで動的に教材企画を生成
 
 OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。
