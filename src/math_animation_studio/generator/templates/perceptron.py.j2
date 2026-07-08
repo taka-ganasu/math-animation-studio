@@ -27,8 +27,7 @@ Z_VALUE = W1 * X1 + W2 * X2 + BIAS
 A_VALUE = 1 if Z_VALUE >= 0 else 0
 
 
-def segment_duration(segment_id: str, fallback_seconds: float) -> float:
-    return max(0.05, float(SEGMENT_DURATIONS.get(segment_id, fallback_seconds)))
+{% include "shared/neural_scene_helpers.py.j2" %}
 
 
 def signed(value: float) -> str:
@@ -37,24 +36,7 @@ def signed(value: float) -> str:
     return f"- {abs(value):.2f}"
 
 
-class PerceptronScene(Scene):
-    def make_math(self, latex: str, fallback: str, font_size: int = 34) -> Mobject:
-        try:
-            return MathTex(latex, font_size=font_size)
-        except Exception:
-            return Text(fallback, font_size=font_size)
-
-    def make_label(self, text: str, font_size: int = 24, color: ManimColor = WHITE) -> Text:
-        label = Text(text, font_size=font_size, color=color)
-        if label.width > 11.4:
-            label.scale(11.4 / label.width)
-        return label
-
-    def wait_remaining(self, segment_seconds: float, used_seconds: float) -> None:
-        remaining = max(0.0, segment_seconds - used_seconds)
-        if remaining > 0.01:
-            self.wait(remaining)
-
+class PerceptronScene(MathAnimationSceneMixin, Scene):
     def construct(self) -> None:
         self.construct_title_intro()
         self.construct_formula_parts()

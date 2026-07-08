@@ -37,6 +37,7 @@ where = ["src"]
 math_animation_studio = [
   "samples/*.json",
   "generator/templates/*.j2",
+  "generator/templates/shared/*.j2",
   "knowledge/*.yaml",
   "llm/prompts/*.txt",
 ]
