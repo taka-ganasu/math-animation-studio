@@ -299,3 +299,34 @@ def test_plan_no_llm_chain_rule_outputs_storyboard(tmp_path) -> None:
     assert explanation_plan["selected_animation_pattern_id"] == "chain_rule_flow"
     assert "$$\n\\frac{dy}{dx}=\\frac{dy}{du}\\frac{du}{dx}\n$$" in brief
     assert "2階微分ではない" in brief
+
+
+def test_plan_no_llm_neural_network_transform_outputs_storyboard(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"h=\sigma(Wx+b)",
+            "--goal",
+            "ニューラルネットワークにおける線形変換・非線形変換・中間表現の意味を直感的に理解したい",
+            "--concept-hint",
+            "neural_network_transform",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    explanation_plan = json.loads((tmp_path / "explanation_plan.json").read_text(encoding="utf-8"))
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
+    assert storyboard.concept == "neural_network_transform"
+    assert storyboard.examples[0].values["activation"] == "relu"
+    assert explanation_plan["selected_animation_pattern_id"] == "neural_network_transform_flow"
+    assert "$$\nh=\\sigma(Wx+b)\n$$" in brief
+    assert "解きやすい座標系" in brief

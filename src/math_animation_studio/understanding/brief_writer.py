@@ -193,6 +193,12 @@ def _animation_policy_rows(
             "- 方針: 入力層、隠れ層、出力層を並べ、全結合の線と順伝播を左から右へ見せる。",
             "- 比喩: 1つのパーセプトロンを横に複数並べ、層として次の層へすべてつなぐ。",
         ]
+    if selected_pattern.id == "neural_network_transform_flow":
+        return [
+            "- パターン: Neural Network Transform Flow",
+            "- 方針: 入力特徴空間を線形変換と非線形変換で中間表現へ変え、最後の判断が単純になる様子を見せる。",
+            "- 比喩: データを解きやすい座標系へ変換する。",
+        ]
     if selected_pattern.id == "backpropagation_chain_rule":
         return [
             "- パターン: Backpropagation Chain Rule",

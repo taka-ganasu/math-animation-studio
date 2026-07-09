@@ -83,6 +83,25 @@ patterns:
       - activation
       - output_distribution
 
+  - id: neural_network_transform_flow
+    name: Neural Network Transform Flow
+    suitable_for:
+      - neural_network_transform
+      - nn_transform
+      - representation_learning
+      - linear_transformation
+      - activation_function
+      - hidden_representation
+    description: 入力特徴空間の点群を、線形変換と非線形変換で予測しやすい中間表現へ変える流れを見せる。
+    visual_metaphor: データを解きやすい座標系へ変換する。
+    manim_template: neural_network_transform.py.j2
+    required_visual_objects:
+      - formula
+      - feature_space
+      - transformed_space
+      - activation_curve
+      - decision_boundary
+
   - id: backpropagation_chain_rule
     name: Backpropagation Chain Rule
     suitable_for:

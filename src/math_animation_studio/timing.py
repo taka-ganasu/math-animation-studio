@@ -166,6 +166,20 @@ CHAIN_RULE_BASE_TIMELINE = (
 )
 
 
+NEURAL_NETWORK_TRANSFORM_BASE_TIMELINE = (
+    TimelineSegment("title_intro", 8.0, "intro_formula"),
+    TimelineSegment("formula_linear", 10.0, "formula_parts_focus", r"Wx+b"),
+    TimelineSegment("formula_activation", 9.0, "formula_parts_focus", r"\sigma"),
+    TimelineSegment("input_space", 10.0, "representation_space"),
+    TimelineSegment("linear_mixing", 12.0, "feature_axis_mixing", r"z=Wx+b"),
+    TimelineSegment("activation_gate", 10.0, "activation_gate", r"h=\mathrm{ReLU}(z)"),
+    TimelineSegment("representation_space", 12.0, "representation_space"),
+    TimelineSegment("decision_boundary", 10.0, "decision_boundary"),
+    TimelineSegment("stacked_layers", 10.0, "dense_layer", r"h_2=\sigma(W_2h_1+b_2)"),
+    TimelineSegment("summary", 9.0, "summary", r"h=\sigma(Wx+b)"),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -276,6 +290,14 @@ def chain_rule_timeline_segments(
     if target_duration_seconds is None:
         return CHAIN_RULE_BASE_TIMELINE
     return scale_timeline(CHAIN_RULE_BASE_TIMELINE, float(target_duration_seconds))
+
+
+def neural_network_transform_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return NEURAL_NETWORK_TRANSFORM_BASE_TIMELINE
+    return scale_timeline(NEURAL_NETWORK_TRANSFORM_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(

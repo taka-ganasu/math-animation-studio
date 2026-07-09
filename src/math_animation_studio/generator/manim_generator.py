@@ -20,6 +20,7 @@ from math_animation_studio.timing import (
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     gradient_surface_3d_timeline_segments,
+    neural_network_transform_timeline_segments,
     perceptron_timeline_segments,
     segment_duration_map,
     segment_metadata_map,
@@ -245,6 +246,21 @@ class ChainRuleParams(BaseModel):
     narration_lines: list[str] = Field(default_factory=list)
 
 
+class NeuralNetworkTransformParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = "Neural Network Transform"
+    target_duration_seconds: float = Field(default=100.0, ge=5, le=180)
+    formula_latex: str = r"h=\sigma(Wx+b)"
+    input_feature_labels: tuple[str, str] = ("耳の丸さ", "鼻の長さ")
+    transformed_feature_labels: tuple[str, str] = ("猫っぽさ", "犬っぽさ")
+    activation: Literal["relu", "sigmoid", "tanh"] = "relu"
+    segment_durations: dict[str, float] = Field(default_factory=dict)
+    segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
+    narration_lines: list[str] = Field(default_factory=list)
+
+
 class ManimGenerator:
     def __init__(
         self,
@@ -268,6 +284,7 @@ class ManimGenerator:
         | FullyConnectedParams
         | BackpropagationParams
         | ChainRuleParams
+        | NeuralNetworkTransformParams
     ):
         template_name = self._select_template(storyboard)
         if template_name == "gradient_descent_3d":
@@ -285,6 +302,9 @@ class ManimGenerator:
         elif template_name == "chain_rule":
             params = self._chain_rule_params_from_storyboard(storyboard)
             template = self._environment().get_template("chain_rule.py.j2")
+        elif template_name == "neural_network_transform":
+            params = self._neural_network_transform_params_from_storyboard(storyboard)
+            template = self._environment().get_template("neural_network_transform.py.j2")
         else:
             params = self._perceptron_params_from_storyboard(storyboard)
             template = self._environment().get_template("perceptron.py.j2")
@@ -306,6 +326,8 @@ class ManimGenerator:
             return "BackpropagationScene"
         if template_name == "chain_rule":
             return "ChainRuleScene"
+        if template_name == "neural_network_transform":
+            return "NeuralNetworkTransformScene"
         return "CrossEntropyPenaltyScene"
 
     def _select_template(self, storyboard: Storyboard) -> str:
@@ -317,13 +339,14 @@ class ManimGenerator:
             "fully_connected_network",
             "backpropagation",
             "chain_rule",
+            "neural_network_transform",
         }
         if self.template not in supported_templates:
             raise GeneratorError(
                 f"Unsupported template '{self.template}'. "
                 "Use 'auto', 'gradient_descent_3d', 'penalty_curve', "
                 "'perceptron', 'fully_connected_network', 'backpropagation', "
-                "or 'chain_rule'."
+                "'chain_rule', or 'neural_network_transform'."
             )
 
         concept = _normalized_concept(storyboard.concept)
@@ -340,11 +363,17 @@ class ManimGenerator:
                 return "backpropagation"
             if concept in {"chain_rule", "chainrule", "連鎖律"}:
                 return "chain_rule"
+            if concept in {
+                "neural_network_transform",
+                "nn_transform",
+                "representation_learning",
+            }:
+                return "neural_network_transform"
             raise GeneratorError(
                 "MVP render templates support concept=gradient_descent, "
                 "concept=cross_entropy, concept=perceptron, "
                 "concept=fully_connected_network, concept=backpropagation, "
-                "or concept=chain_rule."
+                "concept=chain_rule, or concept=neural_network_transform."
             )
 
         expected_concept = {
@@ -354,12 +383,15 @@ class ManimGenerator:
             "fully_connected_network": "fully_connected_network",
             "backpropagation": "backpropagation",
             "chain_rule": "chain_rule",
+            "neural_network_transform": "neural_network_transform",
         }[self.template]
         allowed_concepts = {expected_concept}
         if expected_concept == "backpropagation":
             allowed_concepts.add("backprop")
         if expected_concept == "chain_rule":
             allowed_concepts.update({"chainrule", "連鎖律"})
+        if expected_concept == "neural_network_transform":
+            allowed_concepts.update({"nn_transform", "representation_learning"})
         if concept not in allowed_concepts:
             raise GeneratorError(
                 f"Template '{self.template}' requires concept={expected_concept}, "
@@ -745,6 +777,39 @@ class ManimGenerator:
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
+    def _neural_network_transform_params_from_storyboard(
+        self,
+        storyboard: Storyboard,
+    ) -> NeuralNetworkTransformParams:
+        values = storyboard.examples[0].values if storyboard.examples else {}
+        input_labels = _string_sequence(
+            values.get("input_feature_labels"),
+            ("耳の丸さ", "鼻の長さ"),
+            expected_length=2,
+        )
+        transformed_labels = _string_sequence(
+            values.get("transformed_feature_labels"),
+            ("猫っぽさ", "犬っぽさ"),
+            expected_length=2,
+        )
+        activation = str(values.get("activation", "relu")).strip().lower()
+        if activation not in {"relu", "sigmoid", "tanh"}:
+            activation = "relu"
+        target_duration_seconds = self.target_duration_seconds or 100
+        timeline = neural_network_transform_timeline_segments(target_duration_seconds)
+        return NeuralNetworkTransformParams(
+            target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),
+            title=_title_from_storyboard(storyboard),
+            formula_latex=storyboard.formula or r"h=\sigma(Wx+b)",
+            input_feature_labels=tuple(input_labels),  # type: ignore[arg-type]
+            transformed_feature_labels=tuple(transformed_labels),  # type: ignore[arg-type]
+            activation=activation,  # type: ignore[arg-type]
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
+            narration_lines=[scene.narration for scene in storyboard.scenes],
+        )
+
 
 def _normalized_concept(concept: str) -> str:
     return concept.strip().lower().replace("-", "_").replace(" ", "_")
@@ -793,6 +858,12 @@ def _title_from_storyboard(storyboard: Storyboard) -> str:
         return "Backpropagation"
     if storyboard.concept in {"chain_rule", "chainrule", "連鎖律"}:
         return "Chain Rule"
+    if storyboard.concept in {
+        "neural_network_transform",
+        "nn_transform",
+        "representation_learning",
+    }:
+        return "Neural Network Transform"
     return storyboard.concept.replace("_", " ").title()
 
 

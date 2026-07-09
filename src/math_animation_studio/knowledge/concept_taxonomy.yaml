@@ -52,6 +52,20 @@ concepts:
       - "h = \\sigma(Wx + b)"
     recommended_animation_family: fully_connected_forward_pass
 
+  neural_network_transform:
+    domain: deep_learning
+    aliases:
+      - neural network transform
+      - nn transform
+      - representation learning
+      - 中間表現
+      - 表現学習
+      - 線形変換と非線形変換
+    likely_formulas:
+      - "h = \\sigma(Wx + b)"
+      - "h_2 = \\sigma(W_2\\sigma(W_1x+b_1)+b_2)"
+    recommended_animation_family: neural_network_transform_flow
+
   backpropagation:
     domain: deep_learning
     aliases:

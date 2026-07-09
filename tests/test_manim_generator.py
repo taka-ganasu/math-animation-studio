@@ -128,6 +128,35 @@ def test_generator_writes_compilable_fully_connected_scene(tmp_path) -> None:
     validate_python_syntax(output_path)
 
 
+def test_generator_writes_compilable_neural_network_transform_scene(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"h=\sigma(Wx+b)",
+        goal="ニューラルネットワークにおける線形変換・非線形変換・中間表現の意味を直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="neural_network_transform",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    generator = ManimGenerator(target_duration_seconds=100)
+    params = generator.generate(artifacts.storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert output_path.exists()
+    assert generator.scene_name_for(artifacts.storyboard) == "NeuralNetworkTransformScene"
+    assert "class NeuralNetworkTransformScene" in rendered
+    assert "construct_linear_mixing" in rendered
+    assert "construct_activation_gate" in rendered
+    assert "construct_representation_space" in rendered
+    assert "linear_mixing" in params.segment_durations
+    assert "activation_gate" in params.segment_durations
+    assert "representation_space" in params.segment_durations
+    assert sum(params.segment_durations.values()) == pytest.approx(100.0)
+    assert params.input_feature_labels == ("耳の丸さ", "鼻の長さ")
+    assert params.transformed_feature_labels == ("猫っぽさ", "犬っぽさ")
+    validate_python_syntax(output_path)
+
+
 def test_generator_writes_compilable_backpropagation_scene(tmp_path) -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
         formula=r"\delta^{(l)}=(W^{(l+1)T}\delta^{(l+1)})\odot\sigma'(z^{(l)})",

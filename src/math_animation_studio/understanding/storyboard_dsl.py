@@ -75,6 +75,12 @@ PATTERN_COMPONENTS: dict[str, dict[SceneRole, tuple[str, ...]]] = {
         "visualization": ("dense_layer", "fully_connected_edges", "layer_activation", "softmax_output"),
         "summary": ("summary", "formula_focus"),
     },
+    "neural_network_transform_flow": {
+        "formula_structure": ("formula_focus", "feature_axis_mixing", "activation_gate"),
+        "concrete_example": ("representation_space", "feature_axis_mixing", "text_caption"),
+        "visualization": ("feature_axis_mixing", "activation_gate", "representation_space", "decision_boundary"),
+        "summary": ("summary", "formula_focus"),
+    },
     "backpropagation_chain_rule": {
         "formula_structure": ("formula_focus", "loss_gradient", "backward_pass", "chain_rule"),
         "concrete_example": ("dense_layer", "fully_connected_edges", "forward_pass", "loss_gradient"),

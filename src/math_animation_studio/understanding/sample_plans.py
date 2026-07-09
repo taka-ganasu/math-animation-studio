@@ -90,6 +90,25 @@ def detect_sample_key(formula: str) -> str:
             "partiallpartialw",
         )
     )
+    wants_neural_network_transform = any(
+        keyword in normalized
+        for keyword in (
+            "concept_hint:neural_network_transform",
+            "concept_hint:nn_transform",
+            "concept_hint:representation_learning",
+            "neural_network_transform",
+            "nn_transform",
+            "representationlearning",
+            "中間表現",
+            "表現学習",
+            "変換の本質",
+            "解きやすい座標系",
+            "線形変換",
+            "非線形変換",
+            "h=\\sigma(wx+b)",
+            "h=\\sigma(w_1x+b_1)",
+        )
+    )
     wants_fully_connected = any(
         keyword in normalized
         for keyword in (
@@ -132,6 +151,8 @@ def detect_sample_key(formula: str) -> str:
         return "chain_rule"
     if wants_backpropagation:
         return "backpropagation"
+    if wants_neural_network_transform:
+        return "neural_network_transform"
     if wants_fully_connected:
         return "fully_connected_network"
     if wants_perceptron:
@@ -244,6 +265,30 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["層数や活性化関数は文脈によって変わるため、MVPでは3-4-2の小さな例に固定する。"],
             confidence=0.9,
         )
+    if key == "neural_network_transform":
+        return FormulaAnalysis(
+            raw_formula=formula,
+            normalized_formula_latex=r"h=\sigma(Wx+b)",
+            detected_name="neural_network_transform",
+            short_description="ニューラルネットワークの層は、線形変換で特徴を混ぜ直し、非線形変換で選別して、予測しやすい中間表現を作る。",
+            symbols=[
+                SymbolRole(symbol="x", normalized_symbol="input_features", role="input", meaning="入力特徴量ベクトル", intuition="最初の見え方", confidence=0.9),
+                SymbolRole(symbol="W", normalized_symbol="weight_matrix", role="parameter", meaning="特徴を混ぜ直す重み行列", intuition="新しい特徴軸の作り方", confidence=0.9),
+                SymbolRole(symbol="b", normalized_symbol="bias", role="parameter", meaning="変換後の基準をずらす値", intuition="空間の平行移動", confidence=0.85),
+                SymbolRole(symbol=r"\sigma", normalized_symbol="activation", role="operation", meaning="非線形な活性化関数", intuition="通す、切る、曲げる選別", confidence=0.9),
+                SymbolRole(symbol="h", normalized_symbol="hidden_representation", role="intermediate", meaning="変換後の中間表現", intuition="予測しやすい内部特徴", confidence=0.9),
+            ],
+            operations=[
+                OperationAnalysis(operation=r"Wx+b", meaning="入力特徴を重みで混ぜ直し、基準をずらす", intuition="データの見方を変える", visual_hint="点群を別の特徴軸へ移す"),
+                OperationAnalysis(operation=r"\sigma(\cdot)", meaning="線形変換後の値を非線形に変換する", intuition="出ている特徴だけ通す、不要な値を弱める", visual_hint="ReLUの折れ線で示す"),
+                OperationAnalysis(operation=r"h=\sigma(Wx+b)", meaning="次の層へ渡す中間表現を作る", intuition="予測しやすい座標系へ近づける", visual_hint="分けやすくなった点群を表示する"),
+            ],
+            inputs=["x"],
+            outputs=["h"],
+            assumptions=["全結合層の1ステップとして扱う", "活性化関数はReLUで例示する", "幾何的直感を優先して2次元の点群で示す"],
+            ambiguity_notes=["実際の中間表現は高次元だが、MVPでは2次元の投影として可視化する。"],
+            confidence=0.9,
+        )
     if key == "backpropagation":
         return FormulaAnalysis(
             raw_formula=formula,
@@ -340,6 +385,8 @@ def sample_classification(key: str) -> ConceptClassification:
         return ConceptClassification(primary_domain="deep_learning", primary_concept="scaled_dot_product_attention", related_concepts=["matrix_multiplication", "softmax", "weighted_sum"], difficulty_level="undergraduate_advanced", recommended_animation_family="matrix_similarity_heatmap", confidence=0.85)
     if key == "fully_connected_network":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="fully_connected_network", related_concepts=["dense_layer", "multilayer_perceptron", "activation_function", "softmax", "forward_pass"], difficulty_level="undergraduate_intro", recommended_animation_family="fully_connected_forward_pass", confidence=0.9)
+    if key == "neural_network_transform":
+        return ConceptClassification(primary_domain="deep_learning", primary_concept="neural_network_transform", related_concepts=["linear_transformation", "activation_function", "representation_learning", "hidden_layer"], difficulty_level="undergraduate_intro", recommended_animation_family="neural_network_transform_flow", confidence=0.9)
     if key == "backpropagation":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="backpropagation", related_concepts=["chain_rule", "gradient", "fully_connected_network", "cross_entropy", "gradient_descent"], difficulty_level="undergraduate_intro", recommended_animation_family="backpropagation_chain_rule", confidence=0.9)
     if key == "chain_rule":
@@ -389,6 +436,16 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
                 PrerequisiteItem(concept="softmax", why_needed="分類の出力を確率として読むため", priority="helpful", suggested_micro_explanation="複数クラスのスコアを合計1の確率分布へ変換する。"),
             ],
             likely_blockers=["全結合がすべてのノード間の接続を意味すること", "Wが1つの重みではなく重みの表であること", "ここでは学習ではなく順伝播だけを扱うこと"],
+        )
+    if key == "neural_network_transform":
+        return PrerequisiteMap(
+            target_concept="neural_network_transform",
+            prerequisites=[
+                PrerequisiteItem(concept="ベクトル", why_needed="入力や中間表現を数値のまとまりとして読むため", priority="required", suggested_micro_explanation="ベクトルは複数の特徴量を並べたものとして見られる。"),
+                PrerequisiteItem(concept="行列", why_needed="Wが多数の重みと特徴の混ぜ方をまとめるため", priority="required", suggested_micro_explanation="行列をベクトルに掛けると、新しい特徴ベクトルができる。"),
+                PrerequisiteItem(concept="活性化関数", why_needed="線形変換だけでは表現力が増えない理由を知るため", priority="helpful", suggested_micro_explanation="ReLUは負を0にし、正の値を通す非線形変換である。"),
+            ],
+            likely_blockers=["線形変換を単なる計算手順としてだけ見てしまうこと", "非線形変換がなぜ必要か見えないこと", "中間表現を入力データそのものと混同すること"],
         )
     if key == "backpropagation":
         return PrerequisiteMap(
@@ -620,6 +677,148 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             ],
             misconceptions=["連鎖律は2階微分ではない", "∂Lや∂yは微分済みの値ではなく小さな変化量として読む", "掛け算は途中の影響をつなぐために出てくる"],
             next_questions_to_study=["合成関数", "偏微分の連鎖律", "バックプロパゲーション"],
+        )
+    if key == "neural_network_transform":
+        return ExplanationPlan(
+            formula=r"h=\sigma(Wx+b)",
+            target_concept="neural_network_transform",
+            one_sentence_summary="ニューラルネットワークの層は、データの表現を線形変換と非線形変換で作り替え、予測しやすい中間表現へ変える。",
+            audience=audience,
+            teaching_strategy="geometric_intuition",
+            recommended_examples=[
+                TeachingExample(
+                    title="猫/犬の特徴空間を変換する例",
+                    description="耳の丸さ、鼻の長さのような元特徴を、猫っぽさ、犬っぽさのような内部特徴へ変換する。",
+                    why_it_works="線形変換が特徴軸を混ぜ直し、ReLUが値を選別し、中間表現が分けやすくなる流れを2Dで見せられる。",
+                    concrete_values={
+                        "input_feature_labels": ["耳の丸さ", "鼻の長さ"],
+                        "transformed_feature_labels": ["猫っぽさ", "犬っぽさ"],
+                        "activation": "relu",
+                    },
+                )
+            ],
+            selected_animation_pattern_id="neural_network_transform_flow",
+            explanation_steps=[
+                ExplanationStep(
+                    id="step_01",
+                    scene_role="title_intro",
+                    title="NNにおける変換を見る",
+                    learning_goal="NNがデータの表現を変えるモデルだと理解する",
+                    explanation="今回は、ニューラルネットワークにおける変換の本質を見ます。データを、予測しやすい表現へ変えていく話です。",
+                    visual_idea="h=sigma(Wx+b)を表示し、データを予測しやすい表現へ変えると説明する。",
+                    formula_focus=r"h=\sigma(Wx+b)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="formula_focus", description="層の基本式を表示する", params={"formula_focus": r"h=\sigma(Wx+b)"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_02",
+                    scene_role="formula_structure",
+                    title="線形変換を見る",
+                    learning_goal="Wx+bが特徴を混ぜ直す操作だと理解する",
+                    explanation="まずWxプラスbです。これは元の特徴を混ぜ直して、次の層が見やすい特徴軸を作る部分です。",
+                    visual_idea="式のWx+bを強調し、特徴を混ぜ直すカードを表示する。",
+                    formula_focus=r"Wx+b",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="feature_axis_mixing", description="線形変換で特徴軸を混ぜ直す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_03",
+                    scene_role="formula_structure",
+                    title="非線形変換を見る",
+                    learning_goal="sigmaが値を通す、切る、曲げる操作だと理解する",
+                    explanation="次にシグマです。これは値をそのまま通すか、弱めるか、切るかを決める非線形変換です。",
+                    visual_idea="sigmaを強調し、ReLUの通す/切る動きを表示する。",
+                    formula_focus=r"\sigma",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_gate", description="活性化関数で特徴を選別する", params={"activation": "relu"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_04",
+                    scene_role="concrete_example",
+                    title="入力空間を見る",
+                    learning_goal="入力特徴のままではデータが絡まっている場合があると理解する",
+                    explanation="最初の入力空間では、点は元の特徴量で置かれています。まだ分類しやすい形とは限りません。",
+                    visual_idea="耳の丸さ、鼻の長さの2D点群を表示する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="representation_space", description="入力空間の点群を表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_05",
+                    scene_role="visualization",
+                    title="特徴軸を混ぜ直す",
+                    learning_goal="線形変換がデータの見方を変えることを理解する",
+                    explanation="線形変換では、特徴を混ぜ直します。幾何的には空間の向きや伸び方を変える操作です。",
+                    visual_idea="元の点群から変換後の特徴軸へ点を移す。",
+                    formula_focus=r"z=Wx+b",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="feature_axis_mixing", description="入力特徴を別の特徴軸へ移す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_06",
+                    scene_role="visualization",
+                    title="活性化で選別する",
+                    learning_goal="ReLUが空間を折るような非線形効果を持つことを理解する",
+                    explanation="ReLUのような活性化関数は、負の値をゼロにし、正の値だけを通します。これで空間を折るような効果が出ます。",
+                    visual_idea="ReLUの折れ線と、負なら0、正なら通す表示を出す。",
+                    formula_focus=r"h=\mathrm{ReLU}(z)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_gate", description="ReLUで負を0にし正を通す", params={"activation": "relu"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_07",
+                    scene_role="visualization",
+                    title="中間表現を見る",
+                    learning_goal="中間表現が予測に役立つ内部特徴であることを理解する",
+                    explanation="変換後の中間表現では、入力そのものではなく、予測に役立つ内部特徴としてデータを見ています。",
+                    visual_idea="変換後の点群を猫っぽさ、犬っぽさの軸で表示する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="representation_space", description="予測しやすくなった中間表現を表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_08",
+                    scene_role="visualization",
+                    title="最後の判断を単純にする",
+                    learning_goal="良い表現では単純な境界で分類しやすいことを理解する",
+                    explanation="表現がよくなると、最後の判断は単純な線でもできるようになります。",
+                    visual_idea="中間表現上に単純な決定境界を引く。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="decision_boundary", description="中間表現上の単純な境界を表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_09",
+                    scene_role="visualization",
+                    title="層を重ねる意味を見る",
+                    learning_goal="線形変換と非線形変換を重ねることで段階的に表現を作ることを理解する",
+                    explanation="層を重ねるとは、線形変換と非線形変換を何度も重ね、表現を段階的に作ることです。",
+                    visual_idea="線形、ReLU、線形、ReLUのカードを並べる。",
+                    formula_focus=r"h_2=\sigma(W_2\sigma(W_1x+b_1)+b_2)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="dense_layer", description="層を重ねて表現を段階的に作る"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_10",
+                    scene_role="summary",
+                    title="解きやすい座標系へ変換する",
+                    learning_goal="NNの変換を一文で整理する",
+                    explanation="まとめると、ニューラルネットワークは、データを解きやすい座標系へ変換している、と見ると理解しやすいです。",
+                    visual_idea="線形変換、非線形変換、中間表現の3点をまとめる。",
+                    formula_focus=r"h=\sigma(Wx+b)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="summary", description="NN変換の要点をまとめる"),
+                    ],
+                ),
+            ],
+            misconceptions=["線形変換だけを何層重ねても1つの線形変換にまとまる", "非線形変換は単なる飾りではなく表現力を増やす", "中間表現は入力そのものではなく予測しやすく変換された内部特徴である"],
+            next_questions_to_study=["全結合ニューラルネットワーク", "表現学習", "バックプロパゲーション"],
         )
     if key == "gradient_descent":
         return ExplanationPlan(

@@ -244,6 +244,42 @@ def test_voiceover_script_writer_segments_fully_connected_network() -> None:
     assert "マイナスlog" in script
 
 
+def test_voiceover_script_writer_segments_neural_network_transform() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"h=\sigma(Wx+b)",
+        goal="ニューラルネットワークにおける線形変換・非線形変換・中間表現の意味を直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="neural_network_transform",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=100)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=100)
+
+    assert [segment.id for segment in segments] == [
+        "title_intro",
+        "formula_linear",
+        "formula_activation",
+        "input_space",
+        "linear_mixing",
+        "activation_gate",
+        "representation_space",
+        "decision_boundary",
+        "stacked_layers",
+        "summary",
+    ]
+    assert segments[1].formula_focus == r"Wx+b"
+    assert segments[2].formula_focus == r"\sigma"
+    assert segments[4].component_id == "feature_axis_mixing"
+    assert segments[5].component_id == "activation_gate"
+    assert segments[6].component_id == "representation_space"
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(100.0)
+    assert "ニューラルネットワークにおける変換の本質" in script
+    assert "特徴を混ぜ直し" in script
+    assert "解きやすい座標系" in script
+
+
 def test_voiceover_script_writer_segments_backpropagation() -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
         formula=r"\delta^{(l)}=(W^{(l+1)T}\delta^{(l+1)})\odot\sigma'(z^{(l)})",

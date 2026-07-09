@@ -13,6 +13,7 @@ from math_animation_studio.timing import (
     gradient_double_well_1d_timeline_segments,
     gradient_double_well_timeline_segments,
     gradient_surface_3d_timeline_segments,
+    neural_network_transform_timeline_segments,
     perceptron_timeline_segments,
 )
 
@@ -128,6 +129,21 @@ class VoiceoverScriptWriter:
                 "連鎖律は、途中の変化率を掛けて、端から端の変化率を求めるルールです。"
                 "xがuを変え、uがyを変えるなら、xからyへの影響は二つの変化率の積になります。"
             )
+        if concept == "neural_network_transform":
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
+                return "".join(
+                    segment.text
+                    for segment in self.write_segments(
+                        storyboard,
+                        target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
+                    )
+                )
+            return (
+                "ニューラルネットワークの層は、データの表現を変える変換です。"
+                "線形変換で特徴を混ぜ直し、非線形変換で通すものを選び、"
+                "予測しやすい中間表現へ変えていきます。"
+            )
 
         sentences = [storyboard.one_sentence_summary]
         for scene in storyboard.scenes[:3]:
@@ -177,6 +193,11 @@ class VoiceoverScriptWriter:
         if concept == "chain_rule":
             timeline = chain_rule_timeline_segments(target_duration_seconds)
             text_by_id = _chain_rule_segment_text()
+            return _segments_from_timeline(timeline, text_by_id)
+
+        if concept == "neural_network_transform":
+            timeline = neural_network_transform_timeline_segments(target_duration_seconds)
+            text_by_id = _neural_network_transform_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
@@ -535,6 +556,21 @@ def _chain_rule_segment_text() -> dict[str, str]:
         "ml_bridge": "機械学習では、重みを少し変えると予測が変わり、その結果として損失が変わります。",
         "backprop_bridge": "バックプロパゲーションは、この連鎖律を層ごとに繰り返し、遠い重みまで微分を届けます。",
         "summary": "まとめると、連鎖律は二階微分ではなく、一階微分の変化率を途中で掛けてつなぐルールです。",
+    }
+
+
+def _neural_network_transform_segment_text() -> dict[str, str]:
+    return {
+        "title_intro": "今回は、ニューラルネットワークにおける変換の本質を見ます。データを、予測しやすい表現へ変えていく話です。",
+        "formula_linear": "まずWxプラスbです。これは元の特徴を混ぜ直して、次の層が見やすい特徴軸を作る部分です。",
+        "formula_activation": "次にシグマです。これは値をそのまま通すか、弱めるか、切るかを決める非線形変換です。",
+        "input_space": "最初の入力空間では、点は元の特徴量で置かれています。まだ分類しやすい形とは限りません。",
+        "linear_mixing": "線形変換では、特徴を混ぜ直します。幾何的には空間の向きや伸び方を変える操作です。",
+        "activation_gate": "ReLUのような活性化関数は、負の値をゼロにし、正の値だけを通します。これで空間を折るような効果が出ます。",
+        "representation_space": "変換後の中間表現では、入力そのものではなく、予測に役立つ内部特徴としてデータを見ています。",
+        "decision_boundary": "表現がよくなると、最後の判断は単純な線でもできるようになります。",
+        "stacked_layers": "層を重ねるとは、線形変換と非線形変換を何度も重ね、表現を段階的に作ることです。",
+        "summary": "まとめると、ニューラルネットワークは、データを解きやすい座標系へ変換している、と見ると理解しやすいです。",
     }
 
 

@@ -200,3 +200,32 @@ def test_storyboard_adapter_converts_fully_connected_plan() -> None:
     assert "fully_connected_edges" in component_kinds
     assert "layer_activation" in component_kinds
     assert "softmax_output" in component_kinds
+
+
+def test_storyboard_adapter_converts_neural_network_transform_plan() -> None:
+    formula = r"h=\sigma(Wx+b)"
+    formula_analysis = sample_formula_analysis(formula, "neural_network_transform")
+    explanation_plan = sample_explanation_plan(
+        formula,
+        "neural_network_transform",
+        "high_school_math",
+    )
+
+    storyboard = StoryboardAdapter().convert(
+        formula_analysis=formula_analysis,
+        explanation_plan=explanation_plan,
+    )
+
+    component_kinds = {
+        component.kind
+        for scene in storyboard.scenes
+        for component in scene.components
+    }
+
+    assert storyboard.concept == "neural_network_transform"
+    assert storyboard.blueprint is not None
+    assert storyboard.blueprint.flow_name == "formula_first"
+    assert "feature_axis_mixing" in component_kinds
+    assert "activation_gate" in component_kinds
+    assert "representation_space" in component_kinds
+    assert "decision_boundary" in component_kinds

@@ -175,6 +175,16 @@ def _coerce_animation_family(
     if explicitly_chain_rule:
         return "chain_rule_flow"
 
+    explicitly_neural_network_transform = (
+        requested == "neural_network_transform_flow"
+        or _normalize_concept_name(classification.primary_concept)
+        == "neural_network_transform"
+        or _normalize_concept_name(explanation_plan.target_concept)
+        == "neural_network_transform"
+    )
+    if explicitly_neural_network_transform:
+        return "neural_network_transform_flow"
+
     if (
         "backpropagation" in text
         or "backprop" in text
@@ -188,6 +198,15 @@ def _coerce_animation_family(
         return "backpropagation_chain_rule"
     if "chain_rule" in text or "chain rule" in text or "連鎖律" in text:
         return "chain_rule_flow"
+    if (
+        "neural_network_transform" in text
+        or "nn_transform" in text
+        or "representation_learning" in text
+        or "中間表現" in text
+        or "表現学習" in text
+        or "線形変換" in text and "非線形変換" in text
+    ):
+        return "neural_network_transform_flow"
     if (
         "cross_entropy" in text
         or "cross entropy" in text

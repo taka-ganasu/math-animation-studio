@@ -15,6 +15,9 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert "perceptron_node" in catalog
     assert "dense_layer" in catalog
     assert "fully_connected_edges" in catalog
+    assert "feature_axis_mixing" in catalog
+    assert "activation_gate" in catalog
+    assert "representation_space" in catalog
     assert "softmax_output" in catalog
     assert "decision_boundary" in catalog
     assert "backward_pass" in catalog
@@ -24,6 +27,9 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert catalog["perceptron_node"].category == "neural_network"
     assert catalog["dense_layer"].category == "neural_network"
     assert catalog["decision_boundary"].visual_type == "axis"
+    assert catalog["feature_axis_mixing"].visual_type == "axis"
+    assert catalog["activation_gate"].visual_type == "curve"
+    assert catalog["representation_space"].category == "neural_network"
     assert catalog["backward_pass"].visual_type == "vector"
     assert catalog["weight_update"].category == "optimization"
     assert catalog["terrain_metaphor"].category == "metaphor"
@@ -53,5 +59,7 @@ def test_visual_component_prompt_summary_is_llm_readable() -> None:
     assert "templates=perceptron" in summary
     assert "- dense_layer:" in summary
     assert "templates=fully_connected_network" in summary
+    assert "- feature_axis_mixing:" in summary
+    assert "templates=neural_network_transform" in summary
     assert "- backward_pass:" in summary
     assert "templates=backpropagation" in summary

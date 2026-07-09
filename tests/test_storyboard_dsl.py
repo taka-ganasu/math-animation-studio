@@ -98,6 +98,20 @@ def test_formula_first_blueprint_supports_backpropagation_components() -> None:
     assert "weight_update" in by_role["visualization"].preferred_component_kinds
 
 
+def test_formula_first_blueprint_supports_neural_network_transform_components() -> None:
+    blueprint = default_formula_first_blueprint(
+        target_concept="neural_network_transform",
+        animation_pattern_id="neural_network_transform_flow",
+    )
+
+    by_role = {beat.role: beat for beat in blueprint.beats}
+
+    assert "feature_axis_mixing" in by_role["formula_structure"].preferred_component_kinds
+    assert "activation_gate" in by_role["formula_structure"].preferred_component_kinds
+    assert "representation_space" in by_role["concrete_example"].preferred_component_kinds
+    assert "decision_boundary" in by_role["visualization"].preferred_component_kinds
+
+
 def test_formula_first_blueprint_supports_chain_rule_components() -> None:
     blueprint = default_formula_first_blueprint(
         target_concept="chain_rule",

@@ -684,6 +684,71 @@ components:
           - tanh
     example: "Wx+bのあとにReLUを通してhを作る。"
 
+  - id: feature_axis_mixing
+    name: Feature Axis Mixing
+    category: neural_network
+    description: 線形変換で元の特徴を混ぜ直し、次の層が見やすい特徴軸へ変える様子を見せる。
+    use_when:
+      - Wx+b が特徴の見方を変えることを説明する
+      - 重み行列Wを新しい特徴軸の作り方として見せる
+    avoid_when:
+      - 重み更新や誤差逆伝播そのものを主題にする場面
+    visual_type: axis
+    template_support:
+      - neural_network_transform
+      - storyboard_only
+    params:
+      - name: input_feature_labels
+        value_type: string_list
+        description: 変換前の特徴軸名。
+      - name: transformed_feature_labels
+        value_type: string_list
+        description: 変換後の特徴軸名。
+    example: "耳の丸さ・鼻の長さを、猫っぽさ・犬っぽさの軸へ混ぜ直す。"
+
+  - id: activation_gate
+    name: Activation Gate
+    category: neural_network
+    description: ReLUなどの活性化関数が、値を通す、切る、曲げる効果を持つことを見せる。
+    use_when:
+      - 非線形変換がなぜ必要か説明する
+      - ReLUが負の値を0にすることを見せる
+    avoid_when:
+      - 線形変換だけを説明する場面
+    visual_type: curve
+    template_support:
+      - neural_network_transform
+      - storyboard_only
+    params:
+      - name: activation
+        value_type: enum
+        description: 表示する活性化関数。
+        default: relu
+        allowed_values:
+          - relu
+          - sigmoid
+          - tanh
+    example: "ReLUの折れ線を表示し、負なら0、正なら通すと説明する。"
+
+  - id: representation_space
+    name: Representation Space
+    category: neural_network
+    description: 入力が層を通って、予測しやすい中間表現へ変わる様子を2D点群で見せる。
+    use_when:
+      - 中間表現を説明する
+      - データを解きやすい座標系へ変換する直感を見せる
+    avoid_when:
+      - 個々の重み更新だけを詳しく見せたい場面
+    visual_type: axis
+    template_support:
+      - neural_network_transform
+      - storyboard_only
+    params:
+      - name: feature_labels
+        value_type: string_list
+        description: 表示する特徴軸名。
+    example: "入力空間で絡まった点群が、中間表現では単純な境界で分けやすくなる。"
+
   - id: softmax_output
     name: Softmax Output
     category: neural_network

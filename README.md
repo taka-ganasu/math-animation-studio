@@ -277,6 +277,27 @@ math-anim plan \
 
 成功すると、`outputs/chain_rule_intro/video_with_voice.mp4` が作成されます。
 
+### NN変換: 線形変換・非線形変換・中間表現
+
+`--concept-hint neural_network_transform` を指定すると、`h = sigma(Wx + b)` を「特徴を混ぜ直す線形変換」「通す/切る/曲げる非線形変換」「予測しやすい中間表現」へ分解して説明する動画を生成できます。
+
+```bash
+math-anim plan \
+  --formula "h=\\sigma(Wx+b)" \
+  --goal "ニューラルネットワークにおける線形変換・非線形変換・中間表現の意味を直感的に理解したい" \
+  --concept-hint neural_network_transform \
+  --audience high_school_math \
+  --domain-hint deep_learning \
+  --duration 100 \
+  --output-dir outputs/nn_transform_intro \
+  --no-llm \
+  --render \
+  --voiceover \
+  --voice-rate 130
+```
+
+成功すると、`outputs/nn_transform_intro/video_with_voice.mp4` が作成されます。
+
 ## LLMで動的に教材企画を生成
 
 OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。
@@ -330,8 +351,8 @@ python -m pytest
 ## 現在の制約
 
 - `generate --no-llm` は `concept=gradient_descent` の固定サンプルのみ対応
-- `plan --no-llm` は Cross Entropy、Gradient Descent、Attention、Perceptron、Fully Connected Network、Backpropagation、Chain Rule の固定サンプルに対応
-- Manimテンプレートは Gradient Descent の3D曲面、2D等高線、1D損失曲線、Cross Entropy のPenalty Curve、Perceptron の順伝播・決定境界、Fully Connected Network、Backpropagation、Chain Rule に対応
+- `plan --no-llm` は Cross Entropy、Gradient Descent、Attention、Perceptron、Fully Connected Network、Backpropagation、Chain Rule、Neural Network Transform の固定サンプルに対応
+- Manimテンプレートは Gradient Descent の3D曲面、2D等高線、1D損失曲線、Cross Entropy のPenalty Curve、Perceptron の順伝播・決定境界、Fully Connected Network、Backpropagation、Chain Rule、Neural Network Transform に対応
 - Attentionは企画とStoryboard生成まで対応しており、動画テンプレートは未実装
 - 音声合成はmacOSの `say` コマンドを使う簡易版で、シーン単位の厳密な同期は未実装
 - LLMモードでも動画生成は既存Manimテンプレートに合う数式・パターンのみ対応
