@@ -157,6 +157,37 @@ def test_generator_writes_compilable_neural_network_transform_scene(tmp_path) ->
     validate_python_syntax(output_path)
 
 
+def test_generator_writes_compilable_activation_functions_scene(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"a=f(z),\quad p=\mathrm{softmax}(o)",
+        goal="ReLU、sigmoid、tanh、softmaxの違いと、隠れ層・出力層での使い分けを直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="activation_functions",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    generator = ManimGenerator(target_duration_seconds=100)
+    params = generator.generate(artifacts.storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert output_path.exists()
+    assert generator.scene_name_for(artifacts.storyboard) == "ActivationFunctionsScene"
+    assert "class ActivationFunctionsScene" in rendered
+    assert "construct_relu_curve" in rendered
+    assert "construct_sigmoid_curve" in rendered
+    assert "construct_tanh_curve" in rendered
+    assert "construct_softmax_scores" in rendered
+    assert "Adam" in rendered
+    assert "relu_curve" in params.segment_durations
+    assert "softmax_scores" in params.segment_durations
+    assert "output_layer_choice" in params.segment_durations
+    assert sum(params.segment_durations.values()) == pytest.approx(100.0)
+    assert params.class_labels == ("猫", "犬", "鳥")
+    assert sum(params.probabilities) == pytest.approx(1.0)
+    validate_python_syntax(output_path)
+
+
 def test_generator_writes_compilable_backpropagation_scene(tmp_path) -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
         formula=r"\delta^{(l)}=(W^{(l+1)T}\delta^{(l+1)})\odot\sigma'(z^{(l)})",

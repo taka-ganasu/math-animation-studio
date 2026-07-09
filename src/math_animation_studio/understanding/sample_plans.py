@@ -90,6 +90,22 @@ def detect_sample_key(formula: str) -> str:
             "partiallpartialw",
         )
     )
+    wants_activation_functions = any(
+        keyword in normalized
+        for keyword in (
+            "concept_hint:activation_functions",
+            "concept_hint:activation_function",
+            "concept_hint:activations",
+            "concept_hint:活性化関数",
+            "activationfunctions",
+            "activationfunction",
+            "活性化関数",
+            "relu",
+            "sigmoid",
+            "シグモイド",
+            "tanh",
+        )
+    )
     wants_neural_network_transform = any(
         keyword in normalized
         for keyword in (
@@ -151,6 +167,8 @@ def detect_sample_key(formula: str) -> str:
         return "chain_rule"
     if wants_backpropagation:
         return "backpropagation"
+    if wants_activation_functions:
+        return "activation_functions"
     if wants_neural_network_transform:
         return "neural_network_transform"
     if wants_fully_connected:
@@ -289,6 +307,31 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["実際の中間表現は高次元だが、MVPでは2次元の投影として可視化する。"],
             confidence=0.9,
         )
+    if key == "activation_functions":
+        return FormulaAnalysis(
+            raw_formula=formula,
+            normalized_formula_latex=r"a=f(z),\quad p=\mathrm{softmax}(o)",
+            detected_name="activation_functions",
+            short_description="活性化関数は、線形和zを次の層へ渡す値aへ変換し、隠れ層では非線形性を作り、出力層では確率の形へ整える。",
+            symbols=[
+                SymbolRole(symbol="z", normalized_symbol="pre_activation", role="intermediate", meaning="重み付き和の生のスコア", intuition="まだ曲げる前の値", confidence=0.9),
+                SymbolRole(symbol="f", normalized_symbol="activation_function", role="operation", meaning="活性化関数", intuition="値を通す、切る、押し込む変換", confidence=0.9),
+                SymbolRole(symbol="a", normalized_symbol="activation_output", role="output", meaning="活性化後に次の層へ渡す値", intuition="次の層が受け取る信号", confidence=0.9),
+                SymbolRole(symbol=r"\mathrm{ReLU}", normalized_symbol="relu", role="operation", meaning="負を0にし正を通す活性化関数", intuition="ON/OFF付きの通過ゲート", confidence=0.9),
+                SymbolRole(symbol=r"\mathrm{softmax}", normalized_symbol="softmax", role="operation", meaning="複数スコアを合計1の確率分布へ変える関数", intuition="どのクラスらしいかの配分", confidence=0.9),
+            ],
+            operations=[
+                OperationAnalysis(operation=r"a=f(z)", meaning="線形和を活性化関数に通して次へ渡す値を作る", intuition="生の点数を使いやすい信号へ変える", visual_hint="z -> f(z) -> a の流れを表示する"),
+                OperationAnalysis(operation=r"\mathrm{ReLU}(z)=\max(0,z)", meaning="負の値を0にし、正の値をそのまま通す", intuition="反応しない特徴と反応する特徴を分ける", visual_hint="ReLUの折れ線を表示する"),
+                OperationAnalysis(operation=r"\sigma(z)", meaning="値を0から1へ押し込む", intuition="確率ゲージのように読む", visual_hint="sigmoidのS字曲線を表示する"),
+                OperationAnalysis(operation=r"\mathrm{softmax}(o)", meaning="複数クラスのスコアを確率分布へ変える", intuition="合計1になるクラスごとの自信", visual_hint="スコアカードから確率バーへ変換する"),
+            ],
+            inputs=["z", "o"],
+            outputs=["a", "p"],
+            assumptions=["隠れ層と出力層で活性化関数の使い方が違うことを扱う", "ReLU、sigmoid、tanh、softmaxに絞って比較する"],
+            ambiguity_notes=["softmaxは厳密にはベクトルを確率分布へ変える出力層向けの関数として説明する。Adamは活性化関数ではない。"],
+            confidence=0.9,
+        )
     if key == "backpropagation":
         return FormulaAnalysis(
             raw_formula=formula,
@@ -387,6 +430,8 @@ def sample_classification(key: str) -> ConceptClassification:
         return ConceptClassification(primary_domain="deep_learning", primary_concept="fully_connected_network", related_concepts=["dense_layer", "multilayer_perceptron", "activation_function", "softmax", "forward_pass"], difficulty_level="undergraduate_intro", recommended_animation_family="fully_connected_forward_pass", confidence=0.9)
     if key == "neural_network_transform":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="neural_network_transform", related_concepts=["linear_transformation", "activation_function", "representation_learning", "hidden_layer"], difficulty_level="undergraduate_intro", recommended_animation_family="neural_network_transform_flow", confidence=0.9)
+    if key == "activation_functions":
+        return ConceptClassification(primary_domain="deep_learning", primary_concept="activation_functions", related_concepts=["relu", "sigmoid", "tanh", "softmax", "hidden_layer", "output_layer"], difficulty_level="undergraduate_intro", recommended_animation_family="activation_function_comparison", confidence=0.9)
     if key == "backpropagation":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="backpropagation", related_concepts=["chain_rule", "gradient", "fully_connected_network", "cross_entropy", "gradient_descent"], difficulty_level="undergraduate_intro", recommended_animation_family="backpropagation_chain_rule", confidence=0.9)
     if key == "chain_rule":
@@ -446,6 +491,16 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
                 PrerequisiteItem(concept="活性化関数", why_needed="線形変換だけでは表現力が増えない理由を知るため", priority="helpful", suggested_micro_explanation="ReLUは負を0にし、正の値を通す非線形変換である。"),
             ],
             likely_blockers=["線形変換を単なる計算手順としてだけ見てしまうこと", "非線形変換がなぜ必要か見えないこと", "中間表現を入力データそのものと混同すること"],
+        )
+    if key == "activation_functions":
+        return PrerequisiteMap(
+            target_concept="activation_functions",
+            prerequisites=[
+                PrerequisiteItem(concept="重み付き和", why_needed="活性化関数へ入るzが何からできるか読むため", priority="required", suggested_micro_explanation="z=Wx+bは、入力を重み付きで足した生のスコアである。"),
+                PrerequisiteItem(concept="関数のグラフ", why_needed="ReLUやsigmoidの曲線を入力と出力の対応として読むため", priority="required", suggested_micro_explanation="横軸の入力zに対して、縦軸に変換後の値aを置く。"),
+                PrerequisiteItem(concept="確率分布", why_needed="softmaxの出力を合計1のクラス確率として読むため", priority="helpful", suggested_micro_explanation="複数の確率を足すと1になると、分類の自信として読める。"),
+            ],
+            likely_blockers=["sigmoidとsoftmaxを同じものだと思うこと", "隠れ層と出力層で役割が違うことを見落とすこと", "Adamを活性化関数と混同すること"],
         )
     if key == "backpropagation":
         return PrerequisiteMap(
@@ -677,6 +732,148 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             ],
             misconceptions=["連鎖律は2階微分ではない", "∂Lや∂yは微分済みの値ではなく小さな変化量として読む", "掛け算は途中の影響をつなぐために出てくる"],
             next_questions_to_study=["合成関数", "偏微分の連鎖律", "バックプロパゲーション"],
+        )
+    if key == "activation_functions":
+        return ExplanationPlan(
+            formula=r"a=f(z),\quad p=\mathrm{softmax}(o)",
+            target_concept="activation_functions",
+            one_sentence_summary="活性化関数は、線形和を次の層へ渡す値に変え、隠れ層では非線形な特徴を作り、出力層では確率の形へ整える。",
+            audience=audience,
+            teaching_strategy="visual_first",
+            recommended_examples=[
+                TeachingExample(
+                    title="猫・犬・鳥の分類で活性化関数を使い分ける例",
+                    description="隠れ層ではReLUで特徴を作り、最後はsoftmaxで3クラスの確率に変える。",
+                    why_it_works="ReLU、sigmoid、tanhの曲線比較と、softmaxの確率バーを同じ流れで見せられるため。",
+                    concrete_values={
+                        "class_labels": ["猫", "犬", "鳥"],
+                        "logits": [2.0, 1.0, -0.5],
+                        "probabilities": [0.69, 0.25, 0.06],
+                    },
+                )
+            ],
+            selected_animation_pattern_id="activation_function_comparison",
+            explanation_steps=[
+                ExplanationStep(
+                    id="step_01",
+                    scene_role="title_intro",
+                    title="活性化関数を見る",
+                    learning_goal="活性化関数が線形和を次の層へ渡す値に変える部品だと理解する",
+                    explanation="今回は活性化関数を見ます。活性化関数は、線形和を次の層へ渡す値に変える部品です。",
+                    visual_idea="a=f(z) と p=softmax(o) を表示し、隠れ層と出力層で役割が違うことを示す。",
+                    formula_focus=r"a=f(z)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="formula_focus", description="活性化関数の基本式を表示する", params={"formula_focus": r"a=f(z)"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_02",
+                    scene_role="formula_structure",
+                    title="非線形性が必要な理由を見る",
+                    learning_goal="線形変換だけを重ねても表現力が増えにくいことを理解する",
+                    explanation="線形変換だけを何層重ねても、結局一つの線形変換にまとまります。途中で非線形に曲げるから、複雑な形を表せます。",
+                    visual_idea="線形だけの積み重ねと、線形+ReLUの積み重ねを比較する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_comparison", description="線形だけの場合と非線形を入れた場合を比較する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_03",
+                    scene_role="formula_structure",
+                    title="zからaへの変換として読む",
+                    learning_goal="z、f、aの意味を理解する",
+                    explanation="式では、まず重み付き和zを作り、それを関数fに通してaにします。zは生のスコア、aは次へ渡す値です。",
+                    visual_idea="z=Wx+b -> f(z) -> a の流れを表示する。",
+                    formula_focus=r"z\rightarrow f(z)\rightarrow a",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="formula_focus", description="zからaへの流れを強調する", params={"formula_focus": r"z\rightarrow f(z)\rightarrow a"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_04",
+                    scene_role="visualization",
+                    title="ReLUを見る",
+                    learning_goal="ReLUが負を0にし正を通すことを理解する",
+                    explanation="ReLUは、負ならゼロ、正ならそのまま通します。隠れ層でよく使われ、正の領域では勾配が流れやすいです。",
+                    visual_idea="ReLUの折れ線を描き、負なら0、正なら通す領域をラベル付けする。",
+                    formula_focus=r"\mathrm{ReLU}(z)=\max(0,z)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_curve", description="ReLU曲線を表示する", params={"activation": "relu"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_05",
+                    scene_role="visualization",
+                    title="sigmoidを見る",
+                    learning_goal="sigmoidが0から1へ押し込む関数だと理解する",
+                    explanation="sigmoidは、どんな値もゼロから一の範囲へ押し込みます。二値分類の最後で確率のように読むときに便利です。",
+                    visual_idea="sigmoidのS字曲線と0から1の範囲を表示する。",
+                    formula_focus=r"\sigma(z)=\frac{1}{1+e^{-z}}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_curve", description="sigmoid曲線を表示する", params={"activation": "sigmoid"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_06",
+                    scene_role="visualization",
+                    title="tanhを見る",
+                    learning_goal="tanhが-1から1へ押し込む関数だと理解する",
+                    explanation="tanhは、マイナス一から一の範囲へ押し込みます。sigmoidと似ていますが、中心がゼロなので正負の向きも残せます。",
+                    visual_idea="tanh曲線とゼロ中心の性質を表示する。",
+                    formula_focus=r"\tanh(z)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_curve", description="tanh曲線を表示する", params={"activation": "tanh"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_07",
+                    scene_role="concrete_example",
+                    title="隠れ層での使い分けを見る",
+                    learning_goal="隠れ層では特徴作りが目的だと理解する",
+                    explanation="隠れ層では確率を出すことより、使いやすい特徴を作ることが大事です。そのためReLU系がよく使われます。",
+                    visual_idea="隠れ層ではReLU、sigmoid/tanhは飽和に注意という比較カードを表示する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_comparison", description="隠れ層でよく使う関数を比較する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_08",
+                    scene_role="visualization",
+                    title="softmaxを見る",
+                    learning_goal="softmaxが複数クラスのスコアを確率分布へ変えることを理解する",
+                    explanation="softmaxは、複数クラスのスコアを合計一の確率分布に変えます。一番大きなスコアほど、大きな確率になります。",
+                    visual_idea="猫・犬・鳥のスコアをsoftmaxで確率バーに変換する。",
+                    formula_focus=r"p_i=\frac{e^{o_i}}{\sum_j e^{o_j}}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="softmax_probability_flow", description="logitsから確率バーへ変換する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_09",
+                    scene_role="summary",
+                    title="出力層での使い分けを整理する",
+                    learning_goal="sigmoid、softmax、Adamのカテゴリ違いを理解する",
+                    explanation="出力層では、欲しい答えの形で選びます。二値分類ならsigmoid、多クラス分類ならsoftmaxです。Adamは活性化関数ではなく最適化手法です。",
+                    visual_idea="二値分類、 多クラス分類、Adamを3列で比較する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="activation_comparison", description="出力層での使い分けを整理する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_10",
+                    scene_role="summary",
+                    title="まとめる",
+                    learning_goal="活性化関数の役割を一文で整理する",
+                    explanation="まとめると、活性化関数は、値をどんな形で次へ渡したいかを決める部品です。隠れ層と出力層で役割が違います。",
+                    visual_idea="ReLU、sigmoid/tanh、softmaxの要点をまとめる。",
+                    formula_focus=r"a=f(z),\quad p=\mathrm{softmax}(o)",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="summary", description="活性化関数の要点をまとめる"),
+                    ],
+                ),
+            ],
+            misconceptions=["活性化関数と最適化手法を混同しない", "softmaxは複数スコア全体を確率分布へ変える", "隠れ層と出力層では活性化関数の選び方が違う"],
+            next_questions_to_study=["ReLUの派生関数", "softmaxとクロスエントロピー", "Adamなどの最適化手法"],
         )
     if key == "neural_network_transform":
         return ExplanationPlan(

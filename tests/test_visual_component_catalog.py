@@ -17,6 +17,9 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert "fully_connected_edges" in catalog
     assert "feature_axis_mixing" in catalog
     assert "activation_gate" in catalog
+    assert "activation_curve" in catalog
+    assert "activation_comparison" in catalog
+    assert "softmax_probability_flow" in catalog
     assert "representation_space" in catalog
     assert "softmax_output" in catalog
     assert "decision_boundary" in catalog
@@ -29,6 +32,9 @@ def test_visual_component_catalog_loads_expected_components() -> None:
     assert catalog["decision_boundary"].visual_type == "axis"
     assert catalog["feature_axis_mixing"].visual_type == "axis"
     assert catalog["activation_gate"].visual_type == "curve"
+    assert catalog["activation_curve"].visual_type == "curve"
+    assert catalog["activation_comparison"].category == "neural_network"
+    assert catalog["softmax_probability_flow"].visual_type == "axis"
     assert catalog["representation_space"].category == "neural_network"
     assert catalog["backward_pass"].visual_type == "vector"
     assert catalog["weight_update"].category == "optimization"
@@ -61,5 +67,7 @@ def test_visual_component_prompt_summary_is_llm_readable() -> None:
     assert "templates=fully_connected_network" in summary
     assert "- feature_axis_mixing:" in summary
     assert "templates=neural_network_transform" in summary
+    assert "- activation_curve:" in summary
+    assert "templates=activation_functions" in summary
     assert "- backward_pass:" in summary
     assert "templates=backpropagation" in summary

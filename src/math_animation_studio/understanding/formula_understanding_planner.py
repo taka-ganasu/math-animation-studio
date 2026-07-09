@@ -175,6 +175,16 @@ def _coerce_animation_family(
     if explicitly_chain_rule:
         return "chain_rule_flow"
 
+    explicitly_activation_functions = (
+        requested == "activation_function_comparison"
+        or _normalize_concept_name(classification.primary_concept)
+        in {"activation_functions", "activation_function", "activations"}
+        or _normalize_concept_name(explanation_plan.target_concept)
+        in {"activation_functions", "activation_function", "activations"}
+    )
+    if explicitly_activation_functions:
+        return "activation_function_comparison"
+
     explicitly_neural_network_transform = (
         requested == "neural_network_transform_flow"
         or _normalize_concept_name(classification.primary_concept)
@@ -198,6 +208,17 @@ def _coerce_animation_family(
         return "backpropagation_chain_rule"
     if "chain_rule" in text or "chain rule" in text or "連鎖律" in text:
         return "chain_rule_flow"
+    if (
+        "activation_functions" in text
+        or "activation_function" in text
+        or "activations" in text
+        or "活性化関数" in text
+        or "relu" in text
+        or "sigmoid" in text
+        or "tanh" in text
+        or "softmax" in text and "adam" in text
+    ):
+        return "activation_function_comparison"
     if (
         "neural_network_transform" in text
         or "nn_transform" in text

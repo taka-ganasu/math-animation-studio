@@ -280,6 +280,41 @@ def test_voiceover_script_writer_segments_neural_network_transform() -> None:
     assert "解きやすい座標系" in script
 
 
+def test_voiceover_script_writer_segments_activation_functions() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"a=f(z),\quad p=\mathrm{softmax}(o)",
+        goal="ReLU、sigmoid、tanh、softmaxの違いと、隠れ層・出力層での使い分けを直感的に理解したい",
+        audience="high_school_math",
+        concept_hint="activation_functions",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=100)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=100)
+
+    assert [segment.id for segment in segments] == [
+        "title_intro",
+        "why_nonlinear",
+        "formula_structure",
+        "relu_curve",
+        "sigmoid_curve",
+        "tanh_curve",
+        "hidden_layer_choice",
+        "softmax_scores",
+        "output_layer_choice",
+        "summary",
+    ]
+    assert segments[3].component_id == "activation_curve"
+    assert segments[3].formula_focus == r"\mathrm{ReLU}(z)=\max(0,z)"
+    assert segments[7].component_id == "softmax_probability_flow"
+    assert segments[8].component_id == "activation_comparison"
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(100.0)
+    assert "活性化関数" in script
+    assert "softmax" in script
+    assert "Adamは活性化関数ではなく" in script
+
+
 def test_voiceover_script_writer_segments_backpropagation() -> None:
     artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
         formula=r"\delta^{(l)}=(W^{(l+1)T}\delta^{(l+1)})\odot\sigma'(z^{(l)})",

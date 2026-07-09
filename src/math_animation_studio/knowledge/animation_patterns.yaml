@@ -102,6 +102,24 @@ patterns:
       - activation_curve
       - decision_boundary
 
+  - id: activation_function_comparison
+    name: Activation Function Comparison
+    suitable_for:
+      - activation_functions
+      - activation_function
+      - relu
+      - sigmoid
+      - tanh
+      - softmax
+    description: ReLU、sigmoid、tanh、softmaxを曲線と確率バーで比較し、隠れ層と出力層での使い分けを見せる。
+    visual_metaphor: 値をどんな形で次へ渡すかを決める変換ゲート。
+    manim_template: activation_functions.py.j2
+    required_visual_objects:
+      - formula
+      - activation_curves
+      - comparison_cards
+      - probability_bars
+
   - id: backpropagation_chain_rule
     name: Backpropagation Chain Rule
     suitable_for:

@@ -229,3 +229,31 @@ def test_storyboard_adapter_converts_neural_network_transform_plan() -> None:
     assert "activation_gate" in component_kinds
     assert "representation_space" in component_kinds
     assert "decision_boundary" in component_kinds
+
+
+def test_storyboard_adapter_converts_activation_functions_plan() -> None:
+    formula = r"a=f(z),\quad p=\mathrm{softmax}(o)"
+    formula_analysis = sample_formula_analysis(formula, "activation_functions")
+    explanation_plan = sample_explanation_plan(
+        formula,
+        "activation_functions",
+        "high_school_math",
+    )
+
+    storyboard = StoryboardAdapter().convert(
+        formula_analysis=formula_analysis,
+        explanation_plan=explanation_plan,
+    )
+
+    component_kinds = {
+        component.kind
+        for scene in storyboard.scenes
+        for component in scene.components
+    }
+
+    assert storyboard.concept == "activation_functions"
+    assert storyboard.blueprint is not None
+    assert storyboard.blueprint.flow_name == "formula_first"
+    assert "activation_curve" in component_kinds
+    assert "activation_comparison" in component_kinds
+    assert "softmax_probability_flow" in component_kinds

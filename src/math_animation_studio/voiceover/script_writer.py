@@ -6,6 +6,7 @@ from typing import Sequence
 from math_animation_studio.schema import Storyboard
 from math_animation_studio.timing import (
     TimelineSegment,
+    activation_functions_timeline_segments,
     backpropagation_timeline_segments,
     chain_rule_timeline_segments,
     cross_entropy_timeline_segments,
@@ -144,6 +145,21 @@ class VoiceoverScriptWriter:
                 "線形変換で特徴を混ぜ直し、非線形変換で通すものを選び、"
                 "予測しやすい中間表現へ変えていきます。"
             )
+        if concept == "activation_functions":
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
+                return "".join(
+                    segment.text
+                    for segment in self.write_segments(
+                        storyboard,
+                        target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
+                    )
+                )
+            return (
+                "活性化関数は、重み付き和を次の層へ渡す値に変える部品です。"
+                "ReLUは隠れ層でよく使われ、sigmoidやsoftmaxは出力を確率として読みたいときに使います。"
+                "Adamは活性化関数ではなく、重みの直し方を決める最適化手法です。"
+            )
 
         sentences = [storyboard.one_sentence_summary]
         for scene in storyboard.scenes[:3]:
@@ -198,6 +214,11 @@ class VoiceoverScriptWriter:
         if concept == "neural_network_transform":
             timeline = neural_network_transform_timeline_segments(target_duration_seconds)
             text_by_id = _neural_network_transform_segment_text()
+            return _segments_from_timeline(timeline, text_by_id)
+
+        if concept == "activation_functions":
+            timeline = activation_functions_timeline_segments(target_duration_seconds)
+            text_by_id = _activation_functions_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
@@ -571,6 +592,21 @@ def _neural_network_transform_segment_text() -> dict[str, str]:
         "decision_boundary": "表現がよくなると、最後の判断は単純な線でもできるようになります。",
         "stacked_layers": "層を重ねるとは、線形変換と非線形変換を何度も重ね、表現を段階的に作ることです。",
         "summary": "まとめると、ニューラルネットワークは、データを解きやすい座標系へ変換している、と見ると理解しやすいです。",
+    }
+
+
+def _activation_functions_segment_text() -> dict[str, str]:
+    return {
+        "title_intro": "今回は活性化関数を見ます。活性化関数は、線形和を次の層へ渡す値に変える部品です。",
+        "why_nonlinear": "線形変換だけを何層重ねても、結局一つの線形変換にまとまります。途中で非線形に曲げるから、複雑な形を表せます。",
+        "formula_structure": "式では、まず重み付き和zを作り、それを関数fに通してaにします。zは生のスコア、aは次へ渡す値です。",
+        "relu_curve": "ReLUは、負ならゼロ、正ならそのまま通します。隠れ層でよく使われ、正の領域では勾配が流れやすいです。",
+        "sigmoid_curve": "sigmoidは、どんな値もゼロから一の範囲へ押し込みます。二値分類の最後で確率のように読むときに便利です。",
+        "tanh_curve": "tanhは、マイナス一から一の範囲へ押し込みます。sigmoidと似ていますが、中心がゼロなので正負の向きも残せます。",
+        "hidden_layer_choice": "隠れ層では確率を出すことより、使いやすい特徴を作ることが大事です。そのためReLU系がよく使われます。",
+        "softmax_scores": "softmaxは、複数クラスのスコアを合計一の確率分布に変えます。一番大きなスコアほど、大きな確率になります。",
+        "output_layer_choice": "出力層では、欲しい答えの形で選びます。二値分類ならsigmoid、多クラス分類ならsoftmaxです。Adamは活性化関数ではなく最適化手法です。",
+        "summary": "まとめると、活性化関数は、値をどんな形で次へ渡したいかを決める部品です。隠れ層と出力層で役割が違います。",
     }
 
 

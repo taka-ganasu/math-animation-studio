@@ -180,6 +180,20 @@ NEURAL_NETWORK_TRANSFORM_BASE_TIMELINE = (
 )
 
 
+ACTIVATION_FUNCTIONS_BASE_TIMELINE = (
+    TimelineSegment("title_intro", 8.0, "intro_formula", r"a=f(z)"),
+    TimelineSegment("why_nonlinear", 10.0, "activation_comparison"),
+    TimelineSegment("formula_structure", 10.0, "formula_parts_focus", r"z\rightarrow f(z)\rightarrow a"),
+    TimelineSegment("relu_curve", 11.0, "activation_curve", r"\mathrm{ReLU}(z)=\max(0,z)"),
+    TimelineSegment("sigmoid_curve", 10.0, "activation_curve", r"\sigma(z)=\frac{1}{1+e^{-z}}"),
+    TimelineSegment("tanh_curve", 9.0, "activation_curve", r"\tanh(z)"),
+    TimelineSegment("hidden_layer_choice", 10.0, "activation_comparison"),
+    TimelineSegment("softmax_scores", 12.0, "softmax_probability_flow", r"\mathrm{softmax}(o)_i"),
+    TimelineSegment("output_layer_choice", 11.0, "activation_comparison"),
+    TimelineSegment("summary", 9.0, "summary", r"a=f(z)"),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -298,6 +312,14 @@ def neural_network_transform_timeline_segments(
     if target_duration_seconds is None:
         return NEURAL_NETWORK_TRANSFORM_BASE_TIMELINE
     return scale_timeline(NEURAL_NETWORK_TRANSFORM_BASE_TIMELINE, float(target_duration_seconds))
+
+
+def activation_functions_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return ACTIVATION_FUNCTIONS_BASE_TIMELINE
+    return scale_timeline(ACTIVATION_FUNCTIONS_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(

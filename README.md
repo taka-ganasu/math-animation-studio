@@ -298,6 +298,27 @@ math-anim plan \
 
 成功すると、`outputs/nn_transform_intro/video_with_voice.mp4` が作成されます。
 
+### 活性化関数: ReLU・sigmoid・tanh・softmax
+
+`--concept-hint activation_functions` を指定すると、活性化関数を「線形和を次へ渡す値に変える部品」として説明し、ReLU、sigmoid、tanh、softmaxの違いと使い分けを動画化できます。Adamは活性化関数ではなく最適化手法として整理します。
+
+```bash
+math-anim plan \
+  --formula "a=f(z),\\quad p=\\mathrm{softmax}(o)" \
+  --goal "ReLU、sigmoid、tanh、softmaxの違いと、隠れ層・出力層での使い分けを直感的に理解したい" \
+  --concept-hint activation_functions \
+  --audience high_school_math \
+  --domain-hint deep_learning \
+  --duration 130 \
+  --output-dir outputs/activation_functions_intro \
+  --no-llm \
+  --render \
+  --voiceover \
+  --voice-rate 130
+```
+
+成功すると、`outputs/activation_functions_intro/video_with_voice.mp4` が作成されます。
+
 ## LLMで動的に教材企画を生成
 
 OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。
@@ -327,7 +348,7 @@ LLM出力がschemaに少し合わない場合は、validation errorと前回JSON
 
 MVP2以降は、完全自由なManimコード生成ではなく、Storyboard内の宣言的な部品を既存テンプレートへ写像します。
 
-- `components`: 数式パーツ強調、確率バー、損失曲線、勾配矢印などの再利用可能なアニメーション部品
+- `components`: 数式パーツ強調、確率バー、損失曲線、勾配矢印、活性化曲線などの再利用可能なアニメーション部品
 - `narration_cues`: ナレーションの区間、対応する部品、注目する数式パーツ
 - `generation_boundary`: LLMの役割を教材企画に限定し、コード生成を禁止する安全境界
 

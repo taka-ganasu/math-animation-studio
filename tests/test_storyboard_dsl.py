@@ -112,6 +112,20 @@ def test_formula_first_blueprint_supports_neural_network_transform_components() 
     assert "decision_boundary" in by_role["visualization"].preferred_component_kinds
 
 
+def test_formula_first_blueprint_supports_activation_functions_components() -> None:
+    blueprint = default_formula_first_blueprint(
+        target_concept="activation_functions",
+        animation_pattern_id="activation_function_comparison",
+    )
+
+    by_role = {beat.role: beat for beat in blueprint.beats}
+
+    assert "activation_comparison" in by_role["formula_structure"].preferred_component_kinds
+    assert "activation_curve" in by_role["visualization"].preferred_component_kinds
+    assert "softmax_probability_flow" in by_role["visualization"].preferred_component_kinds
+    assert "summary" in by_role["summary"].preferred_component_kinds
+
+
 def test_formula_first_blueprint_supports_chain_rule_components() -> None:
     blueprint = default_formula_first_blueprint(
         target_concept="chain_rule",

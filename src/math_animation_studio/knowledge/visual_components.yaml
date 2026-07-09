@@ -730,6 +730,79 @@ components:
           - tanh
     example: "ReLUの折れ線を表示し、負なら0、正なら通すと説明する。"
 
+  - id: activation_curve
+    name: Activation Curve
+    category: neural_network
+    description: ReLU、sigmoid、tanhなどの活性化関数を入力zと出力aの曲線として表示する。
+    use_when:
+      - 活性化関数の入力と出力の対応を説明する
+      - ReLU、sigmoid、tanhの違いを曲線で比較する
+    avoid_when:
+      - ニューラルネットワークの接続構造そのものを主題にする場面
+    visual_type: curve
+    template_support:
+      - activation_functions
+      - storyboard_only
+    params:
+      - name: activation
+        value_type: enum
+        description: 表示する活性化関数。
+        default: relu
+        allowed_values:
+          - relu
+          - sigmoid
+          - tanh
+    example: "横軸z、縦軸aとして、ReLUの折れ線やsigmoidのS字曲線を描く。"
+
+  - id: activation_comparison
+    name: Activation Comparison
+    category: neural_network
+    description: 活性化関数の役割や使い分けをカードや簡易フローで比較する。
+    use_when:
+      - 隠れ層と出力層で活性化関数の選び方が違うことを説明する
+      - ReLU、sigmoid、softmax、Adamのカテゴリ違いを整理する
+    avoid_when:
+      - 1つの関数の曲線形状だけを詳しく見る場面
+    visual_type: text
+    template_support:
+      - activation_functions
+      - storyboard_only
+    params:
+      - name: comparison_mode
+        value_type: enum
+        description: 比較する観点。
+        default: hidden_vs_output
+        allowed_values:
+          - linear_vs_nonlinear
+          - hidden_vs_output
+          - optimizer_boundary
+    example: "隠れ層ではReLU、二値分類の出力はsigmoid、多クラス分類の出力はsoftmaxと並べる。"
+
+  - id: softmax_probability_flow
+    name: Softmax Probability Flow
+    category: neural_network
+    description: クラスごとのlogitsをsoftmaxに通し、合計1の確率バーへ変換する。
+    use_when:
+      - softmaxが複数クラス分類の出力で使われることを説明する
+      - logitsと確率分布の違いを見せる
+    avoid_when:
+      - 二値分類で単一確率だけを出す場面
+    visual_type: axis
+    template_support:
+      - activation_functions
+      - storyboard_only
+    params:
+      - name: class_labels
+        value_type: string_list
+        description: クラス名。
+      - name: logits
+        value_type: number_list
+        description: softmax前のスコア。
+      - name: probabilities
+        value_type: number_list
+        description: softmax後の確率。
+    example: "猫・犬・鳥のスコアをsoftmaxに通して、合計1の確率バーへ変える。"
+
   - id: representation_space
     name: Representation Space
     category: neural_network

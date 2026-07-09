@@ -329,6 +329,8 @@ def _render_concept(explanation_plan: ExplanationPlan) -> str:
         return "fully_connected_network"
     if explanation_plan.selected_animation_pattern_id == "neural_network_transform_flow":
         return "neural_network_transform"
+    if explanation_plan.selected_animation_pattern_id == "activation_function_comparison":
+        return "activation_functions"
     if explanation_plan.selected_animation_pattern_id == "backpropagation_chain_rule":
         return "backpropagation"
     if explanation_plan.selected_animation_pattern_id == "chain_rule_flow":

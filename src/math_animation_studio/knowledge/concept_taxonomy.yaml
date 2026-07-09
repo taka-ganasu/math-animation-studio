@@ -66,6 +66,22 @@ concepts:
       - "h_2 = \\sigma(W_2\\sigma(W_1x+b_1)+b_2)"
     recommended_animation_family: neural_network_transform_flow
 
+  activation_functions:
+    domain: deep_learning
+    aliases:
+      - activation function
+      - activations
+      - 活性化関数
+      - ReLU
+      - sigmoid
+      - tanh
+      - softmax
+    likely_formulas:
+      - "a = f(z)"
+      - "a = \\mathrm{ReLU}(z)"
+      - "p = \\mathrm{softmax}(o)"
+    recommended_animation_family: activation_function_comparison
+
   backpropagation:
     domain: deep_learning
     aliases:

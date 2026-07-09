@@ -81,6 +81,12 @@ PATTERN_COMPONENTS: dict[str, dict[SceneRole, tuple[str, ...]]] = {
         "visualization": ("feature_axis_mixing", "activation_gate", "representation_space", "decision_boundary"),
         "summary": ("summary", "formula_focus"),
     },
+    "activation_function_comparison": {
+        "formula_structure": ("formula_focus", "activation_comparison", "activation_curve"),
+        "concrete_example": ("activation_comparison", "softmax_probability_flow", "text_caption"),
+        "visualization": ("activation_curve", "softmax_probability_flow", "activation_comparison"),
+        "summary": ("summary", "formula_focus"),
+    },
     "backpropagation_chain_rule": {
         "formula_structure": ("formula_focus", "loss_gradient", "backward_pass", "chain_rule"),
         "concrete_example": ("dense_layer", "fully_connected_edges", "forward_pass", "loss_gradient"),

@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from math_animation_studio.schema import ExampleValue, Storyboard, VisualObject
 from math_animation_studio.safe_presets import normalize_loss_surface_preset
 from math_animation_studio.timing import (
+    activation_functions_timeline_segments,
     backpropagation_timeline_segments,
     chain_rule_timeline_segments,
     cross_entropy_timeline_segments,
@@ -261,6 +262,23 @@ class NeuralNetworkTransformParams(BaseModel):
     narration_lines: list[str] = Field(default_factory=list)
 
 
+class ActivationFunctionsParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = "Activation Functions"
+    target_duration_seconds: float = Field(default=130.0, ge=5, le=180)
+    formula_latex: str = r"a=f(z),\quad p=\mathrm{softmax}(o)"
+    hidden_activations: tuple[str, str, str] = ("relu", "sigmoid", "tanh")
+    output_activations: tuple[str, str] = ("sigmoid", "softmax")
+    class_labels: tuple[str, str, str] = ("猫", "犬", "鳥")
+    logits: tuple[float, float, float] = (2.0, 1.0, -0.5)
+    probabilities: tuple[float, float, float] = (0.69, 0.25, 0.06)
+    segment_durations: dict[str, float] = Field(default_factory=dict)
+    segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
+    narration_lines: list[str] = Field(default_factory=list)
+
+
 class ManimGenerator:
     def __init__(
         self,
@@ -285,6 +303,7 @@ class ManimGenerator:
         | BackpropagationParams
         | ChainRuleParams
         | NeuralNetworkTransformParams
+        | ActivationFunctionsParams
     ):
         template_name = self._select_template(storyboard)
         if template_name == "gradient_descent_3d":
@@ -305,6 +324,9 @@ class ManimGenerator:
         elif template_name == "neural_network_transform":
             params = self._neural_network_transform_params_from_storyboard(storyboard)
             template = self._environment().get_template("neural_network_transform.py.j2")
+        elif template_name == "activation_functions":
+            params = self._activation_functions_params_from_storyboard(storyboard)
+            template = self._environment().get_template("activation_functions.py.j2")
         else:
             params = self._perceptron_params_from_storyboard(storyboard)
             template = self._environment().get_template("perceptron.py.j2")
@@ -328,6 +350,8 @@ class ManimGenerator:
             return "ChainRuleScene"
         if template_name == "neural_network_transform":
             return "NeuralNetworkTransformScene"
+        if template_name == "activation_functions":
+            return "ActivationFunctionsScene"
         return "CrossEntropyPenaltyScene"
 
     def _select_template(self, storyboard: Storyboard) -> str:
@@ -340,13 +364,14 @@ class ManimGenerator:
             "backpropagation",
             "chain_rule",
             "neural_network_transform",
+            "activation_functions",
         }
         if self.template not in supported_templates:
             raise GeneratorError(
                 f"Unsupported template '{self.template}'. "
                 "Use 'auto', 'gradient_descent_3d', 'penalty_curve', "
                 "'perceptron', 'fully_connected_network', 'backpropagation', "
-                "'chain_rule', or 'neural_network_transform'."
+                "'chain_rule', 'neural_network_transform', or 'activation_functions'."
             )
 
         concept = _normalized_concept(storyboard.concept)
@@ -369,11 +394,19 @@ class ManimGenerator:
                 "representation_learning",
             }:
                 return "neural_network_transform"
+            if concept in {
+                "activation_functions",
+                "activation_function",
+                "activations",
+                "活性化関数",
+            }:
+                return "activation_functions"
             raise GeneratorError(
                 "MVP render templates support concept=gradient_descent, "
                 "concept=cross_entropy, concept=perceptron, "
                 "concept=fully_connected_network, concept=backpropagation, "
-                "concept=chain_rule, or concept=neural_network_transform."
+                "concept=chain_rule, concept=neural_network_transform, "
+                "or concept=activation_functions."
             )
 
         expected_concept = {
@@ -384,6 +417,7 @@ class ManimGenerator:
             "backpropagation": "backpropagation",
             "chain_rule": "chain_rule",
             "neural_network_transform": "neural_network_transform",
+            "activation_functions": "activation_functions",
         }[self.template]
         allowed_concepts = {expected_concept}
         if expected_concept == "backpropagation":
@@ -392,6 +426,8 @@ class ManimGenerator:
             allowed_concepts.update({"chainrule", "連鎖律"})
         if expected_concept == "neural_network_transform":
             allowed_concepts.update({"nn_transform", "representation_learning"})
+        if expected_concept == "activation_functions":
+            allowed_concepts.update({"activation_function", "activations", "活性化関数"})
         if concept not in allowed_concepts:
             raise GeneratorError(
                 f"Template '{self.template}' requires concept={expected_concept}, "
@@ -795,7 +831,7 @@ class ManimGenerator:
         activation = str(values.get("activation", "relu")).strip().lower()
         if activation not in {"relu", "sigmoid", "tanh"}:
             activation = "relu"
-        target_duration_seconds = self.target_duration_seconds or 100
+        target_duration_seconds = self.target_duration_seconds or 130
         timeline = neural_network_transform_timeline_segments(target_duration_seconds)
         return NeuralNetworkTransformParams(
             target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),
@@ -804,6 +840,41 @@ class ManimGenerator:
             input_feature_labels=tuple(input_labels),  # type: ignore[arg-type]
             transformed_feature_labels=tuple(transformed_labels),  # type: ignore[arg-type]
             activation=activation,  # type: ignore[arg-type]
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
+            narration_lines=[scene.narration for scene in storyboard.scenes],
+        )
+
+    def _activation_functions_params_from_storyboard(
+        self,
+        storyboard: Storyboard,
+    ) -> ActivationFunctionsParams:
+        values = storyboard.examples[0].values if storyboard.examples else {}
+        labels = _string_sequence(
+            values.get("class_labels"),
+            ("猫", "犬", "鳥"),
+            expected_length=3,
+        )
+        logits = _float_sequence(
+            values.get("logits"),
+            (2.0, 1.0, -0.5),
+            expected_length=3,
+        )
+        probabilities = _float_sequence(
+            values.get("probabilities"),
+            _softmax(logits),
+            expected_length=3,
+        )
+        target_duration_seconds = self.target_duration_seconds or 100
+        timeline = activation_functions_timeline_segments(target_duration_seconds)
+        return ActivationFunctionsParams(
+            target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),
+            title=_title_from_storyboard(storyboard),
+            formula_latex=storyboard.formula or r"a=f(z),\quad p=\mathrm{softmax}(o)",
+            class_labels=tuple(labels),  # type: ignore[arg-type]
+            logits=tuple(logits),  # type: ignore[arg-type]
+            probabilities=tuple(_normalize_probabilities(probabilities)),  # type: ignore[arg-type]
             segment_durations=segment_duration_map(timeline),
             segment_metadata=segment_metadata_map(timeline),
             template_components=_template_components_from_storyboard(storyboard),
@@ -864,6 +935,13 @@ def _title_from_storyboard(storyboard: Storyboard) -> str:
         "representation_learning",
     }:
         return "Neural Network Transform"
+    if storyboard.concept in {
+        "activation_functions",
+        "activation_function",
+        "activations",
+        "活性化関数",
+    }:
+        return "Activation Functions"
     return storyboard.concept.replace("_", " ").title()
 
 
@@ -966,6 +1044,17 @@ def _normalize_probabilities(values: tuple[float, ...]) -> tuple[float, ...]:
     correction = 1.0 - sum(normalized)
     normalized[-1] += correction
     return tuple(normalized)
+
+
+def _softmax(values: tuple[float, ...]) -> tuple[float, ...]:
+    if not values:
+        return ()
+    max_value = max(values)
+    exps = [math.exp(value - max_value) for value in values]
+    total = sum(exps)
+    if total <= 0:
+        return tuple(1.0 / len(values) for _ in values)
+    return tuple(value / total for value in exps)
 
 
 def _float_layout_param(

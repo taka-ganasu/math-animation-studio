@@ -330,3 +330,34 @@ def test_plan_no_llm_neural_network_transform_outputs_storyboard(tmp_path) -> No
     assert explanation_plan["selected_animation_pattern_id"] == "neural_network_transform_flow"
     assert "$$\nh=\\sigma(Wx+b)\n$$" in brief
     assert "解きやすい座標系" in brief
+
+
+def test_plan_no_llm_activation_functions_outputs_storyboard(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"a=f(z),\quad p=\mathrm{softmax}(o)",
+            "--goal",
+            "ReLU、sigmoid、tanh、softmaxの違いと、隠れ層・出力層での使い分けを直感的に理解したい",
+            "--concept-hint",
+            "activation_functions",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    explanation_plan = json.loads((tmp_path / "explanation_plan.json").read_text(encoding="utf-8"))
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
+    assert storyboard.concept == "activation_functions"
+    assert storyboard.examples[0].values["class_labels"] == ["猫", "犬", "鳥"]
+    assert explanation_plan["selected_animation_pattern_id"] == "activation_function_comparison"
+    assert "$$\na=f(z),\\quad p=\\mathrm{softmax}(o)\n$$" in brief
+    assert "Adamなどの最適化手法" in brief

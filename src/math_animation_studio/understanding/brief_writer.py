@@ -199,6 +199,12 @@ def _animation_policy_rows(
             "- 方針: 入力特徴空間を線形変換と非線形変換で中間表現へ変え、最後の判断が単純になる様子を見せる。",
             "- 比喩: データを解きやすい座標系へ変換する。",
         ]
+    if selected_pattern.id == "activation_function_comparison":
+        return [
+            "- パターン: Activation Function Comparison",
+            "- 方針: ReLU、sigmoid、tanh、softmaxを曲線と確率バーで比較し、隠れ層と出力層での使い分けを見せる。",
+            "- 比喩: 値をどんな形で次へ渡すかを決める変換ゲート。",
+        ]
     if selected_pattern.id == "backpropagation_chain_rule":
         return [
             "- パターン: Backpropagation Chain Rule",
