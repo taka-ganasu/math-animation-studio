@@ -58,9 +58,18 @@ concepts:
       - backprop
       - 誤差逆伝播
       - 逆伝播
-      - chain rule
-      - 連鎖律
     likely_formulas:
       - "\\delta^{(l)} = (W^{(l+1)T}\\delta^{(l+1)}) \\odot \\sigma'(z^{(l)})"
       - "W \\leftarrow W - \\eta \\frac{\\partial L}{\\partial W}"
     recommended_animation_family: backpropagation_chain_rule
+
+  chain_rule:
+    domain: calculus
+    aliases:
+      - chain rule
+      - 連鎖律
+      - 合成関数の微分
+    likely_formulas:
+      - "\\frac{dy}{dx}=\\frac{dy}{du}\\frac{du}{dx}"
+      - "\\frac{\\partial L}{\\partial W}=\\frac{\\partial L}{\\partial \\hat{y}}\\frac{\\partial \\hat{y}}{\\partial W}"
+    recommended_animation_family: chain_rule_flow

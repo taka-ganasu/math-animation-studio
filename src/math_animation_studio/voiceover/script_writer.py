@@ -7,6 +7,7 @@ from math_animation_studio.schema import Storyboard
 from math_animation_studio.timing import (
     TimelineSegment,
     backpropagation_timeline_segments,
+    chain_rule_timeline_segments,
     cross_entropy_timeline_segments,
     fully_connected_timeline_segments,
     gradient_double_well_1d_timeline_segments,
@@ -113,6 +114,20 @@ class VoiceoverScriptWriter:
                 "各重みをどう直すかを計算する方法です。"
                 "最後に、その勾配を使って重みを少し更新します。"
             )
+        if concept == "chain_rule":
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
+                return "".join(
+                    segment.text
+                    for segment in self.write_segments(
+                        storyboard,
+                        target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
+                    )
+                )
+            return (
+                "連鎖律は、途中の変化率を掛けて、端から端の変化率を求めるルールです。"
+                "xがuを変え、uがyを変えるなら、xからyへの影響は二つの変化率の積になります。"
+            )
 
         sentences = [storyboard.one_sentence_summary]
         for scene in storyboard.scenes[:3]:
@@ -157,6 +172,11 @@ class VoiceoverScriptWriter:
         if concept == "backpropagation":
             timeline = backpropagation_timeline_segments(target_duration_seconds)
             text_by_id = _backpropagation_segment_text()
+            return _segments_from_timeline(timeline, text_by_id)
+
+        if concept == "chain_rule":
+            timeline = chain_rule_timeline_segments(target_duration_seconds)
+            text_by_id = _chain_rule_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
@@ -501,6 +521,20 @@ def _backpropagation_segment_text() -> dict[str, str]:
         "hidden_credit": "隠れ層の各ノードにも、損失にどれだけ効いたかを表す信号が割り当てられます。",
         "weight_update": "最後に、その勾配を使って重みを更新します。勾配の逆向きへ少し動かします。",
         "summary": "まとめると、逆伝播は誤差信号を作り、重みごとの勾配に変え、重み更新へつなげる計算です。",
+    }
+
+
+def _chain_rule_segment_text() -> dict[str, str]:
+    return {
+        "title_intro": "今回は、連鎖律を見ていきます。途中の変化率を掛けて、端から端の変化率にするルールです。",
+        "composition_flow": "xが変わると、まず途中のuが変わります。そしてuが変わることで、最後のyが変わります。",
+        "rate_du_dx": "du dxは、xを少し動かしたとき、uがどれだけ動くかを表します。",
+        "rate_dy_du": "dy duは、uを少し動かしたとき、yがどれだけ動くかを表します。",
+        "multiply_rates": "xからyへの影響は、xからuへの影響と、uからyへの影響を掛けてつなぎます。",
+        "numeric_example": "たとえばuが二xプラス一、yがuの二乗なら、xが一の場所では、二と六を掛けて十二になります。",
+        "ml_bridge": "機械学習では、重みを少し変えると予測が変わり、その結果として損失が変わります。",
+        "backprop_bridge": "バックプロパゲーションは、この連鎖律を層ごとに繰り返し、遠い重みまで微分を届けます。",
+        "summary": "まとめると、連鎖律は二階微分ではなく、一階微分の変化率を途中で掛けてつなぐルールです。",
     }
 
 

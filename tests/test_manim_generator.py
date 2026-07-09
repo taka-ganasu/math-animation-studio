@@ -160,6 +160,36 @@ def test_generator_writes_compilable_backpropagation_scene(tmp_path) -> None:
     validate_python_syntax(output_path)
 
 
+def test_generator_writes_compilable_chain_rule_scene(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+        goal="連鎖律を2階微分ではなく変化率のつながりとして理解したい",
+        audience="high_school_math",
+        concept_hint="chain_rule",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    generator = ManimGenerator(target_duration_seconds=88)
+    params = generator.generate(artifacts.storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert output_path.exists()
+    assert generator.scene_name_for(artifacts.storyboard) == "ChainRuleScene"
+    assert "class ChainRuleScene" in rendered
+    assert "construct_composition_flow" in rendered
+    assert "construct_ml_bridge" in rendered
+    assert "construct_backprop_bridge" in rendered
+    assert "composition_flow" in params.segment_durations
+    assert "multiply_rates" in params.segment_durations
+    assert "ml_bridge" in params.segment_durations
+    assert sum(params.segment_durations.values()) == pytest.approx(88.0)
+    assert params.du_dx == pytest.approx(2.0)
+    assert params.dy_du == pytest.approx(6.0)
+    assert params.dy_dx == pytest.approx(12.0)
+    validate_python_syntax(output_path)
+
+
 def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> None:
     storyboard = Storyboard(
         concept="cross_entropy",

@@ -329,6 +329,8 @@ def _render_concept(explanation_plan: ExplanationPlan) -> str:
         return "fully_connected_network"
     if explanation_plan.selected_animation_pattern_id == "backpropagation_chain_rule":
         return "backpropagation"
+    if explanation_plan.selected_animation_pattern_id == "chain_rule_flow":
+        return "chain_rule"
     return explanation_plan.target_concept
 
 

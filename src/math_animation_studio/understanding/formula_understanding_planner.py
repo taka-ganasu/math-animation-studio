@@ -167,20 +167,27 @@ def _coerce_animation_family(
         ]
     ).lower()
 
+    explicitly_chain_rule = (
+        requested == "chain_rule_flow"
+        or _normalize_concept_name(classification.primary_concept) == "chain_rule"
+        or _normalize_concept_name(explanation_plan.target_concept) == "chain_rule"
+    )
+    if explicitly_chain_rule:
+        return "chain_rule_flow"
+
     if (
         "backpropagation" in text
         or "backprop" in text
         or "誤差逆伝播" in text
         or "逆伝播" in text
-        or "chain_rule" in text
-        or "chain rule" in text
-        or "連鎖律" in text
         or "\\delta" in text
         or "δ" in text
         or "\\partial l" in text
         or "∂l" in text
     ):
         return "backpropagation_chain_rule"
+    if "chain_rule" in text or "chain rule" in text or "連鎖律" in text:
+        return "chain_rule_flow"
     if (
         "cross_entropy" in text
         or "cross entropy" in text
@@ -219,3 +226,7 @@ def _coerce_animation_family(
     if "attention" in text or ("q" in formula.lower() and "k" in formula.lower() and "v" in formula.lower()):
         return "matrix_similarity_heatmap"
     return requested
+
+
+def _normalize_concept_name(value: str) -> str:
+    return value.lower().replace("-", "_").replace(" ", "_")

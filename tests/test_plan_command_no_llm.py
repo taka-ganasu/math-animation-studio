@@ -268,3 +268,34 @@ def test_plan_no_llm_gradient_double_well_1d_outputs_storyboard(tmp_path) -> Non
     assert storyboard.scenes[2].narration_cues[0].formula_focus == r"-\nabla L(\theta_t)"
     assert "損失曲線" in brief
     assert "谷・山・谷" in brief
+
+
+def test_plan_no_llm_chain_rule_outputs_storyboard(tmp_path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "plan",
+            "--formula",
+            r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+            "--goal",
+            "連鎖律を2階微分ではなく変化率のつながりとして理解したい",
+            "--concept-hint",
+            "chain_rule",
+            "--output-dir",
+            str(tmp_path),
+            "--no-llm",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    storyboard = Storyboard.model_validate_json(
+        (tmp_path / "storyboard.json").read_text(encoding="utf-8")
+    )
+    explanation_plan = json.loads((tmp_path / "explanation_plan.json").read_text(encoding="utf-8"))
+    brief = (tmp_path / "animation_brief.md").read_text(encoding="utf-8")
+
+    assert storyboard.concept == "chain_rule"
+    assert storyboard.examples[0].values["dy_dx"] == 12
+    assert explanation_plan["selected_animation_pattern_id"] == "chain_rule_flow"
+    assert "$$\n\\frac{dy}{dx}=\\frac{dy}{du}\\frac{du}{dx}\n$$" in brief
+    assert "2階微分ではない" in brief

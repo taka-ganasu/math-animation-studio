@@ -59,6 +59,21 @@ def detect_sample_key(formula: str) -> str:
             "concept_hint:勾配降下法",
         )
     )
+    wants_chain_rule = any(
+        keyword in normalized
+        for keyword in (
+            "concept_hint:chain_rule",
+            "concept_hint:chainrule",
+            "concept_hint:連鎖律",
+            "chainrule",
+            "chain_rule",
+            "chain rule",
+            "連鎖律",
+            "dy/dx",
+            "\\frac{dy}{dx}",
+            "\\frac{\\partial y}{\\partial x}",
+        )
+    )
     wants_backpropagation = any(
         keyword in normalized
         for keyword in (
@@ -69,9 +84,6 @@ def detect_sample_key(formula: str) -> str:
             "backprop",
             "誤差逆伝播",
             "逆伝播",
-            "chainrule",
-            "chain_rule",
-            "連鎖律",
             "deltal",
             "\\delta",
             "∂l/∂w",
@@ -116,6 +128,8 @@ def detect_sample_key(formula: str) -> str:
             "decisionboundary",
         )
     )
+    if wants_chain_rule:
+        return "chain_rule"
     if wants_backpropagation:
         return "backpropagation"
     if wants_fully_connected:
@@ -258,6 +272,30 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["実装ではミニバッチや行列演算でまとめて計算するが、MVPでは1サンプルの流れとして可視化する。"],
             confidence=0.9,
         )
+    if key == "chain_rule":
+        return FormulaAnalysis(
+            raw_formula=formula,
+            normalized_formula_latex=r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+            detected_name="chain_rule",
+            short_description="連鎖律は、途中変数を通る変化を、隣同士の変化率の積としてつなげる微分のルールである。",
+            symbols=[
+                SymbolRole(symbol="x", normalized_symbol="outer_input", role="input", meaning="最初に少し動かす入力", intuition="変化の出発点", confidence=0.9),
+                SymbolRole(symbol="u", normalized_symbol="intermediate_variable", role="intermediate", meaning="xから作られる途中変数", intuition="変化が通る中継地点", confidence=0.9),
+                SymbolRole(symbol="y", normalized_symbol="final_output", role="output", meaning="uから作られる最終出力", intuition="最後にどれだけ変わったかを見る量", confidence=0.9),
+                SymbolRole(symbol=r"\frac{du}{dx}", normalized_symbol="inner_rate", role="rate", meaning="xを少し動かしたときuがどれだけ変わるか", intuition="xからuへの変化率", confidence=0.9),
+                SymbolRole(symbol=r"\frac{dy}{du}", normalized_symbol="outer_rate", role="rate", meaning="uを少し動かしたときyがどれだけ変わるか", intuition="uからyへの変化率", confidence=0.9),
+            ],
+            operations=[
+                OperationAnalysis(operation=r"u=g(x)", meaning="xから途中変数uを作る", intuition="変化の中継地点を置く", visual_hint="x -> u の矢印で表示する"),
+                OperationAnalysis(operation=r"y=f(u)", meaning="途中変数uから最終出力yを作る", intuition="中継地点から最終結果へ進む", visual_hint="u -> y の矢印で表示する"),
+                OperationAnalysis(operation=r"\frac{dy}{du}\frac{du}{dx}", meaning="隣同士の変化率を掛ける", intuition="変化の伝わり方をつなぐ", visual_hint="2本の矢印のラベルを掛け合わせる"),
+            ],
+            inputs=["x"],
+            outputs=["y"],
+            assumptions=["y=f(u), u=g(x) のように関数が合成されている", "各関数は微分可能"],
+            ambiguity_notes=["偏微分の連鎖律では変数が複数になるが、MVPでは1変数の合成関数から説明する。"],
+            confidence=0.9,
+        )
     if key == "perceptron":
         return FormulaAnalysis(
             raw_formula=formula,
@@ -304,6 +342,8 @@ def sample_classification(key: str) -> ConceptClassification:
         return ConceptClassification(primary_domain="deep_learning", primary_concept="fully_connected_network", related_concepts=["dense_layer", "multilayer_perceptron", "activation_function", "softmax", "forward_pass"], difficulty_level="undergraduate_intro", recommended_animation_family="fully_connected_forward_pass", confidence=0.9)
     if key == "backpropagation":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="backpropagation", related_concepts=["chain_rule", "gradient", "fully_connected_network", "cross_entropy", "gradient_descent"], difficulty_level="undergraduate_intro", recommended_animation_family="backpropagation_chain_rule", confidence=0.9)
+    if key == "chain_rule":
+        return ConceptClassification(primary_domain="calculus", primary_concept="chain_rule", related_concepts=["derivative", "composition_function", "backpropagation"], difficulty_level="undergraduate_intro", recommended_animation_family="chain_rule_flow", confidence=0.9)
     if key == "perceptron":
         return ConceptClassification(primary_domain="machine_learning", primary_concept="perceptron", related_concepts=["linear_classifier", "activation_function", "decision_boundary", "neural_network"], difficulty_level="undergraduate_intro", recommended_animation_family="perceptron_decision_boundary", confidence=0.9)
     return ConceptClassification(primary_domain="unknown", primary_concept="unknown_formula", related_concepts=[], difficulty_level="undergraduate_intro", recommended_animation_family="generic_symbol_decomposition", confidence=0.35)
@@ -360,6 +400,16 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
                 PrerequisiteItem(concept="勾配降下法", why_needed="計算した勾配を使って重みを更新するため", priority="helpful", suggested_micro_explanation="損失が増える方向の逆へ少し動かす。"),
             ],
             likely_blockers=["逆伝播を単なる逆再生だと思うこと", "誤差信号と重み更新を混同すること", "活性化関数の微分を掛ける理由を見落とすこと"],
+        )
+    if key == "chain_rule":
+        return PrerequisiteMap(
+            target_concept="chain_rule",
+            prerequisites=[
+                PrerequisiteItem(concept="微分", why_needed="小さな入力変化に対する出力変化を読むため", priority="required", suggested_micro_explanation="微分は、入力を少し動かしたとき出力がどれだけ動くかを表す。"),
+                PrerequisiteItem(concept="合成関数", why_needed="xからu、uからyのように途中変数を通る構造を読むため", priority="required", suggested_micro_explanation="合成関数は、ある関数の出力を次の関数の入力にする形である。"),
+                PrerequisiteItem(concept="偏微分", why_needed="機械学習では重みや予測など複数変数の一部だけを動かすため", priority="helpful", suggested_micro_explanation="偏微分は、他の変数を固定して1つの変数だけ少し動かす見方である。"),
+            ],
+            likely_blockers=["∂Lや∂yを微分済みの値だと読むこと", "連鎖律を2階微分と混同すること", "途中の変化率を掛ける意味が見えないこと"],
         )
     if key == "perceptron":
         return PrerequisiteMap(
@@ -421,6 +471,155 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
             ],
             misconceptions=["全クラスの確率が同じように損失へ効くわけではない", "logは小さい確率を強く罰するために効いている", "損失は確率そのものではなく罰の大きさである"],
             next_questions_to_study=["softmax", "negative log likelihood", "KL divergence"],
+        )
+    if key == "chain_rule":
+        return ExplanationPlan(
+            formula=r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+            target_concept="chain_rule",
+            one_sentence_summary="連鎖律は、途中変数を通る変化を、隣同士の変化率の積としてつなぐルールである。",
+            audience=audience,
+            teaching_strategy="concrete_to_abstract",
+            recommended_examples=[
+                TeachingExample(
+                    title="合成関数 u=2x+1, y=u^2",
+                    description="xを動かすとuが変わり、uが変わるとyが変わる単純な例で、変化率の掛け算を見る。",
+                    why_it_works="数値が小さく、du/dxとdy/duを別々に見てからdy/dxへつなげやすい。",
+                    concrete_values={
+                        "x_value": 1,
+                        "u_value": 3,
+                        "y_value": 9,
+                        "du_dx": 2,
+                        "dy_du": 6,
+                        "dy_dx": 12,
+                    },
+                ),
+                TeachingExample(
+                    title="重みから損失までの影響",
+                    description="重みWを少し変えると予測y_hatが変わり、その結果損失Lが変わる流れを見る。",
+                    why_it_works="バックプロパゲーションで使う dL/dW の直感へ自然につながる。",
+                    concrete_values={
+                        "x_value": 1,
+                        "u_value": 3,
+                        "y_value": 9,
+                        "du_dx": 2,
+                        "dy_du": 6,
+                        "dy_dx": 12,
+                    },
+                ),
+            ],
+            selected_animation_pattern_id="chain_rule_flow",
+            explanation_steps=[
+                ExplanationStep(
+                    id="step_01",
+                    scene_role="title_intro",
+                    title="連鎖律を見る",
+                    learning_goal="連鎖律が2階微分ではなく変化率の接続であることをつかむ",
+                    explanation="今回は、連鎖律を見ていきます。途中の変化率を掛けて、端から端の変化率にするルールです。",
+                    visual_idea="連鎖律の式を大きく表示し、途中の変化率を掛けるという見方を示す。",
+                    formula_focus=r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="連鎖律の全体式を表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_02",
+                    scene_role="formula_structure",
+                    title="途中変数を置く",
+                    learning_goal="xからu、uからyへ変化が流れる構造を理解する",
+                    explanation="xが変わると、まず途中のuが変わります。そしてuが変わることで、最後のyが変わります。",
+                    visual_idea="x -> u -> y の3つのカードを矢印でつなぐ。",
+                    formula_focus=r"x\rightarrow u\rightarrow y",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="xからu、uからyへの流れを見せる"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_03",
+                    scene_role="formula_structure",
+                    title="xからuへの変化率を見る",
+                    learning_goal="du/dxがxを少し動かしたときのuの動きであることを理解する",
+                    explanation="du dxは、xを少し動かしたとき、uがどれだけ動くかを表します。",
+                    visual_idea="x -> u の矢印と du/dx を強調する。",
+                    formula_focus=r"\frac{du}{dx}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="formula_focus", description="du/dxを強調する", params={"formula_focus": r"\frac{du}{dx}"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_04",
+                    scene_role="formula_structure",
+                    title="uからyへの変化率を見る",
+                    learning_goal="dy/duがuを少し動かしたときのyの動きであることを理解する",
+                    explanation="dy duは、uを少し動かしたとき、yがどれだけ動くかを表します。",
+                    visual_idea="u -> y の矢印と dy/du を強調する。",
+                    formula_focus=r"\frac{dy}{du}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="formula_focus", description="dy/duを強調する", params={"formula_focus": r"\frac{dy}{du}"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_05",
+                    scene_role="visualization",
+                    title="変化率を掛けてつなぐ",
+                    learning_goal="隣同士の変化率の積で端から端の変化率が出ることを理解する",
+                    explanation="xからyへの影響は、xからuへの影響と、uからyへの影響を掛けてつなぎます。",
+                    visual_idea="dy/dx = dy/du * du/dx の積を強調する。",
+                    formula_focus=r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="隣同士の変化率の積を示す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_06",
+                    scene_role="concrete_example",
+                    title="数値例で確かめる",
+                    learning_goal="u=2x+1, y=u^2 の例で連鎖律を計算できる",
+                    explanation="たとえばuが二xプラス一、yがuの二乗なら、xが一の場所では、二と六を掛けて十二になります。",
+                    visual_idea="u=2x+1、y=u^2、du/dx=2、dy/du=6、dy/dx=12を順に表示する。",
+                    formula_focus=r"u=2x+1,\ y=u^2",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="具体値で変化率の積を計算する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_07",
+                    scene_role="visualization",
+                    title="機械学習の式につなぐ",
+                    learning_goal="重みから予測、予測から損失へ影響が伝わることを理解する",
+                    explanation="機械学習では、重みを少し変えると予測が変わり、その結果として損失が変わります。",
+                    visual_idea="W -> y_hat -> L の流れと dL/dW = dL/dy_hat * dy_hat/dW を表示する。",
+                    formula_focus=r"\frac{\partial L}{\partial W}=\frac{\partial L}{\partial \hat{y}}\frac{\partial \hat{y}}{\partial W}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="重みから損失への連鎖律を見せる"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_08",
+                    scene_role="visualization",
+                    title="逆伝播への橋渡し",
+                    learning_goal="バックプロパゲーションが連鎖律を層ごとに使うことを理解する",
+                    explanation="バックプロパゲーションは、この連鎖律を層ごとに繰り返し、遠い重みまで微分を届けます。",
+                    visual_idea="損失から入力側へ、途中の微分を掛けながら戻る矢印を表示する。",
+                    formula_focus=r"\frac{\partial L}{\partial W}=\frac{\partial L}{\partial a}\frac{\partial a}{\partial z}\frac{\partial z}{\partial W}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="backward_pass", description="連鎖律を使って損失側から戻る流れを示す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_09",
+                    scene_role="summary",
+                    title="2階微分ではないことを確認する",
+                    learning_goal="連鎖律と2階微分の違いを整理する",
+                    explanation="まとめると、連鎖律は二階微分ではなく、一階微分の変化率を途中で掛けてつなぐルールです。",
+                    visual_idea="途中変数、隣同士の変化率、掛け算でつなぐ、の3点をまとめる。",
+                    formula_focus=r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="summary", description="連鎖律の要点をまとめる"),
+                    ],
+                ),
+            ],
+            misconceptions=["連鎖律は2階微分ではない", "∂Lや∂yは微分済みの値ではなく小さな変化量として読む", "掛け算は途中の影響をつなぐために出てくる"],
+            next_questions_to_study=["合成関数", "偏微分の連鎖律", "バックプロパゲーション"],
         )
     if key == "gradient_descent":
         return ExplanationPlan(

@@ -14,6 +14,7 @@ from math_animation_studio.schema import ExampleValue, Storyboard, VisualObject
 from math_animation_studio.safe_presets import normalize_loss_surface_preset
 from math_animation_studio.timing import (
     backpropagation_timeline_segments,
+    chain_rule_timeline_segments,
     cross_entropy_timeline_segments,
     fully_connected_timeline_segments,
     gradient_double_well_1d_timeline_segments,
@@ -226,6 +227,24 @@ class BackpropagationParams(BaseModel):
     narration_lines: list[str] = Field(default_factory=list)
 
 
+class ChainRuleParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = "Chain Rule"
+    target_duration_seconds: float = Field(default=88.0, ge=5, le=180)
+    formula_latex: str = r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}"
+    x_value: float = 1.0
+    u_value: float = 3.0
+    y_value: float = 9.0
+    du_dx: float = 2.0
+    dy_du: float = 6.0
+    dy_dx: float = 12.0
+    segment_durations: dict[str, float] = Field(default_factory=dict)
+    segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
+    narration_lines: list[str] = Field(default_factory=list)
+
+
 class ManimGenerator:
     def __init__(
         self,
@@ -242,7 +261,14 @@ class ManimGenerator:
         self,
         storyboard: Storyboard,
         output_path: Path,
-    ) -> GradientDescentParams | PenaltyCurveParams | PerceptronParams | FullyConnectedParams | BackpropagationParams:
+    ) -> (
+        GradientDescentParams
+        | PenaltyCurveParams
+        | PerceptronParams
+        | FullyConnectedParams
+        | BackpropagationParams
+        | ChainRuleParams
+    ):
         template_name = self._select_template(storyboard)
         if template_name == "gradient_descent_3d":
             params = self._gradient_descent_params_from_storyboard(storyboard)
@@ -256,6 +282,9 @@ class ManimGenerator:
         elif template_name == "backpropagation":
             params = self._backpropagation_params_from_storyboard(storyboard)
             template = self._environment().get_template("backpropagation.py.j2")
+        elif template_name == "chain_rule":
+            params = self._chain_rule_params_from_storyboard(storyboard)
+            template = self._environment().get_template("chain_rule.py.j2")
         else:
             params = self._perceptron_params_from_storyboard(storyboard)
             template = self._environment().get_template("perceptron.py.j2")
@@ -275,6 +304,8 @@ class ManimGenerator:
             return "FullyConnectedNetworkScene"
         if template_name == "backpropagation":
             return "BackpropagationScene"
+        if template_name == "chain_rule":
+            return "ChainRuleScene"
         return "CrossEntropyPenaltyScene"
 
     def _select_template(self, storyboard: Storyboard) -> str:
@@ -285,12 +316,14 @@ class ManimGenerator:
             "perceptron",
             "fully_connected_network",
             "backpropagation",
+            "chain_rule",
         }
         if self.template not in supported_templates:
             raise GeneratorError(
                 f"Unsupported template '{self.template}'. "
                 "Use 'auto', 'gradient_descent_3d', 'penalty_curve', "
-                "'perceptron', 'fully_connected_network', or 'backpropagation'."
+                "'perceptron', 'fully_connected_network', 'backpropagation', "
+                "or 'chain_rule'."
             )
 
         concept = _normalized_concept(storyboard.concept)
@@ -305,10 +338,13 @@ class ManimGenerator:
                 return "fully_connected_network"
             if concept in {"backpropagation", "backprop"}:
                 return "backpropagation"
+            if concept in {"chain_rule", "chainrule", "連鎖律"}:
+                return "chain_rule"
             raise GeneratorError(
                 "MVP render templates support concept=gradient_descent, "
                 "concept=cross_entropy, concept=perceptron, "
-                "concept=fully_connected_network, or concept=backpropagation."
+                "concept=fully_connected_network, concept=backpropagation, "
+                "or concept=chain_rule."
             )
 
         expected_concept = {
@@ -317,10 +353,13 @@ class ManimGenerator:
             "perceptron": "perceptron",
             "fully_connected_network": "fully_connected_network",
             "backpropagation": "backpropagation",
+            "chain_rule": "chain_rule",
         }[self.template]
         allowed_concepts = {expected_concept}
         if expected_concept == "backpropagation":
             allowed_concepts.add("backprop")
+        if expected_concept == "chain_rule":
+            allowed_concepts.update({"chainrule", "連鎖律"})
         if concept not in allowed_concepts:
             raise GeneratorError(
                 f"Template '{self.template}' requires concept={expected_concept}, "
@@ -680,9 +719,35 @@ class ManimGenerator:
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
+    def _chain_rule_params_from_storyboard(self, storyboard: Storyboard) -> ChainRuleParams:
+        values = storyboard.examples[0].values if storyboard.examples else {}
+        x_value = _safe_float(values.get("x_value"), 1.0)
+        u_value = _safe_float(values.get("u_value"), 2.0 * x_value + 1.0)
+        y_value = _safe_float(values.get("y_value"), u_value**2)
+        du_dx = _safe_float(values.get("du_dx"), 2.0)
+        dy_du = _safe_float(values.get("dy_du"), 2.0 * u_value)
+        dy_dx = _safe_float(values.get("dy_dx"), du_dx * dy_du)
+        target_duration_seconds = self.target_duration_seconds or 88
+        timeline = chain_rule_timeline_segments(target_duration_seconds)
+        return ChainRuleParams(
+            target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),
+            title=_title_from_storyboard(storyboard),
+            formula_latex=storyboard.formula or r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+            x_value=x_value,
+            u_value=u_value,
+            y_value=y_value,
+            du_dx=du_dx,
+            dy_du=dy_du,
+            dy_dx=dy_dx,
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
+            narration_lines=[scene.narration for scene in storyboard.scenes],
+        )
+
 
 def _normalized_concept(concept: str) -> str:
-    return concept.strip().lower().replace("-", "_")
+    return concept.strip().lower().replace("-", "_").replace(" ", "_")
 
 
 def _gradient_timeline_segments(
@@ -726,6 +791,8 @@ def _title_from_storyboard(storyboard: Storyboard) -> str:
         return "Fully Connected Neural Network"
     if storyboard.concept == "backpropagation":
         return "Backpropagation"
+    if storyboard.concept in {"chain_rule", "chainrule", "連鎖律"}:
+        return "Chain Rule"
     return storyboard.concept.replace("_", " ").title()
 
 

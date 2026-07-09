@@ -153,6 +153,19 @@ BACKPROPAGATION_BASE_TIMELINE = (
 )
 
 
+CHAIN_RULE_BASE_TIMELINE = (
+    TimelineSegment("title_intro", 8.0, "intro_formula"),
+    TimelineSegment("composition_flow", 10.0, "chain_rule", r"x\rightarrow u\rightarrow y"),
+    TimelineSegment("rate_du_dx", 9.0, "formula_parts_focus", r"\frac{du}{dx}"),
+    TimelineSegment("rate_dy_du", 9.0, "formula_parts_focus", r"\frac{dy}{du}"),
+    TimelineSegment("multiply_rates", 10.0, "chain_rule", r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}"),
+    TimelineSegment("numeric_example", 12.0, "chain_rule", r"u=2x+1,\ y=u^2"),
+    TimelineSegment("ml_bridge", 12.0, "chain_rule", r"\frac{\partial L}{\partial W}=\frac{\partial L}{\partial \hat{y}}\frac{\partial \hat{y}}{\partial W}"),
+    TimelineSegment("backprop_bridge", 10.0, "backward_pass"),
+    TimelineSegment("summary", 8.0, "summary", r"\text{途中の変化率を掛けてつなぐ}"),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -255,6 +268,14 @@ def backpropagation_timeline_segments(
     if target_duration_seconds is None:
         return BACKPROPAGATION_BASE_TIMELINE
     return scale_timeline(BACKPROPAGATION_BASE_TIMELINE, float(target_duration_seconds))
+
+
+def chain_rule_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return CHAIN_RULE_BASE_TIMELINE
+    return scale_timeline(CHAIN_RULE_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(

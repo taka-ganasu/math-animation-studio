@@ -81,6 +81,12 @@ PATTERN_COMPONENTS: dict[str, dict[SceneRole, tuple[str, ...]]] = {
         "visualization": ("backward_pass", "error_attribution", "weight_update", "chain_rule"),
         "summary": ("summary", "formula_focus"),
     },
+    "chain_rule_flow": {
+        "formula_structure": ("formula_focus", "chain_rule", "text_caption"),
+        "concrete_example": ("chain_rule", "formula_focus", "text_caption"),
+        "visualization": ("chain_rule", "backward_pass", "formula_focus"),
+        "summary": ("summary", "formula_focus"),
+    },
 }
 
 

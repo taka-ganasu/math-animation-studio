@@ -96,3 +96,16 @@ def test_formula_first_blueprint_supports_backpropagation_components() -> None:
     assert "loss_gradient" in by_role["formula_structure"].preferred_component_kinds
     assert "backward_pass" in by_role["visualization"].preferred_component_kinds
     assert "weight_update" in by_role["visualization"].preferred_component_kinds
+
+
+def test_formula_first_blueprint_supports_chain_rule_components() -> None:
+    blueprint = default_formula_first_blueprint(
+        target_concept="chain_rule",
+        animation_pattern_id="chain_rule_flow",
+    )
+
+    by_role = {beat.role: beat for beat in blueprint.beats}
+
+    assert "chain_rule" in by_role["formula_structure"].preferred_component_kinds
+    assert "chain_rule" in by_role["concrete_example"].preferred_component_kinds
+    assert "backward_pass" in by_role["visualization"].preferred_component_kinds

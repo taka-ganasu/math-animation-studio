@@ -293,3 +293,37 @@ def test_voiceover_script_writer_segments_backpropagation() -> None:
     assert "シグマプライム" in script
     assert "誤差信号" in script
     assert "重みを更新" in script
+
+
+def test_voiceover_script_writer_segments_chain_rule() -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}",
+        goal="連鎖律を2階微分ではなく変化率のつながりとして理解したい",
+        audience="high_school_math",
+        concept_hint="chain_rule",
+    )
+    assert artifacts.storyboard is not None
+
+    writer = VoiceoverScriptWriter()
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=88)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=88)
+
+    assert [segment.id for segment in segments] == [
+        "title_intro",
+        "composition_flow",
+        "rate_du_dx",
+        "rate_dy_du",
+        "multiply_rates",
+        "numeric_example",
+        "ml_bridge",
+        "backprop_bridge",
+        "summary",
+    ]
+    assert segments[2].formula_focus == r"\frac{du}{dx}"
+    assert segments[3].formula_focus == r"\frac{dy}{du}"
+    assert segments[6].component_id == "chain_rule"
+    assert segments[7].component_id == "backward_pass"
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(88.0)
+    assert "連鎖律" in script
+    assert "二階微分ではなく" in script
+    assert "重みを少し変えると予測が変わり" in script

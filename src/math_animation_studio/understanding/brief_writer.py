@@ -199,6 +199,12 @@ def _animation_policy_rows(
             "- 方針: 損失から出力層、隠れ層、重みへ誤差信号を戻し、最後に重み更新へつなげる。",
             "- 比喩: 予測のズレを右から左へ送り返し、各接続へ修正指示を配る。",
         ]
+    if selected_pattern.id == "chain_rule_flow":
+        return [
+            "- パターン: Chain Rule Flow",
+            "- 方針: 合成関数を x -> u -> y の流れとして描き、隣同士の変化率を掛けて端から端の変化率にする。",
+            "- 比喩: 変化が中継地点を通り、各区間の倍率を掛けると全体の倍率になる。",
+        ]
     return [
         f"- パターン: {selected_pattern.name}",
         f"- 方針: {selected_pattern.description}",

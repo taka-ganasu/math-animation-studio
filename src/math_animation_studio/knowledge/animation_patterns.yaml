@@ -101,6 +101,23 @@ patterns:
       - error_signals
       - weight_update
 
+  - id: chain_rule_flow
+    name: Chain Rule Flow
+    suitable_for:
+      - chain_rule
+      - calculus
+      - derivative
+      - composition_function
+      - backpropagation_prerequisite
+    description: 合成関数を x -> u -> y の流れとして描き、隣同士の変化率を掛けて端から端の変化率にする様子を見せる。
+    visual_metaphor: 変化が中継地点を通って伝わり、各区間の倍率を掛けると全体の倍率になる。
+    manim_template: chain_rule.py.j2
+    required_visual_objects:
+      - formula
+      - arrows
+      - rate_cards
+      - numeric_example
+
   - id: row_column_matrix_product
     name: Row Column Matrix Product
     suitable_for:

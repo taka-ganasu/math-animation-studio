@@ -40,6 +40,22 @@ math-anim catalog --format json
 対応テンプレート:
 `penalty_curve`, `gradient_descent_3d`, `storyboard_only`
 
+### chain_rule
+
+用途:
+合成関数やバックプロパゲーションで、途中の変化率を掛けて端から端の変化率にする流れを示します。
+
+使う場面:
+- $\frac{dy}{dx}=\frac{dy}{du}\frac{du}{dx}$ を説明する
+- $W \rightarrow \hat{y} \rightarrow L$ の影響をつなぐ
+- 連鎖律が2階微分ではないことを整理する
+
+主なparams:
+- `formula_focus`: 強調する連鎖律の式
+
+対応テンプレート:
+`backpropagation`, `chain_rule`, `storyboard_only`
+
 ### text_caption
 
 用途:

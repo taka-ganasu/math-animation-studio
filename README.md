@@ -256,6 +256,27 @@ math-anim plan \
 
 成功すると、`outputs/backpropagation_phase1/video_with_voice.mp4` が作成されます。
 
+### 連鎖律: 途中の変化率を掛けてつなぐ
+
+`--concept-hint chain_rule` を指定すると、合成関数 `x -> u -> y` の流れから、`dy/dx = dy/du * du/dx` を説明する動画を生成できます。最後に `dL/dW = dL/dy_hat * dy_hat/dW` として、バックプロパゲーションへの接続も見せます。
+
+```bash
+math-anim plan \
+  --formula "\\frac{dy}{dx}=\\frac{dy}{du}\\frac{du}{dx}" \
+  --goal "連鎖律を2階微分ではなく変化率のつながりとして理解したい" \
+  --concept-hint chain_rule \
+  --audience high_school_math \
+  --domain-hint calculus \
+  --duration 88 \
+  --output-dir outputs/chain_rule_intro \
+  --no-llm \
+  --render \
+  --voiceover \
+  --voice-rate 130
+```
+
+成功すると、`outputs/chain_rule_intro/video_with_voice.mp4` が作成されます。
+
 ## LLMで動的に教材企画を生成
 
 OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。
@@ -309,8 +330,8 @@ python -m pytest
 ## 現在の制約
 
 - `generate --no-llm` は `concept=gradient_descent` の固定サンプルのみ対応
-- `plan --no-llm` は Cross Entropy、Gradient Descent、Attention、Perceptron の固定サンプルに対応
-- Manimテンプレートは Gradient Descent の3D曲面、2D等高線、1D損失曲線、Cross Entropy のPenalty Curve、Perceptron の順伝播・決定境界に対応
+- `plan --no-llm` は Cross Entropy、Gradient Descent、Attention、Perceptron、Fully Connected Network、Backpropagation、Chain Rule の固定サンプルに対応
+- Manimテンプレートは Gradient Descent の3D曲面、2D等高線、1D損失曲線、Cross Entropy のPenalty Curve、Perceptron の順伝播・決定境界、Fully Connected Network、Backpropagation、Chain Rule に対応
 - Attentionは企画とStoryboard生成まで対応しており、動画テンプレートは未実装
 - 音声合成はmacOSの `say` コマンドを使う簡易版で、シーン単位の厳密な同期は未実装
 - LLMモードでも動画生成は既存Manimテンプレートに合う数式・パターンのみ対応
