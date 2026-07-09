@@ -138,7 +138,7 @@ def test_generator_writes_compilable_backpropagation_scene(tmp_path) -> None:
     assert artifacts.storyboard is not None
 
     output_path = tmp_path / "manim_scene.py"
-    generator = ManimGenerator(target_duration_seconds=110)
+    generator = ManimGenerator(target_duration_seconds=125)
     params = generator.generate(artifacts.storyboard, output_path)
     rendered = output_path.read_text(encoding="utf-8")
 
@@ -149,7 +149,9 @@ def test_generator_writes_compilable_backpropagation_scene(tmp_path) -> None:
     assert "construct_weight_update" in rendered
     assert "backward_arrows" in params.segment_durations
     assert "weight_update" in params.segment_durations
-    assert sum(params.segment_durations.values()) == pytest.approx(110.0)
+    assert "partial_loss_meaning" in params.segment_durations
+    assert "derivative_ratio_meaning" in params.segment_durations
+    assert sum(params.segment_durations.values()) == pytest.approx(125.0)
     assert params.output_deltas == pytest.approx((-0.28, 0.28))
     assert params.selected_weight_after == pytest.approx(0.438)
     validate_python_syntax(output_path)

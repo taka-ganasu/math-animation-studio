@@ -32,6 +32,7 @@ NARRATION_LINES = {{ params.narration_lines | py_repr }}
 class BackpropagationScene(MathAnimationSceneMixin, Scene):
     def construct(self) -> None:
         self.construct_title_intro()
+        self.construct_partial_derivative_parts()
         self.construct_formula_parts()
         self.construct_forward_context()
         self.construct_loss_signal()
@@ -116,17 +117,79 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
         self.wait_remaining(duration, 2.7)
         self.play(FadeOut(VGroup(title, formula, subtitle)), run_time=0.35)
 
+    def construct_partial_derivative_parts(self) -> None:
+        durations = {
+            "partial_loss_meaning": segment_duration("partial_loss_meaning", 8.0),
+            "partial_prediction_meaning": segment_duration("partial_prediction_meaning", 8.0),
+            "derivative_ratio_meaning": segment_duration("derivative_ratio_meaning", 9.0),
+        }
+        title = self.make_label("まず偏微分の形を読む", font_size=30)
+        title.to_edge(UP, buff=0.35)
+        fraction = self.make_math(r"\frac{\partial L}{\partial \hat{y}}", "dL / d y_hat", font_size=44)
+        fraction.move_to(UP * 1.45)
+        cards = VGroup(
+            self.explain_card(r"\partial L", "損失Lの小さな変化", RED_B),
+            self.explain_card(r"\partial \hat{y}", "予測確率の小さな変化", BLUE_B),
+            self.explain_card(r"\frac{\partial L}{\partial \hat{y}}", "予測を少し動かした時の損失の変化", YELLOW),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.24)
+        cards.move_to(DOWN * 0.55)
+        focus_items = [
+            ("partial_loss_meaning", cards[0], "分子は、結果である損失Lがどれだけ変わったか", RED_B),
+            ("partial_prediction_meaning", cards[1], "分母は、入力側の予測確率をどれだけ動かしたか", BLUE_B),
+            ("derivative_ratio_meaning", cards[2], "分数全体は、割り算というより、変化への反応の強さです", YELLOW),
+        ]
+
+        self.play(FadeIn(title), Write(fraction), FadeIn(cards), run_time=1.0)
+        active_box = None
+        active_label = None
+        for index, (segment_id, target, label_text, color) in enumerate(focus_items):
+            duration = durations[segment_id]
+            used = 1.0 if index == 0 else 0.0
+            if active_box is not None and active_label is not None:
+                fade_time = min(0.16, duration * 0.12)
+                self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
+                used += fade_time
+            box = SurroundingRectangle(target, color=color, buff=0.08)
+            label = self.make_label(label_text, font_size=20, color=color)
+            label.to_edge(DOWN, buff=0.35)
+            entry_time = min(0.35, duration * 0.18)
+            self.play(Create(box), FadeIn(label), run_time=entry_time)
+            used += entry_time
+            self.wait_remaining(duration, used)
+            active_box = box
+            active_label = label
+        cleanup = [FadeOut(title), FadeOut(fraction), FadeOut(cards)]
+        if active_box is not None:
+            cleanup.append(FadeOut(active_box))
+        if active_label is not None:
+            cleanup.append(FadeOut(active_label))
+        self.play(*cleanup, run_time=0.35)
+
+    def explain_card(self, latex: str, text: str, color: ManimColor) -> VGroup:
+        box = RoundedRectangle(
+            corner_radius=0.12,
+            width=7.2,
+            height=0.78,
+            stroke_color=color,
+            fill_color=BLACK,
+            fill_opacity=0.86,
+        )
+        formula = self.make_math(latex, latex, font_size=27)
+        formula.set_color(color)
+        formula.move_to(box.get_left() + RIGHT * 1.15)
+        label = self.make_label(text, font_size=21, color=WHITE)
+        label.move_to(box.get_center() + RIGHT * 1.15)
+        return VGroup(box, formula, label)
+
     def construct_formula_parts(self) -> None:
         durations = {
-            "formula_loss_gradient": segment_duration("formula_loss_gradient", 10.0),
             "formula_output_delta": segment_duration("formula_output_delta", 11.0),
             "formula_hidden_delta": segment_duration("formula_hidden_delta", 12.0),
             "formula_weight_gradient": segment_duration("formula_weight_gradient", 10.0),
         }
-        title = self.make_label("逆向きに流す量を式で見る", font_size=30)
+        title = self.make_label("次に、逆向きに流す量を見る", font_size=30)
         title.to_edge(UP, buff=0.35)
         formulas = VGroup(
-            self.make_math(r"\frac{\partial L}{\partial \hat{y}}", "dL / d y_hat", font_size=30),
             self.make_math(r"\delta^{(2)}=\hat{y}-y", "delta output = y_hat - y", font_size=30),
             self.make_math(
                 r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)})",
@@ -143,10 +206,9 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
             formulas.scale(10.2 / formulas.width)
         formulas.move_to(ORIGIN + UP * 0.2)
         focus_items = [
-            ("formula_loss_gradient", formulas[0], "損失が予測にどう反応するかを見る", RED_B),
-            ("formula_output_delta", formulas[1], "出力層では、予測と正解の差が誤差信号になる", ORANGE),
-            ("formula_hidden_delta", formulas[2], "隠れ層へは、次の層の誤差を重みで戻す", GREEN_B),
-            ("formula_weight_gradient", formulas[3], "各重みの勾配は、誤差信号と手前の出力で決まる", BLUE_B),
+            ("formula_output_delta", formulas[0], "出力層では、予測と正解の差が誤差信号になる", ORANGE),
+            ("formula_hidden_delta", formulas[1], "隠れ層へは、次の層の誤差を重みで戻す", GREEN_B),
+            ("formula_weight_gradient", formulas[2], "各重みの勾配は、誤差信号と手前の出力で決まる", BLUE_B),
         ]
 
         self.play(FadeIn(title), FadeIn(formulas), run_time=0.9)

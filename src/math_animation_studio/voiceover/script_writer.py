@@ -486,7 +486,9 @@ def _fully_connected_segment_text() -> dict[str, str]:
 def _backpropagation_segment_text() -> dict[str, str]:
     return {
         "title_intro": "今回は、バックプロパゲーションを見ていきます。損失から、どの重みをどう直すかを計算する方法です。",
-        "formula_loss_gradient": "まず、損失が予測に対してどう変わるかを見ます。ここが逆向き計算の出発点です。",
+        "partial_loss_meaning": "まず分子のデルLです。これは、損失Lがほんの少し変わる量を表しています。",
+        "partial_prediction_meaning": "次に分母のデル ワイハットです。これは、予測確率をほんの少し動かす量です。",
+        "derivative_ratio_meaning": "分数全体は、予測を少し変えたとき、損失がどれくらい反応するかを表します。",
         "formula_output_delta": "出力層では、予測確率から正解ラベルを引いた値が、最初の誤差信号になります。",
         "formula_hidden_delta": "隠れ層へは、次の層の誤差を重みで戻し、活性化関数の微分を掛けます。",
         "formula_weight_gradient": "各重みの勾配は、その先の誤差信号と、手前から来た出力で決まります。",

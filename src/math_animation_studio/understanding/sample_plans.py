@@ -718,6 +718,18 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                 ExplanationStep(
                     id="step_02",
                     scene_role="formula_structure",
+                    title="偏微分の分数を読む",
+                    learning_goal="デルL、デルyハット、分数全体の意味を理解する",
+                    explanation="分子のデルLは損失の小さな変化、分母のデルyハットは予測確率の小さな変化です。分数全体は、予測を少し動かしたとき損失がどれだけ反応するかを表します。",
+                    visual_idea="partial L、partial yhat、partial L over partial yhatを3つのカードに分けて表示する。",
+                    formula_focus=r"\frac{\partial L}{\partial \hat{y}}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="formula_focus", description="偏微分の分子、分母、全体を順に強調する", params={"formula_focus": r"\frac{\partial L}{\partial \hat{y}}"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_03",
+                    scene_role="formula_structure",
                     title="出力層の誤差を見る",
                     learning_goal="softmaxとクロスエントロピーでは予測 minus 正解が出力誤差になることを理解する",
                     explanation="出力層では、予測確率とone-hot正解ラベルの差が、最初の誤差信号になります。",
@@ -729,7 +741,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_03",
+                    id="step_04",
                     scene_role="formula_structure",
                     title="隠れ層へ誤差を戻す",
                     learning_goal="次の層の誤差を重みで前の層へ配ることを理解する",
@@ -742,7 +754,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_04",
+                    id="step_05",
                     scene_role="formula_structure",
                     title="重みごとの勾配にする",
                     learning_goal="誤差信号と手前の出力から重みの勾配が決まることを理解する",
@@ -754,7 +766,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_05",
+                    id="step_06",
                     scene_role="concrete_example",
                     title="順伝播の結果から始める",
                     learning_goal="逆伝播が順伝播で出た損失を入口にすることを理解する",
@@ -765,7 +777,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_06",
+                    id="step_07",
                     scene_role="visualization",
                     title="誤差を逆向きに流す",
                     learning_goal="逆向きの流れと、途中で微分を掛けることを理解する",
@@ -777,7 +789,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_07",
+                    id="step_08",
                     scene_role="visualization",
                     title="隠れ層の責任を見る",
                     learning_goal="隠れ層にも損失への影響量が割り当てられることを理解する",
@@ -788,7 +800,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_08",
+                    id="step_09",
                     scene_role="visualization",
                     title="重みを更新する",
                     learning_goal="計算した勾配が勾配降下法の更新に入ることを理解する",
@@ -800,7 +812,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_09",
+                    id="step_10",
                     scene_role="summary",
                     title="最後に流れをまとめる",
                     learning_goal="誤差信号、勾配、重み更新の関係を整理する",
