@@ -168,6 +168,20 @@ def _coerce_animation_family(
     ).lower()
 
     if (
+        "backpropagation" in text
+        or "backprop" in text
+        or "誤差逆伝播" in text
+        or "逆伝播" in text
+        or "chain_rule" in text
+        or "chain rule" in text
+        or "連鎖律" in text
+        or "\\delta" in text
+        or "δ" in text
+        or "\\partial l" in text
+        or "∂l" in text
+    ):
+        return "backpropagation_chain_rule"
+    if (
         "cross_entropy" in text
         or "cross entropy" in text
         or "クロスエントロピー" in text

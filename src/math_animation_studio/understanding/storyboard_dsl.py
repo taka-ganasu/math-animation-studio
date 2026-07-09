@@ -75,6 +75,12 @@ PATTERN_COMPONENTS: dict[str, dict[SceneRole, tuple[str, ...]]] = {
         "visualization": ("dense_layer", "fully_connected_edges", "layer_activation", "softmax_output"),
         "summary": ("summary", "formula_focus"),
     },
+    "backpropagation_chain_rule": {
+        "formula_structure": ("formula_focus", "loss_gradient", "backward_pass", "chain_rule"),
+        "concrete_example": ("dense_layer", "fully_connected_edges", "forward_pass", "loss_gradient"),
+        "visualization": ("backward_pass", "error_attribution", "weight_update", "chain_rule"),
+        "summary": ("summary", "formula_focus"),
+    },
 }
 
 

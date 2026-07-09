@@ -133,6 +133,21 @@ FULLY_CONNECTED_BASE_TIMELINE = (
 )
 
 
+BACKPROPAGATION_BASE_TIMELINE = (
+    TimelineSegment("title_intro", 9.0, "intro_formula"),
+    TimelineSegment("formula_loss_gradient", 10.0, "formula_parts_focus", r"\frac{\partial L}{\partial \hat{y}}"),
+    TimelineSegment("formula_output_delta", 11.0, "formula_parts_focus", r"\delta^{(2)}=\hat{y}-y"),
+    TimelineSegment("formula_hidden_delta", 12.0, "formula_parts_focus", r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)})"),
+    TimelineSegment("formula_weight_gradient", 10.0, "formula_parts_focus", r"\frac{\partial L}{\partial W_l}=\delta^{(l)}(a^{(l-1)})^T"),
+    TimelineSegment("forward_context", 9.0, "forward_pass"),
+    TimelineSegment("loss_signal", 9.0, "loss_gradient"),
+    TimelineSegment("backward_arrows", 10.0, "backward_pass"),
+    TimelineSegment("hidden_credit", 9.0, "error_attribution"),
+    TimelineSegment("weight_update", 10.0, "weight_update", r"W\leftarrow W-\eta\frac{\partial L}{\partial W}"),
+    TimelineSegment("summary", 11.0, "summary", r"\delta\rightarrow\frac{\partial L}{\partial W}\rightarrow W_{\mathrm{new}}"),
+)
+
+
 def cross_entropy_timeline_segments(
     target_duration_seconds: int | float | None = None,
     *,
@@ -227,6 +242,14 @@ def fully_connected_timeline_segments(
     if target_duration_seconds is None:
         return FULLY_CONNECTED_BASE_TIMELINE
     return scale_timeline(FULLY_CONNECTED_BASE_TIMELINE, float(target_duration_seconds))
+
+
+def backpropagation_timeline_segments(
+    target_duration_seconds: int | float | None = None,
+) -> tuple[TimelineSegment, ...]:
+    if target_duration_seconds is None:
+        return BACKPROPAGATION_BASE_TIMELINE
+    return scale_timeline(BACKPROPAGATION_BASE_TIMELINE, float(target_duration_seconds))
 
 
 def scale_timeline(

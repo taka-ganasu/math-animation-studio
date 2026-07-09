@@ -83,6 +83,24 @@ patterns:
       - activation
       - output_distribution
 
+  - id: backpropagation_chain_rule
+    name: Backpropagation Chain Rule
+    suitable_for:
+      - backpropagation
+      - backprop
+      - neural_network_training
+      - chain_rule
+      - gradient
+    description: 損失から出力層、隠れ層、重みへ誤差信号を戻し、勾配降下法で重みを更新する流れを見せる。
+    visual_metaphor: 予測のズレを右から左へ送り返し、各接続へ修正指示を配る。
+    manim_template: backpropagation.py.j2
+    required_visual_objects:
+      - formula
+      - layers
+      - backward_arrows
+      - error_signals
+      - weight_update
+
   - id: row_column_matrix_product
     name: Row Column Matrix Product
     suitable_for:

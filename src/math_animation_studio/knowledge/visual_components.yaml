@@ -485,6 +485,7 @@ components:
       - penalty_curve
       - gradient_descent_3d
       - fully_connected_network
+      - backpropagation
       - storyboard_only
     params:
       - name: takeaway
@@ -629,6 +630,7 @@ components:
     visual_type: text
     template_support:
       - fully_connected_network
+      - backpropagation
       - storyboard_only
     params:
       - name: layer_sizes
@@ -648,6 +650,7 @@ components:
     visual_type: vector
     template_support:
       - fully_connected_network
+      - backpropagation
       - storyboard_only
     params:
       - name: connection_opacity
@@ -668,6 +671,7 @@ components:
     visual_type: formula
     template_support:
       - fully_connected_network
+      - backpropagation
       - storyboard_only
     params:
       - name: activation
@@ -692,9 +696,111 @@ components:
     visual_type: axis
     template_support:
       - fully_connected_network
+      - backpropagation
       - storyboard_only
     params:
       - name: class_labels
         value_type: string_list
         description: 出力クラス名。
     example: "猫と犬のlogitsをsoftmaxで確率バーに変える。"
+
+  - id: loss_gradient
+    name: Loss Gradient
+    category: neural_network
+    description: 損失から出力層の誤差信号を作る様子を表示する。
+    use_when:
+      - softmaxとクロスエントロピーの後に、予測と正解の差を扱う
+      - 逆伝播の最初の信号を説明する
+    avoid_when:
+      - 損失ではなく推論だけを扱う場面
+    visual_type: formula
+    template_support:
+      - backpropagation
+      - storyboard_only
+    params:
+      - name: output_probabilities
+        value_type: number_list
+        description: softmax後の予測確率。
+      - name: correct_index
+        value_type: integer
+        description: 正解クラスのindex。
+    example: "猫0.72、犬0.28からdelta = yhat - yを表示する。"
+
+  - id: backward_pass
+    name: Backward Pass
+    category: neural_network
+    description: 出力層から隠れ層、入力側へ誤差信号が戻る流れを矢印で見せる。
+    use_when:
+      - 逆伝播の向きを説明する
+      - 順伝播との違いを見せる
+    avoid_when:
+      - 重み更新や勾配を扱わない推論だけの場面
+    visual_type: vector
+    template_support:
+      - backpropagation
+      - storyboard_only
+    params:
+      - name: layer_sizes
+        value_type: number_list
+        description: 表示する層のノード数。
+    example: "損失から出力層、隠れ層へ赤い矢印を戻す。"
+
+  - id: chain_rule
+    name: Chain Rule
+    category: calculus
+    description: 遠い重みの影響を途中の微分の積としてつなげることを示す。
+    use_when:
+      - 逆伝播が単なる逆再生ではないことを説明する
+      - 重み、活性化、誤差信号の積を見せる
+    avoid_when:
+      - 微分を扱わない直感説明だけの場面
+    visual_type: formula
+    template_support:
+      - backpropagation
+      - storyboard_only
+    params:
+      - name: formula_focus
+        value_type: latex_string
+        description: 強調する連鎖律の式。
+    example: "W^T delta と sigma prime を掛けることを表示する。"
+
+  - id: error_attribution
+    name: Error Attribution
+    category: neural_network
+    description: 隠れ層の各ノードや接続へ誤差信号が割り当てられる様子を表示する。
+    use_when:
+      - 隠れ層にも損失への責任が配られることを説明する
+      - 各重みの勾配へ接続する
+    avoid_when:
+      - 出力層だけの単純な誤差を扱う場面
+    visual_type: text
+    template_support:
+      - backpropagation
+      - storyboard_only
+    params:
+      - name: hidden_deltas
+        value_type: number_list
+        description: 隠れ層ノードごとの誤差信号。
+    example: "h1, h2, h3に正負のdelta値を表示する。"
+
+  - id: weight_update
+    name: Weight Update
+    category: optimization
+    description: 勾配を使って重みを更新する式と数値例を表示する。
+    use_when:
+      - 逆伝播で計算した勾配を学習へつなげる
+      - 勾配降下法との接続を説明する
+    avoid_when:
+      - 勾配を計算するだけで更新しない場面
+    visual_type: formula
+    template_support:
+      - backpropagation
+      - storyboard_only
+    params:
+      - name: learning_rate
+        value_type: number
+        description: 学習率。
+      - name: selected_weight_gradient
+        value_type: number
+        description: 例として表示する重み勾配。
+    example: "W = 0.42, eta = 0.1, gradient = -0.18 から W_new = 0.438 を表示する。"

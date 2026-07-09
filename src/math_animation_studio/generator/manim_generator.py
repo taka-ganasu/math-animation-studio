@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from math_animation_studio.schema import ExampleValue, Storyboard, VisualObject
 from math_animation_studio.safe_presets import normalize_loss_surface_preset
 from math_animation_studio.timing import (
+    backpropagation_timeline_segments,
     cross_entropy_timeline_segments,
     fully_connected_timeline_segments,
     gradient_double_well_1d_timeline_segments,
@@ -197,6 +198,34 @@ class FullyConnectedParams(BaseModel):
     narration_lines: list[str] = Field(default_factory=list)
 
 
+class BackpropagationParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = "Backpropagation"
+    target_duration_seconds: float = Field(default=110.0, ge=5, le=180)
+    formula_latex: str = (
+        r"\delta^{(2)}=\hat{y}-y,\quad "
+        r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)}),\quad "
+        r"W\leftarrow W-\eta\frac{\partial L}{\partial W}"
+    )
+    layer_sizes: tuple[int, int, int] = (3, 4, 2)
+    input_labels: tuple[str, str, str] = (r"x_1", r"x_2", r"x_3")
+    hidden_labels: tuple[str, str, str, str] = (r"h_1", r"h_2", r"h_3", r"h_4")
+    class_labels: tuple[str, str] = ("猫", "犬")
+    output_probabilities: tuple[float, float] = (0.72, 0.28)
+    correct_index: int = Field(default=0, ge=0)
+    output_deltas: tuple[float, float] = (-0.28, 0.28)
+    hidden_deltas: tuple[float, float, float, float] = (0.18, -0.12, 0.09, -0.06)
+    learning_rate: float = Field(default=0.1, gt=0)
+    selected_weight_before: float = 0.42
+    selected_weight_gradient: float = -0.18
+    selected_weight_after: float = 0.438
+    segment_durations: dict[str, float] = Field(default_factory=dict)
+    segment_metadata: dict[str, dict[str, str]] = Field(default_factory=dict)
+    template_components: tuple[dict[str, str], ...] = Field(default_factory=tuple)
+    narration_lines: list[str] = Field(default_factory=list)
+
+
 class ManimGenerator:
     def __init__(
         self,
@@ -213,7 +242,7 @@ class ManimGenerator:
         self,
         storyboard: Storyboard,
         output_path: Path,
-    ) -> GradientDescentParams | PenaltyCurveParams | PerceptronParams | FullyConnectedParams:
+    ) -> GradientDescentParams | PenaltyCurveParams | PerceptronParams | FullyConnectedParams | BackpropagationParams:
         template_name = self._select_template(storyboard)
         if template_name == "gradient_descent_3d":
             params = self._gradient_descent_params_from_storyboard(storyboard)
@@ -224,6 +253,9 @@ class ManimGenerator:
         elif template_name == "fully_connected_network":
             params = self._fully_connected_params_from_storyboard(storyboard)
             template = self._environment().get_template("fully_connected_network.py.j2")
+        elif template_name == "backpropagation":
+            params = self._backpropagation_params_from_storyboard(storyboard)
+            template = self._environment().get_template("backpropagation.py.j2")
         else:
             params = self._perceptron_params_from_storyboard(storyboard)
             template = self._environment().get_template("perceptron.py.j2")
@@ -241,6 +273,8 @@ class ManimGenerator:
             return "PerceptronScene"
         if template_name == "fully_connected_network":
             return "FullyConnectedNetworkScene"
+        if template_name == "backpropagation":
+            return "BackpropagationScene"
         return "CrossEntropyPenaltyScene"
 
     def _select_template(self, storyboard: Storyboard) -> str:
@@ -250,12 +284,13 @@ class ManimGenerator:
             "penalty_curve",
             "perceptron",
             "fully_connected_network",
+            "backpropagation",
         }
         if self.template not in supported_templates:
             raise GeneratorError(
                 f"Unsupported template '{self.template}'. "
                 "Use 'auto', 'gradient_descent_3d', 'penalty_curve', "
-                "'perceptron', or 'fully_connected_network'."
+                "'perceptron', 'fully_connected_network', or 'backpropagation'."
             )
 
         concept = _normalized_concept(storyboard.concept)
@@ -268,10 +303,12 @@ class ManimGenerator:
                 return "perceptron"
             if concept in {"fully_connected_network", "neural_network"}:
                 return "fully_connected_network"
+            if concept in {"backpropagation", "backprop"}:
+                return "backpropagation"
             raise GeneratorError(
                 "MVP render templates support concept=gradient_descent, "
                 "concept=cross_entropy, concept=perceptron, "
-                "or concept=fully_connected_network."
+                "concept=fully_connected_network, or concept=backpropagation."
             )
 
         expected_concept = {
@@ -279,8 +316,12 @@ class ManimGenerator:
             "penalty_curve": "cross_entropy",
             "perceptron": "perceptron",
             "fully_connected_network": "fully_connected_network",
+            "backpropagation": "backpropagation",
         }[self.template]
-        if concept != expected_concept:
+        allowed_concepts = {expected_concept}
+        if expected_concept == "backpropagation":
+            allowed_concepts.add("backprop")
+        if concept not in allowed_concepts:
             raise GeneratorError(
                 f"Template '{self.template}' requires concept={expected_concept}, "
                 f"but storyboard concept is {storyboard.concept}."
@@ -569,6 +610,76 @@ class ManimGenerator:
             narration_lines=[scene.narration for scene in storyboard.scenes],
         )
 
+    def _backpropagation_params_from_storyboard(self, storyboard: Storyboard) -> BackpropagationParams:
+        values = storyboard.examples[0].values if storyboard.examples else {}
+        layer_sizes = _int_sequence(values.get("layer_sizes"), (3, 4, 2), expected_length=3)
+        input_count, hidden_count, output_count = layer_sizes
+        input_labels = _string_sequence(
+            values.get("input_labels"),
+            tuple(f"x_{index}" for index in range(1, input_count + 1)),
+            expected_length=input_count,
+        )
+        hidden_labels = _string_sequence(
+            values.get("hidden_labels"),
+            tuple(f"h_{index}" for index in range(1, hidden_count + 1)),
+            expected_length=hidden_count,
+        )
+        class_labels = _string_sequence(
+            values.get("class_labels"),
+            tuple(f"class {index}" for index in range(1, output_count + 1)),
+            expected_length=output_count,
+        )
+        probabilities = _float_sequence(
+            values.get("output_probabilities"),
+            (0.72, 0.28) if output_count == 2 else tuple(1.0 / output_count for _ in range(output_count)),
+            expected_length=output_count,
+        )
+        normalized_probabilities = _normalize_probabilities(probabilities)
+        correct_index = min(
+            max(0, int(round(_safe_float(values.get("correct_index"), 0.0)))),
+            output_count - 1,
+        )
+        output_deltas = tuple(
+            probability - (1.0 if index == correct_index else 0.0)
+            for index, probability in enumerate(normalized_probabilities)
+        )
+        hidden_deltas = _float_sequence(
+            values.get("hidden_deltas"),
+            tuple(0.18 * ((-1) ** index) / (index + 1) for index in range(hidden_count)),
+            expected_length=hidden_count,
+        )
+        learning_rate = max(1e-6, _safe_float(values.get("learning_rate"), 0.1))
+        selected_weight_before = _safe_float(values.get("selected_weight_before"), 0.42)
+        selected_weight_gradient = _safe_float(values.get("selected_weight_gradient"), -0.18)
+        target_duration_seconds = self.target_duration_seconds or 110
+        timeline = backpropagation_timeline_segments(target_duration_seconds)
+        return BackpropagationParams(
+            target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),
+            title=_title_from_storyboard(storyboard),
+            formula_latex=storyboard.formula
+            or (
+                r"\delta^{(2)}=\hat{y}-y,\quad "
+                r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)}),\quad "
+                r"W\leftarrow W-\eta\frac{\partial L}{\partial W}"
+            ),
+            layer_sizes=layer_sizes,  # type: ignore[arg-type]
+            input_labels=tuple(input_labels),  # type: ignore[arg-type]
+            hidden_labels=tuple(hidden_labels),  # type: ignore[arg-type]
+            class_labels=tuple(class_labels),  # type: ignore[arg-type]
+            output_probabilities=tuple(normalized_probabilities),  # type: ignore[arg-type]
+            correct_index=correct_index,
+            output_deltas=output_deltas,  # type: ignore[arg-type]
+            hidden_deltas=tuple(hidden_deltas),  # type: ignore[arg-type]
+            learning_rate=learning_rate,
+            selected_weight_before=selected_weight_before,
+            selected_weight_gradient=selected_weight_gradient,
+            selected_weight_after=selected_weight_before - learning_rate * selected_weight_gradient,
+            segment_durations=segment_duration_map(timeline),
+            segment_metadata=segment_metadata_map(timeline),
+            template_components=_template_components_from_storyboard(storyboard),
+            narration_lines=[scene.narration for scene in storyboard.scenes],
+        )
+
 
 def _normalized_concept(concept: str) -> str:
     return concept.strip().lower().replace("-", "_")
@@ -613,6 +724,8 @@ def _title_from_storyboard(storyboard: Storyboard) -> str:
         return "Simple Perceptron"
     if storyboard.concept == "fully_connected_network":
         return "Fully Connected Neural Network"
+    if storyboard.concept == "backpropagation":
+        return "Backpropagation"
     return storyboard.concept.replace("_", " ").title()
 
 

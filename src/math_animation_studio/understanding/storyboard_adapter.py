@@ -327,6 +327,8 @@ def _render_concept(explanation_plan: ExplanationPlan) -> str:
         return "perceptron"
     if explanation_plan.selected_animation_pattern_id == "fully_connected_forward_pass":
         return "fully_connected_network"
+    if explanation_plan.selected_animation_pattern_id == "backpropagation_chain_rule":
+        return "backpropagation"
     return explanation_plan.target_concept
 
 

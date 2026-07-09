@@ -83,3 +83,16 @@ def test_formula_first_blueprint_supports_fully_connected_components() -> None:
     assert "dense_layer" in by_role["concrete_example"].preferred_component_kinds
     assert "fully_connected_edges" in by_role["visualization"].preferred_component_kinds
     assert "softmax_output" in by_role["visualization"].preferred_component_kinds
+
+
+def test_formula_first_blueprint_supports_backpropagation_components() -> None:
+    blueprint = default_formula_first_blueprint(
+        target_concept="backpropagation",
+        animation_pattern_id="backpropagation_chain_rule",
+    )
+
+    by_role = {beat.role: beat for beat in blueprint.beats}
+
+    assert "loss_gradient" in by_role["formula_structure"].preferred_component_kinds
+    assert "backward_pass" in by_role["visualization"].preferred_component_kinds
+    assert "weight_update" in by_role["visualization"].preferred_component_kinds

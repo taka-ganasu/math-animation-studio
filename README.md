@@ -235,6 +235,27 @@ math-anim plan \
 
 成功すると、`outputs/fully_connected_phase1/video_with_voice.mp4` が作成されます。
 
+### バックプロパゲーション: 誤差信号と重み更新
+
+`--concept-hint backpropagation` を指定すると、損失から出力層、隠れ層、重みへ誤差信号を戻し、最後に勾配降下法で1本の重みを更新する流れを説明する動画を生成できます。自由なPythonコード生成ではなく、固定のJinja2テンプレートで描画します。
+
+```bash
+math-anim plan \
+  --formula "\\delta^{(l)}=(W^{(l+1)T}\\delta^{(l+1)})\\odot\\sigma'(z^{(l)})" \
+  --goal "バックプロパゲーションで誤差信号がどう戻り、重み更新につながるか理解したい" \
+  --concept-hint backpropagation \
+  --audience high_school_math \
+  --domain-hint deep_learning \
+  --duration 110 \
+  --output-dir outputs/backpropagation_phase1 \
+  --no-llm \
+  --render \
+  --voiceover \
+  --voice-rate 130
+```
+
+成功すると、`outputs/backpropagation_phase1/video_with_voice.mp4` が作成されます。
+
 ## LLMで動的に教材企画を生成
 
 OpenAI APIを使う場合は、APIキーを環境変数で渡します。キーはリポジトリに保存しません。

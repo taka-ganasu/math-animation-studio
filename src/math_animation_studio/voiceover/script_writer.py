@@ -6,6 +6,7 @@ from typing import Sequence
 from math_animation_studio.schema import Storyboard
 from math_animation_studio.timing import (
     TimelineSegment,
+    backpropagation_timeline_segments,
     cross_entropy_timeline_segments,
     fully_connected_timeline_segments,
     gradient_double_well_1d_timeline_segments,
@@ -97,6 +98,21 @@ class VoiceoverScriptWriter:
                 "分類ではsoftmaxで確率に変え、正解ラベルと組み合わせて"
                 "クロスエントロピー損失を作ります。"
             )
+        if concept == "backpropagation":
+            if target_duration_seconds is not None and target_duration_seconds >= 25:
+                return "".join(
+                    segment.text
+                    for segment in self.write_segments(
+                        storyboard,
+                        target_duration_seconds=target_duration_seconds,
+                        voice_rate=voice_rate,
+                    )
+                )
+            return (
+                "バックプロパゲーションは、損失から誤差信号を逆向きに伝え、"
+                "各重みをどう直すかを計算する方法です。"
+                "最後に、その勾配を使って重みを少し更新します。"
+            )
 
         sentences = [storyboard.one_sentence_summary]
         for scene in storyboard.scenes[:3]:
@@ -136,6 +152,11 @@ class VoiceoverScriptWriter:
         if concept == "fully_connected_network":
             timeline = fully_connected_timeline_segments(target_duration_seconds)
             text_by_id = _fully_connected_segment_text()
+            return _segments_from_timeline(timeline, text_by_id)
+
+        if concept == "backpropagation":
+            timeline = backpropagation_timeline_segments(target_duration_seconds)
+            text_by_id = _backpropagation_segment_text()
             return _segments_from_timeline(timeline, text_by_id)
 
         if concept != "cross_entropy":
@@ -459,6 +480,22 @@ def _fully_connected_segment_text() -> dict[str, str]:
         "correct_probability": "クロスエントロピーでは、予測全体から正解クラスに置いた確率だけを取り出します。",
         "cross_entropy_loss": "その正解確率をマイナスlogへ通すと損失になります。正解確率が高いほど、損失は小さくなります。",
         "summary": "まとめると、ネットワークが確率を出し、正解ラベルが見る場所を決め、マイナスlogが損失に変えます。",
+    }
+
+
+def _backpropagation_segment_text() -> dict[str, str]:
+    return {
+        "title_intro": "今回は、バックプロパゲーションを見ていきます。損失から、どの重みをどう直すかを計算する方法です。",
+        "formula_loss_gradient": "まず、損失が予測に対してどう変わるかを見ます。ここが逆向き計算の出発点です。",
+        "formula_output_delta": "出力層では、予測確率から正解ラベルを引いた値が、最初の誤差信号になります。",
+        "formula_hidden_delta": "隠れ層へは、次の層の誤差を重みで戻し、活性化関数の微分を掛けます。",
+        "formula_weight_gradient": "各重みの勾配は、その先の誤差信号と、手前から来た出力で決まります。",
+        "forward_context": "順伝播では、入力から予測、そして損失が出ます。逆伝播はこの損失から始まります。",
+        "loss_signal": "猫が正解なら、猫への予測と一との差、犬への予測とゼロとの差を見ます。",
+        "backward_arrows": "誤差信号を右から左へ戻します。ただし、単なる逆再生ではなく、微分を掛けながら戻します。",
+        "hidden_credit": "隠れ層の各ノードにも、損失にどれだけ効いたかを表す信号が割り当てられます。",
+        "weight_update": "最後に、その勾配を使って重みを更新します。勾配の逆向きへ少し動かします。",
+        "summary": "まとめると、逆伝播は誤差信号を作り、重みごとの勾配に変え、重み更新へつなげる計算です。",
     }
 
 

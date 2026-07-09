@@ -59,6 +59,25 @@ def detect_sample_key(formula: str) -> str:
             "concept_hint:勾配降下法",
         )
     )
+    wants_backpropagation = any(
+        keyword in normalized
+        for keyword in (
+            "concept_hint:backpropagation",
+            "concept_hint:backprop",
+            "concept_hint:誤差逆伝播",
+            "backpropagation",
+            "backprop",
+            "誤差逆伝播",
+            "逆伝播",
+            "chainrule",
+            "chain_rule",
+            "連鎖律",
+            "deltal",
+            "\\delta",
+            "∂l/∂w",
+            "partiallpartialw",
+        )
+    )
     wants_fully_connected = any(
         keyword in normalized
         for keyword in (
@@ -97,6 +116,8 @@ def detect_sample_key(formula: str) -> str:
             "decisionboundary",
         )
     )
+    if wants_backpropagation:
+        return "backpropagation"
     if wants_fully_connected:
         return "fully_connected_network"
     if wants_perceptron:
@@ -209,6 +230,34 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             ambiguity_notes=["層数や活性化関数は文脈によって変わるため、MVPでは3-4-2の小さな例に固定する。"],
             confidence=0.9,
         )
+    if key == "backpropagation":
+        return FormulaAnalysis(
+            raw_formula=formula,
+            normalized_formula_latex=(
+                r"\delta^{(2)}=\hat{y}-y,\quad "
+                r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)}),\quad "
+                r"W\leftarrow W-\eta\frac{\partial L}{\partial W}"
+            ),
+            detected_name="backpropagation",
+            short_description="バックプロパゲーションは、損失の微分を出力層から前の層へ伝え、各重みをどう更新すべきかを計算する方法である。",
+            symbols=[
+                SymbolRole(symbol=r"\delta^{(l)}", normalized_symbol="layer_error_signal", role="intermediate", meaning="層lの誤差信号", intuition="その層が損失にどれだけ効いたか", confidence=0.9),
+                SymbolRole(symbol=r"W_l", normalized_symbol="layer_weights", role="parameter", meaning="層lの重み行列", intuition="直す対象の接続重み", confidence=0.9),
+                SymbolRole(symbol=r"\eta", normalized_symbol="learning_rate", role="hyperparameter", meaning="学習率", intuition="重みを直す一歩の大きさ", confidence=0.85),
+                SymbolRole(symbol=r"\frac{\partial L}{\partial W_l}", normalized_symbol="weight_gradient", role="direction", meaning="重みを増やすと損失がどう変わるか", intuition="その重みへの修正指示", confidence=0.9),
+            ],
+            operations=[
+                OperationAnalysis(operation=r"\hat{y}-y", meaning="出力層の予測と正解の差から誤差信号を作る", intuition="最初のズレ", visual_hint="出力バーとone-hotの差を表示する"),
+                OperationAnalysis(operation=r"W^T\delta", meaning="次の層の誤差を重みに沿って前の層へ戻す", intuition="責任を前の層へ配る", visual_hint="右から左への矢印で示す"),
+                OperationAnalysis(operation=r"\odot\sigma'(z)", meaning="活性化関数の反応しやすさを掛ける", intuition="そのニューロンが修正に反応できる量", visual_hint="隠れ層ノードに誤差信号を表示する"),
+                OperationAnalysis(operation=r"W-\eta\frac{\partial L}{\partial W}", meaning="勾配の逆向きへ重みを更新する", intuition="損失を下げる方向へ少し直す", visual_hint="1本の接続重みの数値更新を見せる"),
+            ],
+            inputs=[r"\hat{y}", "y", r"W_l", r"a^{(l-1)}"],
+            outputs=[r"\frac{\partial L}{\partial W_l}", r"W_{\mathrm{new}}"],
+            assumptions=["全結合ニューラルネットワーク", "softmaxとクロスエントロピーの組み合わせ", "小さな3層ネットワークで説明する"],
+            ambiguity_notes=["実装ではミニバッチや行列演算でまとめて計算するが、MVPでは1サンプルの流れとして可視化する。"],
+            confidence=0.9,
+        )
     if key == "perceptron":
         return FormulaAnalysis(
             raw_formula=formula,
@@ -253,6 +302,8 @@ def sample_classification(key: str) -> ConceptClassification:
         return ConceptClassification(primary_domain="deep_learning", primary_concept="scaled_dot_product_attention", related_concepts=["matrix_multiplication", "softmax", "weighted_sum"], difficulty_level="undergraduate_advanced", recommended_animation_family="matrix_similarity_heatmap", confidence=0.85)
     if key == "fully_connected_network":
         return ConceptClassification(primary_domain="deep_learning", primary_concept="fully_connected_network", related_concepts=["dense_layer", "multilayer_perceptron", "activation_function", "softmax", "forward_pass"], difficulty_level="undergraduate_intro", recommended_animation_family="fully_connected_forward_pass", confidence=0.9)
+    if key == "backpropagation":
+        return ConceptClassification(primary_domain="deep_learning", primary_concept="backpropagation", related_concepts=["chain_rule", "gradient", "fully_connected_network", "cross_entropy", "gradient_descent"], difficulty_level="undergraduate_intro", recommended_animation_family="backpropagation_chain_rule", confidence=0.9)
     if key == "perceptron":
         return ConceptClassification(primary_domain="machine_learning", primary_concept="perceptron", related_concepts=["linear_classifier", "activation_function", "decision_boundary", "neural_network"], difficulty_level="undergraduate_intro", recommended_animation_family="perceptron_decision_boundary", confidence=0.9)
     return ConceptClassification(primary_domain="unknown", primary_concept="unknown_formula", related_concepts=[], difficulty_level="undergraduate_intro", recommended_animation_family="generic_symbol_decomposition", confidence=0.35)
@@ -298,6 +349,17 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
                 PrerequisiteItem(concept="softmax", why_needed="分類の出力を確率として読むため", priority="helpful", suggested_micro_explanation="複数クラスのスコアを合計1の確率分布へ変換する。"),
             ],
             likely_blockers=["全結合がすべてのノード間の接続を意味すること", "Wが1つの重みではなく重みの表であること", "ここでは学習ではなく順伝播だけを扱うこと"],
+        )
+    if key == "backpropagation":
+        return PrerequisiteMap(
+            target_concept="backpropagation",
+            prerequisites=[
+                PrerequisiteItem(concept="順伝播", why_needed="損失から逆向きにたどる前に、値が左から右へ流れる構造を知るため", priority="required", suggested_micro_explanation="入力、隠れ層、出力、損失の順に値が作られる。"),
+                PrerequisiteItem(concept="微分", why_needed="重みを少し変えたとき損失がどう変わるかを見るため", priority="required", suggested_micro_explanation="微分は小さな変化に対する出力の変化量を表す。"),
+                PrerequisiteItem(concept="連鎖律", why_needed="損失から遠い重みまで影響をつなげて計算するため", priority="required", suggested_micro_explanation="途中の変化量を掛け合わせると、遠い入力の影響がわかる。"),
+                PrerequisiteItem(concept="勾配降下法", why_needed="計算した勾配を使って重みを更新するため", priority="helpful", suggested_micro_explanation="損失が増える方向の逆へ少し動かす。"),
+            ],
+            likely_blockers=["逆伝播を単なる逆再生だと思うこと", "誤差信号と重み更新を混同すること", "活性化関数の微分を掛ける理由を見落とすこと"],
         )
     if key == "perceptron":
         return PrerequisiteMap(
@@ -609,6 +671,153 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                 "ここでは学習ではなく、学習済み重みでの順伝播だけを見ている",
             ],
             next_questions_to_study=["多層パーセプトロン", "誤差逆伝播", "ReLU", "softmaxとクロスエントロピー"],
+        )
+    if key == "backpropagation":
+        return ExplanationPlan(
+            formula=(
+                r"\delta^{(2)}=\hat{y}-y,\quad "
+                r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)}),\quad "
+                r"W\leftarrow W-\eta\frac{\partial L}{\partial W}"
+            ),
+            target_concept="backpropagation",
+            one_sentence_summary="バックプロパゲーションは、損失から誤差信号を逆向きに伝え、各重みをどう直すかを計算する方法である。",
+            audience=audience,
+            teaching_strategy="visual_first",
+            recommended_examples=[
+                TeachingExample(
+                    title="猫/犬分類の小さな全結合ネットワーク",
+                    description="猫が正解なのに、モデルが猫0.72・犬0.28と予測した後、出力層から隠れ層へ誤差信号を戻す。",
+                    why_it_works="全結合NNとクロスエントロピーの続きとして、損失から重み更新へつながる流れを見せやすい。",
+                    concrete_values={
+                        "layer_sizes": [3, 4, 2],
+                        "input_labels": ["x_1", "x_2", "x_3"],
+                        "hidden_labels": ["h_1", "h_2", "h_3", "h_4"],
+                        "class_labels": ["猫", "犬"],
+                        "output_probabilities": [0.72, 0.28],
+                        "correct_index": 0,
+                        "hidden_deltas": [0.18, -0.12, 0.09, -0.06],
+                        "learning_rate": 0.1,
+                        "selected_weight_before": 0.42,
+                        "selected_weight_gradient": -0.18,
+                    },
+                )
+            ],
+            selected_animation_pattern_id="backpropagation_chain_rule",
+            explanation_steps=[
+                ExplanationStep(
+                    id="step_01",
+                    scene_role="title_intro",
+                    title="損失から学習が始まる",
+                    learning_goal="バックプロパゲーションが重み更新のための計算だと理解する",
+                    explanation="バックプロパゲーションは、損失から出発して、各重みをどう直せばよいかを逆向きに計算します。",
+                    visual_idea="全体式と、損失から重みへ戻る矢印を表示する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="text_caption", description="バックプロパゲーションの目的を示す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_02",
+                    scene_role="formula_structure",
+                    title="出力層の誤差を見る",
+                    learning_goal="softmaxとクロスエントロピーでは予測 minus 正解が出力誤差になることを理解する",
+                    explanation="出力層では、予測確率とone-hot正解ラベルの差が、最初の誤差信号になります。",
+                    visual_idea="猫と犬の確率バーに、yhat-yの値を並べる。",
+                    formula_focus=r"\delta^{(2)}=\hat{y}-y",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="loss_gradient", description="出力層の予測と正解の差を表示する"),
+                        PlannedAnimationComponent(kind="formula_focus", description="出力誤差式を強調する", params={"formula_focus": r"\delta^{(2)}=\hat{y}-y"}),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_03",
+                    scene_role="formula_structure",
+                    title="隠れ層へ誤差を戻す",
+                    learning_goal="次の層の誤差を重みで前の層へ配ることを理解する",
+                    explanation="隠れ層の誤差は、次の層の誤差信号を重みで戻し、活性化関数の微分を掛けて作ります。",
+                    visual_idea="出力層から隠れ層へ赤い矢印を戻す。",
+                    formula_focus=r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)})",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="backward_pass", description="誤差信号を右から左へ戻す"),
+                        PlannedAnimationComponent(kind="chain_rule", description="重みと活性化微分を掛けることを示す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_04",
+                    scene_role="formula_structure",
+                    title="重みごとの勾配にする",
+                    learning_goal="誤差信号と手前の出力から重みの勾配が決まることを理解する",
+                    explanation="各重みの勾配は、その先の誤差信号と、その重みに入ってきた手前の出力で決まります。",
+                    visual_idea="1本の接続線を強調し、delta times activationを表示する。",
+                    formula_focus=r"\frac{\partial L}{\partial W_l}=\delta^{(l)}(a^{(l-1)})^T",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="error_attribution", description="隠れ層ノードに誤差信号を配る"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_05",
+                    scene_role="concrete_example",
+                    title="順伝播の結果から始める",
+                    learning_goal="逆伝播が順伝播で出た損失を入口にすることを理解する",
+                    explanation="まず順伝播で、入力から予測確率、そして損失Lが出ます。逆伝播はこのLから始まります。",
+                    visual_idea="入力、隠れ層、出力、損失を左から右へ表示する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="forward_pass", description="順伝播で損失まで値が流れる"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_06",
+                    scene_role="visualization",
+                    title="誤差を逆向きに流す",
+                    learning_goal="逆向きの流れと、途中で微分を掛けることを理解する",
+                    explanation="誤差信号は右から左へ戻ります。ただの逆再生ではなく、重みと活性化の微分を掛けながら戻ります。",
+                    visual_idea="ネットワーク上に右から左への太い矢印を出す。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="backward_pass", description="右から左への誤差信号を表示する"),
+                        PlannedAnimationComponent(kind="chain_rule", description="途中で微分を掛けることを補足する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_07",
+                    scene_role="visualization",
+                    title="隠れ層の責任を見る",
+                    learning_goal="隠れ層にも損失への影響量が割り当てられることを理解する",
+                    explanation="隠れ層の各ノードにも、損失にどれだけ効いたかを表す誤差信号が割り当てられます。",
+                    visual_idea="隠れ層ノードに正負のdelta値を表示する。",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="error_attribution", description="隠れ層のdeltaを表示する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_08",
+                    scene_role="visualization",
+                    title="重みを更新する",
+                    learning_goal="計算した勾配が勾配降下法の更新に入ることを理解する",
+                    explanation="最後に、重みは勾配の逆向きへ少し動きます。これで次の予測が少し改善される方向へ進みます。",
+                    visual_idea="1本の重みに対して、更新前、勾配、更新後の値を表示する。",
+                    formula_focus=r"W\leftarrow W-\eta\frac{\partial L}{\partial W}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="weight_update", description="1本の重みを更新する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_09",
+                    scene_role="summary",
+                    title="最後に流れをまとめる",
+                    learning_goal="誤差信号、勾配、重み更新の関係を整理する",
+                    explanation="まとめると、逆伝播は誤差信号を作り、各重みの勾配に変え、勾配降下法で重みを更新する流れです。",
+                    visual_idea="delta、gradient、new weightの3段階を並べる。",
+                    formula_focus=r"\delta\rightarrow\frac{\partial L}{\partial W}\rightarrow W_{\mathrm{new}}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="summary", description="逆伝播の流れをまとめる"),
+                    ],
+                ),
+            ],
+            misconceptions=[
+                "逆伝播は順伝播を単に逆再生する処理ではなく、連鎖律で微分を掛けながら戻す処理である",
+                "誤差信号deltaと、重みを更新する量そのものは同じではない",
+                "重み更新には、逆伝播で出した勾配を勾配降下法に入れる必要がある",
+            ],
+            next_questions_to_study=["連鎖律", "計算グラフ", "ミニバッチ学習", "勾配消失"],
         )
     if key == "perceptron":
         return ExplanationPlan(

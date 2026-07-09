@@ -51,3 +51,16 @@ concepts:
       - "\\hat{y} = \\mathrm{softmax}(W_2 \\sigma(W_1 x + b_1) + b_2)"
       - "h = \\sigma(Wx + b)"
     recommended_animation_family: fully_connected_forward_pass
+
+  backpropagation:
+    domain: deep_learning
+    aliases:
+      - backprop
+      - 誤差逆伝播
+      - 逆伝播
+      - chain rule
+      - 連鎖律
+    likely_formulas:
+      - "\\delta^{(l)} = (W^{(l+1)T}\\delta^{(l+1)}) \\odot \\sigma'(z^{(l)})"
+      - "W \\leftarrow W - \\eta \\frac{\\partial L}{\\partial W}"
+    recommended_animation_family: backpropagation_chain_rule

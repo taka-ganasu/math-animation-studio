@@ -128,6 +128,33 @@ def test_generator_writes_compilable_fully_connected_scene(tmp_path) -> None:
     validate_python_syntax(output_path)
 
 
+def test_generator_writes_compilable_backpropagation_scene(tmp_path) -> None:
+    artifacts = FormulaUnderstandingPlanner(no_llm=True).plan(
+        formula=r"\delta^{(l)}=(W^{(l+1)T}\delta^{(l+1)})\odot\sigma'(z^{(l)})",
+        goal="バックプロパゲーションで誤差信号がどう戻り、重み更新につながるか理解したい",
+        audience="high_school_math",
+        concept_hint="backpropagation",
+    )
+    assert artifacts.storyboard is not None
+
+    output_path = tmp_path / "manim_scene.py"
+    generator = ManimGenerator(target_duration_seconds=110)
+    params = generator.generate(artifacts.storyboard, output_path)
+    rendered = output_path.read_text(encoding="utf-8")
+
+    assert output_path.exists()
+    assert generator.scene_name_for(artifacts.storyboard) == "BackpropagationScene"
+    assert "class BackpropagationScene" in rendered
+    assert "construct_backward_arrows" in rendered
+    assert "construct_weight_update" in rendered
+    assert "backward_arrows" in params.segment_durations
+    assert "weight_update" in params.segment_durations
+    assert sum(params.segment_durations.values()) == pytest.approx(110.0)
+    assert params.output_deltas == pytest.approx((-0.28, 0.28))
+    assert params.selected_weight_after == pytest.approx(0.438)
+    validate_python_syntax(output_path)
+
+
 def test_cross_entropy_scene_uses_storyboard_example_and_captions(tmp_path) -> None:
     storyboard = Storyboard(
         concept="cross_entropy",

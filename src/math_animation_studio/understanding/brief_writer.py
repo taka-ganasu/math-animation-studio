@@ -193,6 +193,12 @@ def _animation_policy_rows(
             "- 方針: 入力層、隠れ層、出力層を並べ、全結合の線と順伝播を左から右へ見せる。",
             "- 比喩: 1つのパーセプトロンを横に複数並べ、層として次の層へすべてつなぐ。",
         ]
+    if selected_pattern.id == "backpropagation_chain_rule":
+        return [
+            "- パターン: Backpropagation Chain Rule",
+            "- 方針: 損失から出力層、隠れ層、重みへ誤差信号を戻し、最後に重み更新へつなげる。",
+            "- 比喩: 予測のズレを右から左へ送り返し、各接続へ修正指示を配る。",
+        ]
     return [
         f"- パターン: {selected_pattern.name}",
         f"- 方針: {selected_pattern.description}",
