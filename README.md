@@ -246,7 +246,7 @@ math-anim plan \
   --concept-hint backpropagation \
   --audience high_school_math \
   --domain-hint deep_learning \
-  --duration 125 \
+  --duration 151 \
   --output-dir outputs/backpropagation_phase1 \
   --no-llm \
   --render \

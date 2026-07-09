@@ -254,8 +254,8 @@ def test_voiceover_script_writer_segments_backpropagation() -> None:
     assert artifacts.storyboard is not None
 
     writer = VoiceoverScriptWriter()
-    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=125)
-    script = writer.write(artifacts.storyboard, target_duration_seconds=125)
+    segments = writer.write_segments(artifacts.storyboard, target_duration_seconds=151)
+    script = writer.write(artifacts.storyboard, target_duration_seconds=151)
 
     assert [segment.id for segment in segments] == [
         "title_intro",
@@ -263,6 +263,9 @@ def test_voiceover_script_writer_segments_backpropagation() -> None:
         "partial_prediction_meaning",
         "derivative_ratio_meaning",
         "formula_output_delta",
+        "hidden_weighted_return",
+        "hidden_activation_gate",
+        "hidden_elementwise_product",
         "formula_hidden_delta",
         "formula_weight_gradient",
         "forward_context",
@@ -275,13 +278,18 @@ def test_voiceover_script_writer_segments_backpropagation() -> None:
     assert segments[1].formula_focus == r"\partial L"
     assert segments[2].formula_focus == r"\partial \hat{y}"
     assert segments[3].formula_focus == r"\frac{\partial L}{\partial \hat{y}}"
-    assert segments[8].component_id == "loss_gradient"
-    assert segments[9].component_id == "backward_pass"
-    assert segments[10].component_id == "error_attribution"
-    assert segments[11].component_id == "weight_update"
-    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(125.0)
+    assert segments[5].formula_focus == r"W_2^T\delta^{(2)}"
+    assert segments[6].formula_focus == r"\sigma'(z^{(1)})"
+    assert segments[7].formula_focus == r"\odot"
+    assert segments[11].component_id == "loss_gradient"
+    assert segments[12].component_id == "backward_pass"
+    assert segments[13].component_id == "error_attribution"
+    assert segments[14].component_id == "weight_update"
+    assert sum(segment.duration_seconds for segment in segments) == pytest.approx(151.0)
     assert "バックプロパゲーション" in script
     assert "デルL" in script
     assert "デル ワイハット" in script
+    assert "W2転置" in script
+    assert "シグマプライム" in script
     assert "誤差信号" in script
     assert "重みを更新" in script

@@ -34,6 +34,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
         self.construct_title_intro()
         self.construct_partial_derivative_parts()
         self.construct_formula_parts()
+        self.construct_hidden_delta_parts()
         self.construct_forward_context()
         self.construct_loss_signal()
         self.construct_backward_arrows()
@@ -231,6 +232,60 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
             active_box = box
             active_label = label
         cleanup = [FadeOut(title), FadeOut(formulas)]
+        if active_box is not None:
+            cleanup.append(FadeOut(active_box))
+        if active_label is not None:
+            cleanup.append(FadeOut(active_label))
+        self.play(*cleanup, run_time=0.35)
+
+    def construct_hidden_delta_parts(self) -> None:
+        durations = {
+            "hidden_weighted_return": segment_duration("hidden_weighted_return", 9.0),
+            "hidden_activation_gate": segment_duration("hidden_activation_gate", 9.0),
+            "hidden_elementwise_product": segment_duration("hidden_elementwise_product", 8.0),
+        }
+        title = self.make_label("隠れ層の誤差をさらに分解する", font_size=30)
+        title.to_edge(UP, buff=0.35)
+        formula = self.make_math(
+            r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)})",
+            "delta hidden = W2^T delta output times sigma prime",
+            font_size=31,
+        )
+        if formula.width > 10.4:
+            formula.scale(10.4 / formula.width)
+        formula.move_to(UP * 1.45)
+        cards = VGroup(
+            self.explain_card(r"W_2^T\delta^{(2)}", "出力層の誤差を重みに沿って戻す", RED_B),
+            self.explain_card(r"\sigma'(z^{(1)})", "隠れノードがどれだけ反応できるか", GREEN_B),
+            self.explain_card(r"\odot", "同じ位置どうしを掛ける", YELLOW),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.24)
+        cards.move_to(DOWN * 0.55)
+        focus_items = [
+            ("hidden_weighted_return", cards[0], "次の層の誤差を、接続重みで隠れ層へ配り直します", RED_B),
+            ("hidden_activation_gate", cards[1], "活性化の微分は、そのノードが修正に反応できる強さです", GREEN_B),
+            ("hidden_elementwise_product", cards[2], "丸に点の掛け算は、ノードごとに対応する値を掛ける意味です", YELLOW),
+        ]
+
+        self.play(FadeIn(title), Write(formula), FadeIn(cards), run_time=1.0)
+        active_box = None
+        active_label = None
+        for index, (segment_id, target, label_text, color) in enumerate(focus_items):
+            duration = durations[segment_id]
+            used = 1.0 if index == 0 else 0.0
+            if active_box is not None and active_label is not None:
+                fade_time = min(0.16, duration * 0.12)
+                self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
+                used += fade_time
+            box = SurroundingRectangle(target, color=color, buff=0.08)
+            label = self.make_label(label_text, font_size=20, color=color)
+            label.to_edge(DOWN, buff=0.35)
+            entry_time = min(0.35, duration * 0.18)
+            self.play(Create(box), FadeIn(label), run_time=entry_time)
+            used += entry_time
+            self.wait_remaining(duration, used)
+            active_box = box
+            active_label = label
+        cleanup = [FadeOut(title), FadeOut(formula), FadeOut(cards)]
         if active_box is not None:
             cleanup.append(FadeOut(active_box))
         if active_label is not None:

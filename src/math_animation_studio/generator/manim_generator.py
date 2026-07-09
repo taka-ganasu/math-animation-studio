@@ -202,7 +202,7 @@ class BackpropagationParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = "Backpropagation"
-    target_duration_seconds: float = Field(default=125.0, ge=5, le=180)
+    target_duration_seconds: float = Field(default=151.0, ge=5, le=180)
     formula_latex: str = (
         r"\delta^{(2)}=\hat{y}-y,\quad "
         r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)}),\quad "
@@ -651,7 +651,7 @@ class ManimGenerator:
         learning_rate = max(1e-6, _safe_float(values.get("learning_rate"), 0.1))
         selected_weight_before = _safe_float(values.get("selected_weight_before"), 0.42)
         selected_weight_gradient = _safe_float(values.get("selected_weight_gradient"), -0.18)
-        target_duration_seconds = self.target_duration_seconds or 125
+        target_duration_seconds = self.target_duration_seconds or 151
         timeline = backpropagation_timeline_segments(target_duration_seconds)
         return BackpropagationParams(
             target_duration_seconds=round(sum(segment.duration_seconds for segment in timeline), 3),

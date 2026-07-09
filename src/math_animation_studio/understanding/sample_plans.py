@@ -743,7 +743,43 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                 ExplanationStep(
                     id="step_04",
                     scene_role="formula_structure",
-                    title="隠れ層へ誤差を戻す",
+                    title="出力誤差を重みで戻す",
+                    learning_goal="W2転置かけるdelta2が、出力層の誤差を隠れ層へ配り直すことを理解する",
+                    explanation="W2転置かけるdelta2は、出力層の誤差を、接続重みに沿って隠れ層へ配り直す部分です。",
+                    visual_idea="W2^T delta2をカードとして表示し、出力層から隠れ層へ戻る信号として説明する。",
+                    formula_focus=r"W_2^T\delta^{(2)}",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="出力層の誤差を重みに沿って戻す部分を強調する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_05",
+                    scene_role="formula_structure",
+                    title="活性化の微分を掛ける",
+                    learning_goal="sigma primeが隠れノードの反応しやすさを表すことを理解する",
+                    explanation="sigma primeは、隠れノードがその場所でどれだけ修正に反応できるかを表します。",
+                    visual_idea="sigma primeのカードを表示し、反応できる強さとして説明する。",
+                    formula_focus=r"\sigma'(z^{(1)})",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="活性化関数の微分を掛ける理由を示す"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_06",
+                    scene_role="formula_structure",
+                    title="同じ位置どうしを掛ける",
+                    learning_goal="odotがノードごとの掛け算を意味することを理解する",
+                    explanation="丸に点の掛け算は、同じ位置どうしを掛けるという意味です。隠れノードごとの調整になります。",
+                    visual_idea="odotのカードを表示し、ノードごとの値を対応させる。",
+                    formula_focus=r"\odot",
+                    planned_components=[
+                        PlannedAnimationComponent(kind="chain_rule", description="要素ごとの積を説明する"),
+                    ],
+                ),
+                ExplanationStep(
+                    id="step_07",
+                    scene_role="formula_structure",
+                    title="隠れ層の誤差信号を作る",
                     learning_goal="次の層の誤差を重みで前の層へ配ることを理解する",
                     explanation="隠れ層の誤差は、次の層の誤差信号を重みで戻し、活性化関数の微分を掛けて作ります。",
                     visual_idea="出力層から隠れ層へ赤い矢印を戻す。",
@@ -754,7 +790,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_05",
+                    id="step_08",
                     scene_role="formula_structure",
                     title="重みごとの勾配にする",
                     learning_goal="誤差信号と手前の出力から重みの勾配が決まることを理解する",
@@ -766,7 +802,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_06",
+                    id="step_09",
                     scene_role="concrete_example",
                     title="順伝播の結果から始める",
                     learning_goal="逆伝播が順伝播で出た損失を入口にすることを理解する",
@@ -777,7 +813,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_07",
+                    id="step_10",
                     scene_role="visualization",
                     title="誤差を逆向きに流す",
                     learning_goal="逆向きの流れと、途中で微分を掛けることを理解する",
@@ -789,7 +825,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_08",
+                    id="step_11",
                     scene_role="visualization",
                     title="隠れ層の責任を見る",
                     learning_goal="隠れ層にも損失への影響量が割り当てられることを理解する",
@@ -800,7 +836,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_09",
+                    id="step_12",
                     scene_role="visualization",
                     title="重みを更新する",
                     learning_goal="計算した勾配が勾配降下法の更新に入ることを理解する",
@@ -812,7 +848,7 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
                 ExplanationStep(
-                    id="step_10",
+                    id="step_13",
                     scene_role="summary",
                     title="最後に流れをまとめる",
                     learning_goal="誤差信号、勾配、重み更新の関係を整理する",
