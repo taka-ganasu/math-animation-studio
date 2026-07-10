@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import numpy as np
 from manim import *
 
 
@@ -122,25 +121,36 @@ class PerceptronScene(MathAnimationSceneMixin, Scene):
         self.play(*animations, run_time=0.45)
         self.play(FadeOut(VGroup(title, parts, meaning)), run_time=0.35)
 
-    def node(self, label: Mobject | str, center: np.ndarray, color: ManimColor) -> VGroup:
-        circle = Circle(radius=0.42, stroke_color=color, stroke_width=3, fill_color=BLACK, fill_opacity=0.85)
-        circle.move_to(center)
-        if isinstance(label, str):
-            text = self.make_label(label, font_size=22, color=color)
-        else:
-            text = label
-        text.move_to(circle.get_center())
-        return VGroup(circle, text)
-
     def construct_network_diagram(self) -> None:
         duration = segment_duration("network_diagram", 8.0)
         title = self.scene_title("1つのニューロンとして見る", font_size=30)
-        x1 = self.node(self.make_math(INPUT_LABELS[0], INPUT_LABELS[0], font_size=26), LEFT * 4.8 + UP * 1.35, BLUE_B)
-        x2 = self.node(self.make_math(INPUT_LABELS[1], INPUT_LABELS[1], font_size=26), LEFT * 4.8 + DOWN * 0.05, BLUE_B)
-        b = self.node("b", LEFT * 4.8 + DOWN * 1.45, ORANGE)
-        sum_node = self.node(self.make_math(r"\sum", "sum", font_size=30), LEFT * 1.05, GREEN_B)
-        act_node = self.node(self.make_math(r"\mathrm{step}", "step", font_size=23), RIGHT * 1.75, PURPLE_B)
-        out_node = self.node("a", RIGHT * 4.65, YELLOW)
+        node_style = {"radius": 0.42, "font_size": 22, "fill_opacity": 0.85}
+        x1 = self.neural_node(
+            self.make_math(INPUT_LABELS[0], INPUT_LABELS[0], font_size=26),
+            LEFT * 4.8 + UP * 1.35,
+            BLUE_B,
+            **node_style,
+        )
+        x2 = self.neural_node(
+            self.make_math(INPUT_LABELS[1], INPUT_LABELS[1], font_size=26),
+            LEFT * 4.8 + DOWN * 0.05,
+            BLUE_B,
+            **node_style,
+        )
+        b = self.neural_node("b", LEFT * 4.8 + DOWN * 1.45, ORANGE, **node_style)
+        sum_node = self.neural_node(
+            self.make_math(r"\sum", "sum", font_size=30),
+            LEFT * 1.05,
+            GREEN_B,
+            **node_style,
+        )
+        act_node = self.neural_node(
+            self.make_math(r"\mathrm{step}", "step", font_size=23),
+            RIGHT * 1.75,
+            PURPLE_B,
+            **node_style,
+        )
+        out_node = self.neural_node("a", RIGHT * 4.65, YELLOW, **node_style)
 
         arrows = VGroup()
         labels = VGroup()

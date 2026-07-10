@@ -59,6 +59,121 @@ class MathAnimationSceneMixin:
         text.move_to(box.get_center())
         return VGroup(box, text)
 
+    def neural_node(
+        self,
+        label: Mobject | str,
+        center,
+        color: ManimColor,
+        *,
+        radius: float = 0.28,
+        font_size: int = 18,
+        fill_opacity: float = 0.9,
+        stroke_width: float = 3,
+    ) -> VGroup:
+        circle = Circle(
+            radius=radius,
+            stroke_color=color,
+            stroke_width=stroke_width,
+            fill_color=BLACK,
+            fill_opacity=fill_opacity,
+        )
+        circle.move_to(center)
+        if isinstance(label, str):
+            text = self.make_label(label, font_size=font_size, color=color)
+        else:
+            text = label
+        text.move_to(circle.get_center())
+        return VGroup(circle, text)
+
+    def neural_layer(
+        self,
+        labels: tuple[str, ...],
+        x: float,
+        color: ManimColor,
+        *,
+        spacing: float | None = None,
+        radius: float = 0.28,
+        font_size: int = 18,
+    ) -> VGroup:
+        count = len(labels)
+        resolved_spacing = spacing if spacing is not None else (0.72 if count >= 4 else 0.9)
+        nodes = VGroup()
+        for index, label in enumerate(labels):
+            y = (count - 1) * resolved_spacing / 2 - index * resolved_spacing
+            nodes.add(self.neural_node(label, RIGHT * x + UP * y, color, radius=radius, font_size=font_size))
+        return nodes
+
+    def neural_connections(
+        self,
+        left_nodes: VGroup,
+        right_nodes: VGroup,
+        *,
+        color: ManimColor = GREY_B,
+        opacity: float = 0.4,
+        stroke_width: float = 2.0,
+    ) -> VGroup:
+        edges = VGroup()
+        for left in left_nodes:
+            for right in right_nodes:
+                edge = Line(
+                    left[0].get_right(),
+                    right[0].get_left(),
+                    stroke_width=stroke_width,
+                    color=color,
+                    stroke_opacity=opacity,
+                )
+                edges.add(edge)
+        return edges
+
+    def three_layer_network_parts(
+        self,
+        *,
+        input_labels: tuple[str, ...],
+        hidden_labels: tuple[str, ...],
+        output_labels: tuple[str, ...],
+        input_title_text: str,
+        hidden_title_text: str,
+        output_title_text: str,
+        input_x: float = -4.4,
+        hidden_x: float = -0.55,
+        output_x: float = 3.25,
+        input_color: ManimColor = BLUE_B,
+        hidden_color: ManimColor = GREEN_B,
+        output_color: ManimColor = YELLOW,
+        connection_color: ManimColor = GREY_B,
+        connection_opacity: float = 0.4,
+        connection_stroke_width: float = 2.0,
+        title_font_size: int = 20,
+        title_buff: float = 0.32,
+    ):
+        input_nodes = self.neural_layer(input_labels, input_x, input_color)
+        hidden_nodes = self.neural_layer(hidden_labels, hidden_x, hidden_color)
+        output_nodes = self.neural_layer(output_labels, output_x, output_color)
+        input_edges = self.neural_connections(
+            input_nodes,
+            hidden_nodes,
+            color=connection_color,
+            opacity=connection_opacity,
+            stroke_width=connection_stroke_width,
+        )
+        output_edges = self.neural_connections(
+            hidden_nodes,
+            output_nodes,
+            color=connection_color,
+            opacity=connection_opacity,
+            stroke_width=connection_stroke_width,
+        )
+        input_title = self.make_label(input_title_text, font_size=title_font_size, color=input_color)
+        hidden_title = self.make_label(hidden_title_text, font_size=title_font_size, color=hidden_color)
+        output_title = self.make_label(output_title_text, font_size=title_font_size, color=output_color)
+        for title, nodes in (
+            (input_title, input_nodes),
+            (hidden_title, hidden_nodes),
+            (output_title, output_nodes),
+        ):
+            title.next_to(nodes, UP, buff=title_buff)
+        return input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, VGroup(input_title, hidden_title, output_title)
+
     def fade_out_scene(self, *mobjects: Mobject, run_time: float = 0.35) -> None:
         self.play(FadeOut(VGroup(*mobjects)), run_time=run_time)
 

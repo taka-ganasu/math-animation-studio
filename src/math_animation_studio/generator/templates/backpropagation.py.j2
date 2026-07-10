@@ -42,64 +42,17 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
         self.construct_weight_update()
         self.construct_summary()
 
-    def node(self, label: str, center, color: ManimColor, radius: float = 0.28) -> VGroup:
-        circle = Circle(
-            radius=radius,
-            stroke_color=color,
-            stroke_width=3,
-            fill_color=BLACK,
-            fill_opacity=0.9,
-        )
-        circle.move_to(center)
-        text = self.make_label(label, font_size=18, color=color)
-        text.move_to(circle.get_center())
-        return VGroup(circle, text)
-
-    def layer(self, labels: tuple[str, ...], x: float, color: ManimColor) -> VGroup:
-        count = len(labels)
-        spacing = 0.72 if count >= 4 else 0.9
-        nodes = VGroup()
-        for index, label in enumerate(labels):
-            y = (count - 1) * spacing / 2 - index * spacing
-            nodes.add(self.node(label, RIGHT * x + UP * y, color))
-        return nodes
-
-    def connect_layers(
-        self,
-        left_nodes: VGroup,
-        right_nodes: VGroup,
-        color: ManimColor = GREY_B,
-        opacity: float = 0.35,
-    ) -> VGroup:
-        edges = VGroup()
-        for left in left_nodes:
-            for right in right_nodes:
-                edge = Line(
-                    left[0].get_right(),
-                    right[0].get_left(),
-                    stroke_width=2.0,
-                    color=color,
-                    stroke_opacity=opacity,
-                )
-                edges.add(edge)
-        return edges
-
     def network_parts(self):
-        input_nodes = self.layer(INPUT_LABELS, -4.4, BLUE_B)
-        hidden_nodes = self.layer(HIDDEN_LABELS, -0.55, GREEN_B)
-        output_nodes = self.layer(CLASS_LABELS, 3.25, YELLOW)
-        input_edges = self.connect_layers(input_nodes, hidden_nodes)
-        output_edges = self.connect_layers(hidden_nodes, output_nodes)
-        input_title = self.make_label("入力", font_size=20, color=BLUE_B)
-        hidden_title = self.make_label("隠れ層", font_size=20, color=GREEN_B)
-        output_title = self.make_label("出力", font_size=20, color=YELLOW)
-        for title, nodes in (
-            (input_title, input_nodes),
-            (hidden_title, hidden_nodes),
-            (output_title, output_nodes),
-        ):
-            title.next_to(nodes, UP, buff=0.32)
-        return input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, VGroup(input_title, hidden_title, output_title)
+        return self.three_layer_network_parts(
+            input_labels=INPUT_LABELS,
+            hidden_labels=HIDDEN_LABELS,
+            output_labels=CLASS_LABELS,
+            input_title_text="入力",
+            hidden_title_text="隠れ層",
+            output_title_text="出力",
+            connection_opacity=0.35,
+            connection_stroke_width=2.0,
+        )
 
     def construct_title_intro(self) -> None:
         duration = segment_duration("title_intro", 9.0)
