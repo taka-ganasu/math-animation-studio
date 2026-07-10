@@ -15,6 +15,53 @@ class MathAnimationSceneMixin:
             label.scale(11.4 / label.width)
         return label
 
+    def scene_title(self, text: str, font_size: int = 30, top_buff: float = 0.35) -> Text:
+        title = self.make_label(text, font_size=font_size)
+        title.to_edge(UP, buff=top_buff)
+        return title
+
+    def bottom_caption(
+        self,
+        text: str,
+        font_size: int = 21,
+        color: ManimColor = YELLOW,
+        bottom_buff: float = 0.35,
+    ) -> Text:
+        caption = self.make_label(text, font_size=font_size, color=color)
+        caption.to_edge(DOWN, buff=bottom_buff)
+        return caption
+
+    def card(
+        self,
+        label: Mobject | str,
+        *,
+        color: ManimColor = BLUE_B,
+        width: float = 2.6,
+        height: float = 0.85,
+        font_size: int = 21,
+        corner_radius: float = 0.1,
+        stroke_width: float = 3,
+        fill_opacity: float = 0.86,
+    ) -> VGroup:
+        box = RoundedRectangle(
+            corner_radius=corner_radius,
+            width=width,
+            height=height,
+            stroke_color=color,
+            stroke_width=stroke_width,
+            fill_color=BLACK,
+            fill_opacity=fill_opacity,
+        )
+        if isinstance(label, str):
+            text = self.make_label(label, font_size=font_size, color=color)
+        else:
+            text = label
+        text.move_to(box.get_center())
+        return VGroup(box, text)
+
+    def fade_out_scene(self, *mobjects: Mobject, run_time: float = 0.35) -> None:
+        self.play(FadeOut(VGroup(*mobjects)), run_time=run_time)
+
     def wait_remaining(self, segment_seconds: float, used_seconds: float) -> None:
         remaining = max(0.0, segment_seconds - used_seconds)
         if remaining > 0.01:

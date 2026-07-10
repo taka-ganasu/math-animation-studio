@@ -34,30 +34,6 @@ class ChainRuleScene(MathAnimationSceneMixin, Scene):
         self.construct_backprop_bridge()
         self.construct_summary()
 
-    def card(
-        self,
-        label: Mobject | str,
-        *,
-        width: float = 2.35,
-        height: float = 1.0,
-        color: ManimColor = BLUE_B,
-    ) -> VGroup:
-        rect = RoundedRectangle(
-            corner_radius=0.12,
-            width=width,
-            height=height,
-            stroke_color=color,
-            stroke_width=3,
-            fill_color=BLACK,
-            fill_opacity=0.86,
-        )
-        if isinstance(label, str):
-            text = self.make_label(label, font_size=22, color=color)
-        else:
-            text = label
-        text.move_to(rect.get_center())
-        return VGroup(rect, text)
-
     def construct_title_intro(self) -> None:
         duration = segment_duration("title_intro", 8.0)
         title = self.make_label("今回は連鎖律を見ていきます", font_size=32)

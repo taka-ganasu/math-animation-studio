@@ -99,23 +99,6 @@ class NeuralNetworkTransformScene(MathAnimationSceneMixin, Scene):
             dots.add(Dot(axes.c2p(x, y), color=color, radius=0.07))
         return dots
 
-    def card(self, label: Mobject | str, *, color: ManimColor, width: float = 2.45) -> VGroup:
-        box = RoundedRectangle(
-            corner_radius=0.1,
-            width=width,
-            height=0.85,
-            stroke_color=color,
-            stroke_width=3,
-            fill_color=BLACK,
-            fill_opacity=0.86,
-        )
-        if isinstance(label, str):
-            text = self.make_label(label, font_size=20, color=color)
-        else:
-            text = label
-        text.move_to(box.get_center())
-        return VGroup(box, text)
-
     def construct_title_intro(self) -> None:
         duration = segment_duration("title_intro", 8.0)
         title = self.make_label("NNにおける変換の本質を見る", font_size=32)
