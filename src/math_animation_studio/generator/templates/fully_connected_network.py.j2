@@ -95,30 +95,15 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
             ("formula_output", parts[4], "W2h+b2: 出力層のスコアを作る", ORANGE),
         ]
         self.play(FadeIn(title), Write(formula_group), run_time=0.9)
-        active_box = None
-        active_label = None
-        for index, (segment_id, target, label_text, color) in enumerate(focus_items):
-            duration = durations[segment_id]
-            used = 0.9 if index == 0 else 0.0
-            if active_box is not None and active_label is not None:
-                fade_time = min(0.16, duration * 0.12)
-                self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
-                used += fade_time
-            box = SurroundingRectangle(target, color=color, buff=0.08)
-            label = self.make_label(label_text, font_size=20, color=color)
-            label.next_to(formula_group, DOWN, buff=0.4)
-            entry_time = min(0.35, duration * 0.18)
-            self.play(Create(box), FadeIn(label), run_time=entry_time)
-            used += entry_time
-            self.wait_remaining(duration, used)
-            active_box = box
-            active_label = label
-        cleanup = [FadeOut(title), FadeOut(formula_group)]
-        if active_box is not None:
-            cleanup.append(FadeOut(active_box))
-        if active_label is not None:
-            cleanup.append(FadeOut(active_label))
-        self.play(*cleanup, run_time=0.35)
+        active_box, active_label = self.play_focus_sequence(
+            focus_items,
+            durations,
+            first_used_time=0.9,
+            label_placement="anchor_down",
+            label_anchor=formula_group,
+            label_buff=0.4,
+        )
+        self.focus_cleanup(title, formula_group, active_box=active_box, active_label=active_label)
 
     def construct_layer_stack(self) -> None:
         duration = segment_duration("layer_stack", 12.0)

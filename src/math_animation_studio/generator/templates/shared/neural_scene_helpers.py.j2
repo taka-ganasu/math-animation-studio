@@ -174,6 +174,85 @@ class MathAnimationSceneMixin:
             title.next_to(nodes, UP, buff=title_buff)
         return input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, VGroup(input_title, hidden_title, output_title)
 
+    def focus_label(
+        self,
+        text: str,
+        target: Mobject,
+        color: ManimColor,
+        *,
+        placement: str = "bottom",
+        anchor: Mobject | None = None,
+        font_size: int = 20,
+        buff: float = 0.35,
+    ) -> Text:
+        label = self.make_label(text, font_size=font_size, color=color)
+        if placement == "target_down":
+            label.next_to(target, DOWN, buff=buff)
+        elif placement == "anchor_down":
+            if anchor is None:
+                raise ValueError("anchor is required for anchor_down focus labels")
+            label.next_to(anchor, DOWN, buff=buff)
+        elif placement == "bottom":
+            label.to_edge(DOWN, buff=buff)
+        else:
+            raise ValueError(f"Unknown focus label placement: {placement}")
+        return label
+
+    def play_focus_sequence(
+        self,
+        focus_items,
+        durations: dict[str, float],
+        *,
+        first_used_time: float = 0.0,
+        box_buff: float = 0.08,
+        label_placement: str = "bottom",
+        label_anchor: Mobject | None = None,
+        label_font_size: int = 20,
+        label_buff: float = 0.35,
+        max_fade_time: float = 0.16,
+        fade_ratio: float = 0.12,
+        max_entry_time: float = 0.35,
+        entry_ratio: float | None = 0.18,
+        min_entry_time: float = 0.05,
+    ):
+        active_box = None
+        active_label = None
+        for index, (segment_id, target, label_text, color) in enumerate(focus_items):
+            duration = durations[segment_id]
+            used = first_used_time if index == 0 else 0.0
+            if active_box is not None and active_label is not None:
+                fade_time = min(max_fade_time, duration * fade_ratio)
+                self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
+                used += fade_time
+            box = SurroundingRectangle(target, color=color, buff=box_buff)
+            label = self.focus_label(
+                label_text,
+                target,
+                color,
+                placement=label_placement,
+                anchor=label_anchor,
+                font_size=label_font_size,
+                buff=label_buff,
+            )
+            if entry_ratio is None:
+                entry_time = min(max_entry_time, max(min_entry_time, duration - used))
+            else:
+                entry_time = min(max_entry_time, duration * entry_ratio)
+            self.play(Create(box), FadeIn(label), run_time=entry_time)
+            used += entry_time
+            self.wait_remaining(duration, used)
+            active_box = box
+            active_label = label
+        return active_box, active_label
+
+    def focus_cleanup(self, *mobjects: Mobject, active_box=None, active_label=None, run_time: float = 0.35) -> None:
+        cleanup = [FadeOut(mobject) for mobject in mobjects]
+        if active_box is not None:
+            cleanup.append(FadeOut(active_box))
+        if active_label is not None:
+            cleanup.append(FadeOut(active_label))
+        self.play(*cleanup, run_time=run_time)
+
     def fade_out_scene(self, *mobjects: Mobject, run_time: float = 0.35) -> None:
         self.play(FadeOut(VGroup(*mobjects)), run_time=run_time)
 

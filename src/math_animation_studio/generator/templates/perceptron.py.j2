@@ -94,24 +94,17 @@ class PerceptronScene(MathAnimationSceneMixin, Scene):
 
         intro_time = min(0.55, focus_durations["formula_weighted_inputs"] * 0.25)
         self.play(FadeIn(title), Write(parts), run_time=intro_time)
-        active_box = None
-        active_label = None
-        for index, (segment_id, target, label_text, color) in enumerate(focus_items):
-            segment_time = focus_durations[segment_id]
-            used_time = intro_time if index == 0 else 0.0
-            if active_box is not None and active_label is not None:
-                fade_time = min(0.14, segment_time * 0.15)
-                self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
-                used_time += fade_time
-            box = SurroundingRectangle(target, color=color, buff=0.08)
-            label = self.make_label(label_text, font_size=20, color=color)
-            label.next_to(target, DOWN, buff=0.25)
-            entry_time = min(0.28, max(0.05, segment_time - used_time))
-            self.play(Create(box), FadeIn(label), run_time=entry_time)
-            used_time += entry_time
-            self.wait_remaining(segment_time, used_time)
-            active_box = box
-            active_label = label
+        active_box, active_label = self.play_focus_sequence(
+            focus_items,
+            focus_durations,
+            first_used_time=intro_time,
+            label_placement="target_down",
+            label_buff=0.25,
+            max_fade_time=0.14,
+            fade_ratio=0.15,
+            max_entry_time=0.28,
+            entry_ratio=None,
+        )
 
         animations = [FadeIn(meaning)]
         if active_box is not None:
