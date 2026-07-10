@@ -102,8 +102,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_title_intro(self) -> None:
         duration = segment_duration("title_intro", 8.0)
-        title = self.make_label("今回は全結合ニューラルネットワークを見ていきます", font_size=29)
-        title.to_edge(UP, buff=0.32)
+        title = self.scene_title("今回は全結合ニューラルネットワークを見ていきます", font_size=29, top_buff=0.32)
         formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=31)
         formula.move_to(ORIGIN + UP * 0.35)
         subtitle = self.make_label("1つのニューロンを層として並べ、すべて次の層へつなぐ", font_size=22, color=YELLOW)
@@ -121,8 +120,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
             "formula_activation": segment_duration("formula_activation", 8.0),
             "formula_output": segment_duration("formula_output", 9.0),
         }
-        title = self.make_label("式を層の流れとして読む", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("式を層の流れとして読む", font_size=30)
         parts = VGroup(
             self.make_math(r"\hat{y}", "y_hat", font_size=32),
             self.make_math("=", "=", font_size=32),
@@ -171,15 +169,12 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_layer_stack(self) -> None:
         duration = segment_duration("layer_stack", 12.0)
-        title = self.make_label("まず層として並べる", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("まず層として並べる", font_size=30)
         input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, layer_titles = self.network_parts()
-        caption = self.make_label(
+        caption = self.bottom_caption(
             f"{LAYER_SIZES[0]}個の入力、{LAYER_SIZES[1]}個の隠れニューロン、{LAYER_SIZES[2]}個の出力",
             font_size=22,
-            color=YELLOW,
         )
-        caption.to_edge(DOWN, buff=0.35)
 
         self.play(FadeIn(title), FadeIn(input_nodes), FadeIn(layer_titles[0]), run_time=0.8)
         self.play(FadeIn(hidden_nodes), FadeIn(layer_titles[1]), run_time=0.8)
@@ -189,8 +184,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_full_connections(self) -> None:
         duration = segment_duration("full_connections", 11.0)
-        title = self.make_label("全結合 = すべて次の層へつなぐ", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("全結合 = すべて次の層へつなぐ", font_size=30)
         input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, layer_titles = self.network_parts()
         formula = self.make_math(r"W_1x+b_1", "W1*x+b1", font_size=30)
         formula.to_edge(DOWN, buff=0.35)
@@ -207,8 +201,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_forward_pass(self) -> None:
         duration = segment_duration("forward_pass", 12.0)
-        title = self.make_label("順伝播では左から右へ値が流れる", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("順伝播では左から右へ値が流れる", font_size=30)
         input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, layer_titles = self.network_parts()
         all_nodes = VGroup(input_nodes, hidden_nodes, output_nodes, layer_titles)
         input_values = VGroup()
@@ -232,8 +225,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_softmax_output(self) -> None:
         duration = segment_duration("softmax_output", 9.0)
-        title = self.make_label("softmaxで確率として読む", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("softmaxで確率として読む", font_size=30)
         formula = self.make_math(r"\hat{y}=\mathrm{softmax}(o)", "y_hat = softmax(o)", font_size=32)
         formula.move_to(UP * 1.65)
         bars = VGroup()
@@ -255,8 +247,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
             label.next_to(bar, LEFT, buff=0.25)
             bars.add(bar)
             labels.add(label)
-        caption = self.make_label("分類では、この確率をクロスエントロピーなどの損失につなげます", font_size=21, color=YELLOW)
-        caption.to_edge(DOWN, buff=0.35)
+        caption = self.bottom_caption("分類では、この確率をクロスエントロピーなどの損失につなげます")
 
         self.play(FadeIn(title), Write(formula), run_time=1.0)
         self.play(LaggedStart(*[GrowFromEdge(bar, LEFT) for bar in bars], lag_ratio=0.18), FadeIn(labels), run_time=1.2)
@@ -266,8 +257,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_one_hot_label(self) -> None:
         duration = segment_duration("one_hot_label", 8.0)
-        title = self.make_label("正解ラベルはone-hotで持つ", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("正解ラベルはone-hotで持つ", font_size=30)
         values = ["1" if index == CORRECT_INDEX else "0" for index in range(len(CLASS_LABELS))]
         vector_text = ",".join(values)
         formula = self.make_math(rf"y=[{vector_text}]", f"y=[{vector_text}]", font_size=30)
@@ -292,8 +282,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
             cells.add(VGroup(cell, value_label))
             labels.add(class_label)
         group = VGroup(cells, labels).move_to(ORIGIN)
-        caption = self.make_label("正解クラスだけが1になり、損失ではそのクラスだけを見ます", font_size=21, color=YELLOW)
-        caption.to_edge(DOWN, buff=0.35)
+        caption = self.bottom_caption("正解クラスだけが1になり、損失ではそのクラスだけを見ます")
 
         self.play(FadeIn(title), Write(formula), FadeIn(correct_label), run_time=1.0)
         self.play(FadeIn(group), run_time=0.9)
@@ -303,8 +292,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_correct_probability(self) -> None:
         duration = segment_duration("correct_probability", 8.0)
-        title = self.make_label("正解クラスの確率だけを取り出す", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("正解クラスの確率だけを取り出す", font_size=30)
         bars = VGroup()
         labels = VGroup()
         for index, probability in enumerate(OUTPUT_PROBABILITIES):
@@ -343,8 +331,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_cross_entropy_loss(self) -> None:
         duration = segment_duration("cross_entropy_loss", 10.0)
-        title = self.make_label("正解確率を-logで損失にする", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("正解確率を-logで損失にする", font_size=30)
         probability = OUTPUT_PROBABILITIES[CORRECT_INDEX]
         formula = self.make_math(
             rf"L=-\log({probability:.2f})={CROSS_ENTROPY_LOSS:.2f}",
@@ -364,8 +351,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
         dot = Dot(axes.c2p(probability, CROSS_ENTROPY_LOSS), color=RED_B, radius=0.08)
         dot_label = self.make_label(f"p={probability:.2f}", font_size=19, color=RED_B)
         dot_label.next_to(dot, UP, buff=0.1)
-        caption = self.make_label("正解確率が高いほど、損失は小さくなります", font_size=21, color=YELLOW)
-        caption.to_edge(DOWN, buff=0.25)
+        caption = self.bottom_caption("正解確率が高いほど、損失は小さくなります", bottom_buff=0.25)
 
         self.play(FadeIn(title), Write(formula), run_time=1.0)
         self.play(Create(axes), Create(curve), run_time=1.2)
@@ -375,8 +361,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
 
     def construct_summary(self) -> None:
         duration = segment_duration("summary", 9.0)
-        title = self.make_label("まとめ", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("まとめ", font_size=30)
         formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=30)
         formula.move_to(UP * 1.2)
         rows = VGroup(
@@ -385,8 +370,7 @@ class FullyConnectedNetworkScene(MathAnimationSceneMixin, Scene):
             self.make_label("3. softmaxの確率と正解ラベルから損失を作る", font_size=22),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.22)
         rows.next_to(formula, DOWN, buff=0.45)
-        note = self.make_label("次の発展は、この損失から重みを更新するバックプロパゲーションです", font_size=21, color=YELLOW)
-        note.to_edge(DOWN, buff=0.35)
+        note = self.bottom_caption("次の発展は、この損失から重みを更新するバックプロパゲーションです")
 
         self.play(FadeIn(title), Write(formula), run_time=1.0)
         self.play(FadeIn(rows), run_time=0.9)

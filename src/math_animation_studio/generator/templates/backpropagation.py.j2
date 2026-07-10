@@ -103,8 +103,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
 
     def construct_title_intro(self) -> None:
         duration = segment_duration("title_intro", 9.0)
-        title = self.make_label("今回はバックプロパゲーションを見ていきます", font_size=30)
-        title.to_edge(UP, buff=0.32)
+        title = self.scene_title("今回はバックプロパゲーションを見ていきます", font_size=30, top_buff=0.32)
         formula = self.make_math(FORMULA_LATEX, FORMULA_FALLBACK_TEXT, font_size=29)
         if formula.width > 10.4:
             formula.scale(10.4 / formula.width)
@@ -124,8 +123,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
             "partial_prediction_meaning": segment_duration("partial_prediction_meaning", 8.0),
             "derivative_ratio_meaning": segment_duration("derivative_ratio_meaning", 9.0),
         }
-        title = self.make_label("まず偏微分の形を読む", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("まず偏微分の形を読む", font_size=30)
         fraction = self.make_math(r"\frac{\partial L}{\partial \hat{y}}", "dL / d y_hat", font_size=44)
         fraction.move_to(UP * 1.45)
         cards = VGroup(
@@ -151,8 +149,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
                 self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
                 used += fade_time
             box = SurroundingRectangle(target, color=color, buff=0.08)
-            label = self.make_label(label_text, font_size=20, color=color)
-            label.to_edge(DOWN, buff=0.35)
+            label = self.bottom_caption(label_text, font_size=20, color=color)
             entry_time = min(0.35, duration * 0.18)
             self.play(Create(box), FadeIn(label), run_time=entry_time)
             used += entry_time
@@ -188,8 +185,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
             "formula_hidden_delta": segment_duration("formula_hidden_delta", 12.0),
             "formula_weight_gradient": segment_duration("formula_weight_gradient", 10.0),
         }
-        title = self.make_label("次に、逆向きに流す量を見る", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("次に、逆向きに流す量を見る", font_size=30)
         formulas = VGroup(
             self.make_math(r"\delta^{(2)}=\hat{y}-y", "delta output = y_hat - y", font_size=30),
             self.make_math(
@@ -223,8 +219,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
                 self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
                 used += fade_time
             box = SurroundingRectangle(target, color=color, buff=0.09)
-            label = self.make_label(label_text, font_size=20, color=color)
-            label.to_edge(DOWN, buff=0.35)
+            label = self.bottom_caption(label_text, font_size=20, color=color)
             entry_time = min(0.35, duration * 0.18)
             self.play(Create(box), FadeIn(label), run_time=entry_time)
             used += entry_time
@@ -244,8 +239,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
             "hidden_activation_gate": segment_duration("hidden_activation_gate", 9.0),
             "hidden_elementwise_product": segment_duration("hidden_elementwise_product", 8.0),
         }
-        title = self.make_label("隠れ層の誤差をさらに分解する", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("隠れ層の誤差をさらに分解する", font_size=30)
         formula = self.make_math(
             r"\delta^{(1)}=(W_2^T\delta^{(2)})\odot\sigma'(z^{(1)})",
             "delta hidden = W2^T delta output times sigma prime",
@@ -277,8 +271,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
                 self.play(FadeOut(active_box), FadeOut(active_label), run_time=fade_time)
                 used += fade_time
             box = SurroundingRectangle(target, color=color, buff=0.08)
-            label = self.make_label(label_text, font_size=20, color=color)
-            label.to_edge(DOWN, buff=0.35)
+            label = self.bottom_caption(label_text, font_size=20, color=color)
             entry_time = min(0.35, duration * 0.18)
             self.play(Create(box), FadeIn(label), run_time=entry_time)
             used += entry_time
@@ -294,8 +287,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
 
     def construct_forward_context(self) -> None:
         duration = segment_duration("forward_context", 9.0)
-        title = self.make_label("まず順伝播で予測と損失が出る", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("まず順伝播で予測と損失が出る", font_size=30)
         input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, layer_titles = self.network_parts()
         all_nodes = VGroup(input_nodes, hidden_nodes, output_nodes, layer_titles)
         loss_box = RoundedRectangle(corner_radius=0.12, width=1.7, height=0.85, stroke_color=RED_B, fill_color=BLACK, fill_opacity=0.85)
@@ -304,8 +296,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
         loss_text.move_to(loss_box)
         forward_arrow = Arrow(input_nodes.get_right(), output_nodes.get_left(), color=BLUE_B, buff=0.25, stroke_width=6)
         loss_arrow = Arrow(output_nodes.get_right(), loss_box.get_left(), color=RED_B, buff=0.12, stroke_width=5)
-        caption = self.make_label("逆伝播は、この損失からスタートします", font_size=21, color=YELLOW)
-        caption.to_edge(DOWN, buff=0.35)
+        caption = self.bottom_caption("逆伝播は、この損失からスタートします")
 
         self.play(FadeIn(title), FadeIn(all_nodes), FadeIn(input_edges), FadeIn(output_edges), run_time=0.9)
         self.play(GrowArrow(forward_arrow), run_time=0.9)
@@ -315,8 +306,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
 
     def construct_loss_signal(self) -> None:
         duration = segment_duration("loss_signal", 9.0)
-        title = self.make_label("出力層の誤差は 予測 - 正解", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("出力層の誤差は 予測 - 正解", font_size=30)
         formula = self.make_math(r"\delta^{(2)}=\hat{y}-y", "delta output = y_hat - y", font_size=34)
         formula.move_to(UP * 1.45)
         bars = VGroup()
@@ -341,8 +331,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
             label.next_to(bar, LEFT, buff=0.24)
             bars.add(bar)
             delta_labels.add(label)
-        caption = self.make_label("正解クラスは低ければ負、他クラスは高すぎれば正の信号になります", font_size=20, color=YELLOW)
-        caption.to_edge(DOWN, buff=0.35)
+        caption = self.bottom_caption("正解クラスは低ければ負、他クラスは高すぎれば正の信号になります", font_size=20)
 
         self.play(FadeIn(title), Write(formula), run_time=0.9)
         self.play(LaggedStart(*[GrowFromEdge(bar, LEFT) for bar in bars], lag_ratio=0.16), FadeIn(delta_labels), run_time=1.2)
@@ -352,8 +341,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
 
     def construct_backward_arrows(self) -> None:
         duration = segment_duration("backward_arrows", 10.0)
-        title = self.make_label("誤差信号を右から左へ戻す", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("誤差信号を右から左へ戻す", font_size=30)
         input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, layer_titles = self.network_parts()
         all_nodes = VGroup(input_nodes, hidden_nodes, output_nodes, layer_titles)
         formula = self.make_math(
@@ -376,8 +364,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
 
     def construct_hidden_credit(self) -> None:
         duration = segment_duration("hidden_credit", 9.0)
-        title = self.make_label("隠れ層にも責任を配る", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("隠れ層にも責任を配る", font_size=30)
         input_nodes, hidden_nodes, output_nodes, input_edges, output_edges, layer_titles = self.network_parts()
         all_nodes = VGroup(input_nodes, hidden_nodes, output_nodes, layer_titles, input_edges, output_edges)
         hidden_labels = VGroup()
@@ -402,8 +389,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
 
     def construct_weight_update(self) -> None:
         duration = segment_duration("weight_update", 10.0)
-        title = self.make_label("最後に重みを少し直す", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("最後に重みを少し直す", font_size=30)
         formula = self.make_math(
             r"W\leftarrow W-\eta\frac{\partial L}{\partial W}",
             "W <- W - eta * gradient",
@@ -420,8 +406,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
         dot_right = Dot(edge.get_end(), color=YELLOW)
         edge_label = self.make_label("1本の接続重み", font_size=21, color=YELLOW)
         edge_label.next_to(edge, DOWN, buff=0.25)
-        caption = self.make_label("勾配が負なら、重みは少し大きくなります", font_size=20, color=YELLOW)
-        caption.to_edge(DOWN, buff=0.35)
+        caption = self.bottom_caption("勾配が負なら、重みは少し大きくなります", font_size=20)
 
         self.play(FadeIn(title), Write(formula), run_time=0.9)
         self.play(Create(edge), FadeIn(dot_left), FadeIn(dot_right), FadeIn(edge_label), run_time=0.8)
@@ -433,8 +418,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
 
     def construct_summary(self) -> None:
         duration = segment_duration("summary", 11.0)
-        title = self.make_label("まとめ", font_size=30)
-        title.to_edge(UP, buff=0.35)
+        title = self.scene_title("まとめ", font_size=30)
         rows = VGroup(
             self.make_label("1. 損失から、出力層の誤差を作る", font_size=22),
             self.make_label("2. 重みと活性化の微分を掛けながら、誤差を前の層へ戻す", font_size=22),
@@ -447,8 +431,7 @@ class BackpropagationScene(MathAnimationSceneMixin, Scene):
             font_size=32,
         )
         formula.next_to(rows, DOWN, buff=0.55)
-        note = self.make_label("逆伝播は、全重みへ同じ考えをまとめて適用する計算です", font_size=21, color=YELLOW)
-        note.to_edge(DOWN, buff=0.35)
+        note = self.bottom_caption("逆伝播は、全重みへ同じ考えをまとめて適用する計算です")
 
         self.play(FadeIn(title), FadeIn(rows), run_time=1.0)
         self.play(Write(formula), FadeIn(note), run_time=0.9)
