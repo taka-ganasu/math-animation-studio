@@ -178,7 +178,7 @@ def test_generator_writes_compilable_activation_functions_scene(tmp_path) -> Non
     assert "construct_sigmoid_curve" in rendered
     assert "construct_tanh_curve" in rendered
     assert "construct_softmax_scores" in rendered
-    assert "Adam" in rendered
+    assert "Adam" not in rendered
     assert "relu_curve" in params.segment_durations
     assert "softmax_scores" in params.segment_durations
     assert "output_layer_choice" in params.segment_durations

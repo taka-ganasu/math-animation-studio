@@ -760,7 +760,7 @@ components:
     description: 活性化関数の役割や使い分けをカードや簡易フローで比較する。
     use_when:
       - 隠れ層と出力層で活性化関数の選び方が違うことを説明する
-      - ReLU、sigmoid、softmax、Adamのカテゴリ違いを整理する
+      - ReLU、sigmoid、softmaxの使い分けを整理する
     avoid_when:
       - 1つの関数の曲線形状だけを詳しく見る場面
     visual_type: text
@@ -775,7 +775,7 @@ components:
         allowed_values:
           - linear_vs_nonlinear
           - hidden_vs_output
-          - optimizer_boundary
+          - output_shape
     example: "隠れ層ではReLU、二値分類の出力はsigmoid、多クラス分類の出力はsoftmaxと並べる。"
 
   - id: softmax_probability_flow

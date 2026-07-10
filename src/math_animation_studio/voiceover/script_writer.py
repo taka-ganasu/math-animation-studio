@@ -158,7 +158,6 @@ class VoiceoverScriptWriter:
             return (
                 "活性化関数は、重み付き和を次の層へ渡す値に変える部品です。"
                 "ReLUは隠れ層でよく使われ、sigmoidやsoftmaxは出力を確率として読みたいときに使います。"
-                "Adamは活性化関数ではなく、重みの直し方を決める最適化手法です。"
             )
 
         sentences = [storyboard.one_sentence_summary]
@@ -605,7 +604,7 @@ def _activation_functions_segment_text() -> dict[str, str]:
         "tanh_curve": "tanhは、マイナス一から一の範囲へ押し込みます。sigmoidと似ていますが、中心がゼロなので正負の向きも残せます。",
         "hidden_layer_choice": "隠れ層では確率を出すことより、使いやすい特徴を作ることが大事です。そのためReLU系がよく使われます。",
         "softmax_scores": "softmaxは、複数クラスのスコアを合計一の確率分布に変えます。一番大きなスコアほど、大きな確率になります。",
-        "output_layer_choice": "出力層では、欲しい答えの形で選びます。二値分類ならsigmoid、多クラス分類ならsoftmaxです。Adamは活性化関数ではなく最適化手法です。",
+        "output_layer_choice": "出力層では、欲しい答えの形で選びます。二値分類ならsigmoid、多クラス分類ならsoftmaxです。",
         "summary": "まとめると、活性化関数は、値をどんな形で次へ渡したいかを決める部品です。隠れ層と出力層で役割が違います。",
     }
 

@@ -216,7 +216,6 @@ def _coerce_animation_family(
         or "relu" in text
         or "sigmoid" in text
         or "tanh" in text
-        or "softmax" in text and "adam" in text
     ):
         return "activation_function_comparison"
     if (

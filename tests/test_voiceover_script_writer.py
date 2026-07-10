@@ -312,7 +312,8 @@ def test_voiceover_script_writer_segments_activation_functions() -> None:
     assert sum(segment.duration_seconds for segment in segments) == pytest.approx(100.0)
     assert "活性化関数" in script
     assert "softmax" in script
-    assert "Adamは活性化関数ではなく" in script
+    assert "Adam" not in script
+    assert "二値分類ならsigmoid" in script
 
 
 def test_voiceover_script_writer_segments_backpropagation() -> None:

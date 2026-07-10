@@ -329,7 +329,7 @@ def sample_formula_analysis(formula: str, key: str) -> FormulaAnalysis:
             inputs=["z", "o"],
             outputs=["a", "p"],
             assumptions=["隠れ層と出力層で活性化関数の使い方が違うことを扱う", "ReLU、sigmoid、tanh、softmaxに絞って比較する"],
-            ambiguity_notes=["softmaxは厳密にはベクトルを確率分布へ変える出力層向けの関数として説明する。Adamは活性化関数ではない。"],
+            ambiguity_notes=["softmaxは厳密にはベクトルを確率分布へ変える出力層向けの関数として説明する。"],
             confidence=0.9,
         )
     if key == "backpropagation":
@@ -500,7 +500,7 @@ def sample_prerequisites(key: str) -> PrerequisiteMap:
                 PrerequisiteItem(concept="関数のグラフ", why_needed="ReLUやsigmoidの曲線を入力と出力の対応として読むため", priority="required", suggested_micro_explanation="横軸の入力zに対して、縦軸に変換後の値aを置く。"),
                 PrerequisiteItem(concept="確率分布", why_needed="softmaxの出力を合計1のクラス確率として読むため", priority="helpful", suggested_micro_explanation="複数の確率を足すと1になると、分類の自信として読める。"),
             ],
-            likely_blockers=["sigmoidとsoftmaxを同じものだと思うこと", "隠れ層と出力層で役割が違うことを見落とすこと", "Adamを活性化関数と混同すること"],
+            likely_blockers=["sigmoidとsoftmaxを同じものだと思うこと", "隠れ層と出力層で役割が違うことを見落とすこと"],
         )
     if key == "backpropagation":
         return PrerequisiteMap(
@@ -852,9 +852,9 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     id="step_09",
                     scene_role="summary",
                     title="出力層での使い分けを整理する",
-                    learning_goal="sigmoid、softmax、Adamのカテゴリ違いを理解する",
-                    explanation="出力層では、欲しい答えの形で選びます。二値分類ならsigmoid、多クラス分類ならsoftmaxです。Adamは活性化関数ではなく最適化手法です。",
-                    visual_idea="二値分類、 多クラス分類、Adamを3列で比較する。",
+                    learning_goal="sigmoidとsoftmaxの出力層での使い分けを理解する",
+                    explanation="出力層では、欲しい答えの形で選びます。二値分類ならsigmoid、多クラス分類ならsoftmaxです。",
+                    visual_idea="二値分類と多クラス分類を2列で比較する。",
                     planned_components=[
                         PlannedAnimationComponent(kind="activation_comparison", description="出力層での使い分けを整理する"),
                     ],
@@ -872,8 +872,8 @@ def sample_explanation_plan(formula: str, key: str, audience: str) -> Explanatio
                     ],
                 ),
             ],
-            misconceptions=["活性化関数と最適化手法を混同しない", "softmaxは複数スコア全体を確率分布へ変える", "隠れ層と出力層では活性化関数の選び方が違う"],
-            next_questions_to_study=["ReLUの派生関数", "softmaxとクロスエントロピー", "Adamなどの最適化手法"],
+            misconceptions=["softmaxは複数スコア全体を確率分布へ変える", "隠れ層と出力層では活性化関数の選び方が違う"],
+            next_questions_to_study=["ReLUの派生関数", "softmaxとクロスエントロピー", "出力層と損失関数の組み合わせ"],
         )
     if key == "neural_network_transform":
         return ExplanationPlan(

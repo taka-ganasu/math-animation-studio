@@ -335,31 +335,23 @@ class ActivationFunctionsScene(MathAnimationSceneMixin, Scene):
             self.card("sigmoid", color=BLUE_B, width=2.8),
             self.card("1つの確率", color=BLUE_B, width=2.8),
         ).arrange(DOWN, buff=0.25)
-        binary.move_to(LEFT * 3.0 + DOWN * 0.05)
+        binary.move_to(LEFT * 2.1 + DOWN * 0.05)
 
         multiclass = VGroup(
             self.card("多クラス分類", color=YELLOW, width=2.8, height=0.86, font_size=24),
             self.card("softmax", color=YELLOW, width=2.8),
             self.card("合計1の分布", color=YELLOW, width=2.8),
         ).arrange(DOWN, buff=0.25)
-        multiclass.move_to(ORIGIN + DOWN * 0.05)
+        multiclass.move_to(RIGHT * 2.1 + DOWN * 0.05)
 
-        optimizer = VGroup(
-            self.card("Adam", color=RED_B, width=2.8, height=0.86, font_size=24),
-            self.card("活性化関数ではない", color=RED_B, width=3.4),
-            self.card("重みの直し方", color=RED_B, width=3.4),
-        ).arrange(DOWN, buff=0.25)
-        optimizer.move_to(RIGHT * 3.05 + DOWN * 0.05)
-
-        caption = self.make_label("活性化関数、損失関数、最適化手法は役割が違います", font_size=21, color=YELLOW)
+        caption = self.make_label("隠れ層は特徴作り、出力層は答えの形作りとして見ると整理しやすいです", font_size=21, color=YELLOW)
         caption.to_edge(DOWN, buff=0.35)
 
         self.play(FadeIn(title), run_time=0.5)
         self.play(FadeIn(binary), run_time=0.8)
-        self.play(FadeIn(multiclass), run_time=0.8)
-        self.play(FadeIn(optimizer), FadeIn(caption), run_time=0.8)
+        self.play(FadeIn(multiclass), FadeIn(caption), run_time=0.8)
         self.wait_remaining(duration, 2.9)
-        self.play(FadeOut(VGroup(title, binary, multiclass, optimizer, caption)), run_time=0.35)
+        self.play(FadeOut(VGroup(title, binary, multiclass, caption)), run_time=0.35)
 
     def construct_summary(self) -> None:
         duration = segment_duration("summary", 9.0)

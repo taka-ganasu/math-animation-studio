@@ -300,7 +300,7 @@ math-anim plan \
 
 ### 活性化関数: ReLU・sigmoid・tanh・softmax
 
-`--concept-hint activation_functions` を指定すると、活性化関数を「線形和を次へ渡す値に変える部品」として説明し、ReLU、sigmoid、tanh、softmaxの違いと使い分けを動画化できます。Adamは活性化関数ではなく最適化手法として整理します。
+`--concept-hint activation_functions` を指定すると、活性化関数を「線形和を次へ渡す値に変える部品」として説明し、ReLU、sigmoid、tanh、softmaxの違いと使い分けを動画化できます。
 
 ```bash
 math-anim plan \

@@ -360,4 +360,5 @@ def test_plan_no_llm_activation_functions_outputs_storyboard(tmp_path) -> None:
     assert storyboard.examples[0].values["class_labels"] == ["猫", "犬", "鳥"]
     assert explanation_plan["selected_animation_pattern_id"] == "activation_function_comparison"
     assert "$$\na=f(z),\\quad p=\\mathrm{softmax}(o)\n$$" in brief
-    assert "Adamなどの最適化手法" in brief
+    assert "Adam" not in brief
+    assert "softmaxとクロスエントロピー" in brief
