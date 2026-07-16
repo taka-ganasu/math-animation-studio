@@ -28,6 +28,7 @@ from .storyboard import (
     load_storyboard,
     save_storyboard,
 )
+from .template_catalog import TemplateChapterDefinition, TemplateDefinition
 from .voiceover import VoiceoverScript
 from .visual_component import (
     VisualComponentDefinition,
@@ -59,6 +60,8 @@ __all__ = [
     "SymbolDefinition",
     "SymbolRole",
     "TeachingExample",
+    "TemplateChapterDefinition",
+    "TemplateDefinition",
     "VisualObject",
     "VoiceoverScript",
     "VisualComponentDefinition",

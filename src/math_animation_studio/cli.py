@@ -22,6 +22,10 @@ from math_animation_studio.understanding.storyboard_dsl import (
     default_formula_first_blueprint,
     storyboard_dsl_prompt_summary,
 )
+from math_animation_studio.understanding.template_catalog import (
+    load_template_catalog,
+    template_prompt_summary,
+)
 from math_animation_studio.understanding.visual_component_catalog import (
     load_visual_component_catalog,
     visual_component_prompt_summary,
@@ -92,6 +96,7 @@ def catalog(
 
     blueprint = default_formula_first_blueprint()
     components = load_visual_component_catalog()
+    templates = load_template_catalog()
     if output_format == "json":
         typer.echo(
             json.dumps(
@@ -100,6 +105,10 @@ def catalog(
                     "visual_components": [
                         component.model_dump(mode="json")
                         for component in components.values()
+                    ],
+                    "template_chapters": [
+                        template.model_dump(mode="json")
+                        for template in templates.values()
                     ],
                 },
                 ensure_ascii=False,
@@ -117,6 +126,10 @@ def catalog(
     typer.echo("## Visual Components")
     typer.echo("")
     typer.echo(visual_component_prompt_summary())
+    typer.echo("")
+    typer.echo("## Template Chapters")
+    typer.echo("")
+    typer.echo(template_prompt_summary())
 
 
 @app.command()

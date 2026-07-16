@@ -30,6 +30,8 @@ def test_catalog_markdown() -> None:
     assert "formula_first" in result.output
     assert "Visual Components" in result.output
     assert "formula_focus" in result.output
+    assert "Template Chapters" in result.output
+    assert "fully_connected_network" in result.output
 
 
 def test_catalog_json() -> None:
@@ -38,6 +40,7 @@ def test_catalog_json() -> None:
     assert result.exit_code == 0, result.output
     assert '"storyboard_dsl"' in result.output
     assert '"visual_components"' in result.output
+    assert '"template_chapters"' in result.output
     assert '"formula_first"' in result.output
 
 

@@ -1,0 +1,305 @@
+templates:
+  - id: penalty_curve
+    concept: cross_entropy
+    name: Cross Entropy Penalty Curve
+    manim_template: penalty_curve.py.j2
+    description: クロスエントロピーを、数式分解、モデル出力、one-hot、正解確率、-logの罰として順に説明する。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: 扱う式と、正解確率を罰に変えるという見方を示す。
+        segment_ids: [intro_formula]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 式の構造
+        intent: y_i、予測確率、log、総和、マイナス記号を順に意味へ対応づける。
+        segment_ids: [focus_y_i, focus_y_hat_i, focus_log, focus_sum, focus_minus]
+        component_kinds: [formula_focus]
+      - id: concrete_example
+        role: concrete_example
+        title: 分類の具体例
+        intent: モデル出力からsoftmax確率とone-hot正解ラベルが作られる流れを見る。
+        segment_ids: [model_pipeline, one_hot_vector, softmax_distribution, correct_selector]
+        component_kinds: [model_pipeline, one_hot_vector, probability_bars, probability_selector]
+      - id: visualization
+        role: visualization
+        title: -logの罰
+        intent: 正解確率が低いほど損失が急に大きくなる形を曲線で見せる。
+        segment_ids: [negative_log_penalty]
+        component_kinds: [negative_log_curve]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 正解確率を取り出して罰へ変換する式として回収する。
+        segment_ids: [summary]
+        component_kinds: [summary]
+
+  - id: gradient_descent_3d
+    concept: gradient_descent
+    name: Gradient Descent Loss Landscape
+    manim_template: gradient_descent_3d.py.j2
+    description: 損失関数を地形として見て、現在地、勾配、下る方向、更新式の対応を説明する。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: 勾配降下法を、損失地形の上で点が動く問題として導入する。
+        segment_ids: [title_intro]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 更新式の構造
+        intent: 現在地、学習率、勾配、マイナス方向の意味を式で確認する。
+        segment_ids: [formula_parts]
+        component_kinds: [formula_focus, formula_bridge]
+      - id: concrete_example
+        role: concrete_example
+        title: 損失地形
+        intent: 曲面、現在地、局所的な傾きを対応づける。
+        segment_ids: [intro_surface, current_point, local_gradient]
+        component_kinds: [surface_plot, gradient_arrow, terrain_metaphor]
+      - id: visualization
+        role: visualization
+        title: 点の移動
+        intent: 勾配の逆向きへ点が少しずつ動き、損失が下がる様子を見る。
+        segment_ids: [descent_path]
+        component_kinds: [descent_path, downhill_arrow, footstep_path]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 地形上の一歩と更新式を対応づけて回収する。
+        segment_ids: [summary_surface]
+        component_kinds: [summary, formula_bridge]
+
+  - id: perceptron
+    concept: perceptron
+    name: Simple Perceptron
+    manim_template: perceptron.py.j2
+    description: 単純パーセプトロンを、重み付き和、活性化、2D決定境界として説明する。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: 1つのニューロンが入力から0/1を判断することを示す。
+        segment_ids: [title_intro]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 式の構造
+        intent: 入力と重みの積、バイアス、step、出力を順に読む。
+        segment_ids: [formula_weighted_inputs, formula_bias, formula_activation, formula_output]
+        component_kinds: [formula_focus, weighted_sum, activation_function]
+      - id: concrete_example
+        role: concrete_example
+        title: 1つのニューロン
+        intent: 入力ノード、重み付き接続、sum、step、出力の流れを見る。
+        segment_ids: [network_diagram, weighted_sum, activation]
+        component_kinds: [perceptron_node, weighted_connection, weighted_sum, activation_function]
+      - id: visualization
+        role: visualization
+        title: 決定境界
+        intent: 2D平面では境界線のどちら側かで分類が変わることを見せる。
+        segment_ids: [decision_boundary]
+        component_kinds: [decision_boundary]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 入力、重み、バイアス、活性化の役割を短く回収する。
+        segment_ids: [summary]
+        component_kinds: [summary]
+
+  - id: fully_connected_network
+    concept: fully_connected_network
+    name: Fully Connected Neural Network
+    manim_template: fully_connected_network.py.j2
+    description: 全結合ニューラルネットワークを、層、全接続、順伝播、softmax、損失への接続として説明する。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: ニューロンを層として並べ、次の層へすべて接続する見方を示す。
+        segment_ids: [title_intro]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 式の構造
+        intent: W1x+b1、活性化、W2h+b2を層の流れとして読む。
+        segment_ids: [formula_affine, formula_activation, formula_output]
+        component_kinds: [formula_focus, layer_activation]
+      - id: concrete_example
+        role: concrete_example
+        title: 層と全結合
+        intent: 入力層、隠れ層、出力層と、層間のすべての接続を見せる。
+        segment_ids: [layer_stack, full_connections, forward_pass]
+        component_kinds: [dense_layer, fully_connected_edges, forward_pass]
+      - id: visualization
+        role: visualization
+        title: 確率と損失
+        intent: softmax確率、one-hot正解、正解確率、クロスエントロピー損失へ接続する。
+        segment_ids: [softmax_output, one_hot_label, correct_probability, cross_entropy_loss]
+        component_kinds: [softmax_output, one_hot_vector, probability_selector, negative_log_curve]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 行列の重み、活性化、確率、損失のつながりを回収する。
+        segment_ids: [summary]
+        component_kinds: [summary]
+
+  - id: backpropagation
+    concept: backpropagation
+    name: Backpropagation
+    manim_template: backpropagation.py.j2
+    description: 損失から誤差信号を戻し、隠れ層の責任配分と重み更新へつなげる。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: 損失から各重みをどう直すかを逆向きに計算する見方を示す。
+        segment_ids: [title_intro]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 微分と誤差信号
+        intent: 偏微分、出力層の誤差、隠れ層の誤差、重み勾配を分解する。
+        segment_ids:
+          - partial_loss_meaning
+          - partial_prediction_meaning
+          - derivative_ratio_meaning
+          - formula_output_delta
+          - hidden_weighted_return
+          - hidden_activation_gate
+          - hidden_elementwise_product
+          - formula_hidden_delta
+          - formula_weight_gradient
+        component_kinds: [formula_focus, chain_rule, loss_gradient]
+      - id: concrete_example
+        role: concrete_example
+        title: 順伝播から損失へ
+        intent: 予測と損失が出た後、そこから逆伝播が始まることを見る。
+        segment_ids: [forward_context, loss_signal]
+        component_kinds: [forward_pass, loss_gradient]
+      - id: visualization
+        role: visualization
+        title: 逆向きの流れと重み更新
+        intent: 誤差信号を右から左へ戻し、隠れ層の責任と1本の重み更新を見る。
+        segment_ids: [backward_arrows, hidden_credit, weight_update]
+        component_kinds: [backward_pass, error_attribution, weight_update]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 誤差信号、勾配、重み更新の対応を回収する。
+        segment_ids: [summary]
+        component_kinds: [summary]
+
+  - id: chain_rule
+    concept: chain_rule
+    name: Chain Rule
+    manim_template: chain_rule.py.j2
+    description: 合成関数の途中の変化率を掛けて、端から端の変化率を求めることを説明する。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: 連鎖律を2階微分ではなく、変化率のつながりとして導入する。
+        segment_ids: [title_intro]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 変化率の部品
+        intent: xからu、uからyへの変化率と、それを掛ける意味を見る。
+        segment_ids: [composition_flow, rate_du_dx, rate_dy_du, multiply_rates]
+        component_kinds: [chain_rule, formula_focus]
+      - id: concrete_example
+        role: concrete_example
+        title: 数値例
+        intent: u=2x+1、y=u^2の例で、途中の倍率を掛けることを確かめる。
+        segment_ids: [numeric_example]
+        component_kinds: [chain_rule]
+      - id: visualization
+        role: visualization
+        title: バックプロパゲーションへの橋渡し
+        intent: Wから予測、予測から損失へ影響が伝わる見方へ接続する。
+        segment_ids: [ml_bridge, backprop_bridge]
+        component_kinds: [chain_rule, backward_pass]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 途中の変化率を掛けて全体の変化率にする、と回収する。
+        segment_ids: [summary]
+        component_kinds: [summary]
+
+  - id: neural_network_transform
+    concept: neural_network_transform
+    name: Neural Network Transform
+    manim_template: neural_network_transform.py.j2
+    description: 線形変換、非線形変換、中間表現を、特徴空間の変換として説明する。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: h=sigma(Wx+b)を、特徴を変換する式として導入する。
+        segment_ids: [title_intro]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 式の構造
+        intent: Wx+bで特徴を混ぜ直し、sigmaで非線形に変えることを見る。
+        segment_ids: [formula_linear, formula_activation]
+        component_kinds: [formula_focus, feature_axis_mixing, activation_gate]
+      - id: concrete_example
+        role: concrete_example
+        title: 特徴空間の変換
+        intent: 入力空間の点群を、線形変換と活性化で別の表現へ移す。
+        segment_ids: [input_space, linear_mixing, activation_gate, representation_space]
+        component_kinds: [representation_space, feature_axis_mixing, activation_gate]
+      - id: visualization
+        role: visualization
+        title: 分類しやすい表現
+        intent: 変換後の中間表現で、より単純な決定境界を作れることを見る。
+        segment_ids: [decision_boundary, stacked_layers]
+        component_kinds: [decision_boundary, dense_layer]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 線形変換、非線形変換、中間表現の役割を回収する。
+        segment_ids: [summary]
+        component_kinds: [summary]
+
+  - id: activation_functions
+    concept: activation_functions
+    name: Activation Functions
+    manim_template: activation_functions.py.j2
+    description: ReLU、sigmoid、tanh、softmaxを比較し、隠れ層と出力層での使い分けを説明する。
+    chapters:
+      - id: intro
+        role: title_intro
+        title: 導入
+        intent: 活性化関数を、線形和を次へ渡す値に変える部品として導入する。
+        segment_ids: [title_intro]
+        component_kinds: [formula_focus]
+      - id: formula_structure
+        role: formula_structure
+        title: 非線形性の意味
+        intent: zからf(z)、aへの変換と、非線形が必要な理由を見る。
+        segment_ids: [why_nonlinear, formula_structure]
+        component_kinds: [activation_comparison, formula_focus]
+      - id: concrete_example
+        role: concrete_example
+        title: 隠れ層の活性化
+        intent: ReLU、sigmoid、tanhの曲線を比較し、値の通し方の違いを見る。
+        segment_ids: [relu_curve, sigmoid_curve, tanh_curve, hidden_layer_choice]
+        component_kinds: [activation_curve, activation_comparison]
+      - id: visualization
+        role: visualization
+        title: 出力層のsoftmax
+        intent: スコアを確率分布に変えるsoftmaxと、出力層での使い分けを見る。
+        segment_ids: [softmax_scores, output_layer_choice]
+        component_kinds: [softmax_probability_flow, activation_comparison]
+      - id: summary
+        role: summary
+        title: まとめ
+        intent: 隠れ層の非線形変換と出力層の確率変換を区別して回収する。
+        segment_ids: [summary]
+        component_kinds: [summary]

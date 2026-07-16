@@ -53,7 +53,7 @@ LLMは `explanation_steps[].scene_role` に上記roleのいずれかを入れる
 
 ## Inspect
 
-現在のDSLと視覚部品カタログはCLIで確認できる。
+現在のDSL、視覚部品カタログ、テンプレート章構成はCLIで確認できる。
 
 ```bash
 math-anim catalog
